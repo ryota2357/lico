@@ -177,16 +177,99 @@ mod tests {
     fn int() {
         assert_eq!(to_token("0"), vec![Token::Int(0)]);
         assert_eq!(to_token("7"), vec![Token::Int(7)]);
+        assert_eq!(to_token("1234567890"), vec![Token::Int(1234567890)]);
+        assert_eq!(to_token("01"), vec![Token::Int(1)]);
     }
 
     #[test]
     fn float() {
         assert_eq!(to_token("0.0"), vec![Token::Float(0.0)]);
         assert_eq!(to_token("0.3"), vec![Token::Float(0.3)]);
+        assert_eq!(to_token("12.34"), vec![Token::Float(12.34)]);
+        assert_eq!(to_token("7.0"), vec![Token::Float(7.0)]);
+        assert_eq!(to_token("01.23"), vec![Token::Float(1.23)]);
     }
 
     #[test]
     fn string() {
-        assert_eq!(to_token(r#""abc""#), vec![Token::String("abc")]);
+        assert_eq!(to_token(r#""abc de g""#), vec![Token::String("abc de g")]);
+        assert_eq!(to_token(r#""""#), vec![Token::String("")]);
+
+        assert_eq!(to_token("'abc de g'"), vec![Token::String("abc de g")]);
+        assert_eq!(to_token("''"), vec![Token::String("")]);
+    }
+
+    #[test]
+    fn bool() {
+        assert_eq!(to_token("true"), vec![Token::Bool(true)]);
+        assert_eq!(to_token("false"), vec![Token::Bool(false)]);
+    }
+
+    #[test]
+    fn nil() {
+        assert_eq!(to_token("nil"), vec![Token::Nil]);
+    }
+
+    #[test]
+    fn keyword() {
+        assert_eq!(to_token("var"), vec![Token::Var]);
+        assert_eq!(to_token("let"), vec![Token::Let]);
+        assert_eq!(to_token("func"), vec![Token::Func]);
+        assert_eq!(to_token("if"), vec![Token::If]);
+        assert_eq!(to_token("then"), vec![Token::Then]);
+        assert_eq!(to_token("elif"), vec![Token::Elif]);
+        assert_eq!(to_token("else"), vec![Token::Else]);
+        assert_eq!(to_token("for"), vec![Token::For]);
+        assert_eq!(to_token("while"), vec![Token::While]);
+        assert_eq!(to_token("in"), vec![Token::In]);
+        assert_eq!(to_token("do"), vec![Token::Do]);
+        assert_eq!(to_token("end"), vec![Token::End]);
+        assert_eq!(to_token("return"), vec![Token::Return]);
+        assert_eq!(to_token("break"), vec![Token::Break]);
+        assert_eq!(to_token("continue"), vec![Token::Continue]);
+    }
+
+    #[test]
+    fn operator() {
+        assert_eq!(to_token("+"), vec![Token::Add]);
+        assert_eq!(to_token("-"), vec![Token::Sub]);
+        assert_eq!(to_token("*"), vec![Token::Mul]);
+        assert_eq!(to_token("/"), vec![Token::Div]);
+        assert_eq!(to_token("%"), vec![Token::Mod]);
+        assert_eq!(to_token("^"), vec![Token::Pow]);
+        assert_eq!(to_token("=="), vec![Token::Eq]);
+        assert_eq!(to_token("!="), vec![Token::NotEq]);
+        assert_eq!(to_token("<"), vec![Token::Less]);
+        assert_eq!(to_token("<="), vec![Token::LessEq]);
+        assert_eq!(to_token(">"), vec![Token::Greater]);
+        assert_eq!(to_token(">="), vec![Token::GreaterEq]);
+        assert_eq!(to_token("."), vec![Token::Dot]);
+    }
+
+    #[test]
+    fn keyword_operator() {
+        assert_eq!(to_token("and"), vec![Token::And]);
+        assert_eq!(to_token("or"), vec![Token::Or]);
+        assert_eq!(to_token("not"), vec![Token::Not]);
+    }
+
+    #[test]
+    fn delimiter() {
+        assert_eq!(to_token(","), vec![Token::Comma]);
+        assert_eq!(to_token("("), vec![Token::OpenParen]);
+        assert_eq!(to_token(")"), vec![Token::CloseParen]);
+        assert_eq!(to_token("{"), vec![Token::OpenBrace]);
+        assert_eq!(to_token("}"), vec![Token::CloseBrace]);
+        assert_eq!(to_token("["), vec![Token::OpenBracket]);
+        assert_eq!(to_token("]"), vec![Token::CloseBracket]);
+    }
+
+    #[test]
+    fn identifier() {
+        assert_eq!(to_token("abc"), vec![Token::Identifier("abc")]);
+        assert_eq!(to_token("a1"), vec![Token::Identifier("a1")]);
+        assert_eq!(to_token("a_1"), vec![Token::Identifier("a_1")]);
+        assert_eq!(to_token("_foo"), vec![Token::Identifier("_foo")]);
+        assert_eq!(to_token("bar_"), vec![Token::Identifier("bar_")]);
     }
 }
