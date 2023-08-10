@@ -43,6 +43,7 @@ pub enum Token<'src> {
     Greater,   // >
     GreaterEq, // >=
     Dot,       // .
+    Assign,    // =
 
     // keyword operators
     And,
@@ -121,6 +122,7 @@ pub fn lexer<'src>(
         just(">=").to(Token::GreaterEq),
         just('>').to(Token::Greater),
         just('.').to(Token::Dot),
+        just('=').to(Token::Assign),
     ));
 
     let delimiter = choice((
@@ -258,6 +260,7 @@ mod tests {
         assert_eq!(to_token(">"), vec![Token::Greater]);
         assert_eq!(to_token(">="), vec![Token::GreaterEq]);
         assert_eq!(to_token("."), vec![Token::Dot]);
+        assert_eq!(to_token("="), vec![Token::Assign]);
     }
 
     #[test]
