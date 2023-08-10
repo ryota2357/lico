@@ -74,22 +74,30 @@ pub fn lexer<'src>(
         .map(Token::Float);
 
     let string = {
-        let escape = just('\\').ignore_then(
-            just('\\')
-                .or(just('/'))
-                .or(just('"'))
-                .or(just('\''))
-                .or(just('b').to('\x08'))
-                .or(just('f').to('\x0C'))
-                .or(just('n').to('\n'))
-                .or(just('r').to('\r'))
-                .or(just('t').to('\t')),
-        );
+        // TODO: Support escape sequences
+        // let escape = just('\\').ignore_then(
+        //     just('\\')
+        //         .or(just('/'))
+        //         .or(just('"'))
+        //         .or(just('\''))
+        //         .or(just('b').to('\x08'))
+        //         .or(just('f').to('\x0C'))
+        //         .or(just('n').to('\n'))
+        //         .or(just('r').to('\r'))
+        //         .or(just('t').to('\t')),
+        // );
+        // let str1 = just('"')
+        //     .ignore_then(none_of("\\\"").or(escape).repeated().slice())
+        //     .then_ignore(just('"'));
+        // let str2 = just('\'')
+        //     .ignore_then(none_of("\\\'").or(escape).repeated().slice())
+        //     .then_ignore(just('\''));
+
         let str1 = just('"')
-            .ignore_then(none_of("\\\"").or(escape).repeated().slice())
+            .ignore_then(none_of("\"").repeated().slice())
             .then_ignore(just('"'));
         let str2 = just('\'')
-            .ignore_then(none_of("\\\'").or(escape).repeated().slice())
+            .ignore_then(none_of("'").repeated().slice())
             .then_ignore(just('\''));
 
         str1.or(str2).map(Token::String)
