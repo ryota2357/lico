@@ -64,9 +64,13 @@ pub enum Token<'src> {
 
 pub fn lexer<'src>(
 ) -> impl Parser<'src, &'src str, Vec<(Token<'src>, Span)>, extra::Err<Error<'src>>> {
-    let int = text::int(10).from_str().unwrapped().map(Token::Int);
+    let int = text::digits(10)
+        .slice()
+        .from_str()
+        .unwrapped()
+        .map(Token::Int);
 
-    let float = text::int(10)
+    let float = text::digits(10)
         .then(just('.').then(text::digits(10)))
         .slice()
         .from_str()
@@ -187,6 +191,7 @@ mod tests {
         assert_eq!(to_token("7"), vec![Token::Int(7)]);
         assert_eq!(to_token("1234567890"), vec![Token::Int(1234567890)]);
         assert_eq!(to_token("01"), vec![Token::Int(1)]);
+        assert_eq!(to_token("0010"), vec![Token::Int(10)]);
     }
 
     #[test]
@@ -196,6 +201,7 @@ mod tests {
         assert_eq!(to_token("12.34"), vec![Token::Float(12.34)]);
         assert_eq!(to_token("7.0"), vec![Token::Float(7.0)]);
         assert_eq!(to_token("01.23"), vec![Token::Float(1.23)]);
+        assert_eq!(to_token("0010.00"), vec![Token::Float(10.0)]);
     }
 
     #[test]
