@@ -61,6 +61,7 @@ pub enum Token<'src> {
 
     // other
     Identifier(&'src str),
+    AtMark,
 }
 
 impl std::fmt::Display for Token<'_> {
@@ -111,6 +112,7 @@ impl std::fmt::Display for Token<'_> {
             Token::OpenBracket => write!(f, "["),
             Token::CloseBracket => write!(f, "]"),
             Token::Identifier(x) => write!(f, "{}", x),
+            Token::AtMark => write!(f, "@"),
         }
     }
 }
@@ -160,7 +162,8 @@ pub fn lexer<'src>(
         str1.or(str2).map(Token::String)
     };
 
-    let operator = choice((
+    let symbol = choice((
+        // operator
         just('+').to(Token::Add),
         just('-').to(Token::Sub),
         just('*').to(Token::Mul),
@@ -175,9 +178,7 @@ pub fn lexer<'src>(
         just('>').to(Token::Greater),
         just('.').to(Token::Dot),
         just('=').to(Token::Assign),
-    ));
-
-    let delimiter = choice((
+        // delimiter
         just(',').to(Token::Comma),
         just('(').to(Token::OpenParen),
         just(')').to(Token::CloseParen),
@@ -185,6 +186,8 @@ pub fn lexer<'src>(
         just('}').to(Token::CloseBrace),
         just('[').to(Token::OpenBracket),
         just(']').to(Token::CloseBracket),
+        // other
+        just('@').to(Token::AtMark),
     ));
 
     let word = text::ascii::ident().map(|ident: &str| match ident {
@@ -219,7 +222,7 @@ pub fn lexer<'src>(
         _ => Token::Identifier(ident),
     });
 
-    let token = choice((float, int, string, operator, delimiter, word))
+    let token = choice((float, int, string, symbol, word))
         .map_with_span(|token, span| (token, span))
         .padded();
 
@@ -340,5 +343,10 @@ mod tests {
         assert_eq!(to_token("a_1"), vec![Token::Identifier("a_1")]);
         assert_eq!(to_token("_foo"), vec![Token::Identifier("_foo")]);
         assert_eq!(to_token("bar_"), vec![Token::Identifier("bar_")]);
+    }
+
+    #[test]
+    fn at_mark() {
+        assert_eq!(to_token("@"), vec![Token::AtMark]);
     }
 }
