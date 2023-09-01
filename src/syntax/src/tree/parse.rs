@@ -7,12 +7,9 @@ type ParseError<'tokens, 'src> = extra::Err<Rich<'tokens, Token<'src>, Span>>;
 type ParserInput<'tokens, 'src> =
     chumsky::input::SpannedInput<Token<'src>, Span, &'tokens [(Token<'src>, Span)]>;
 
-pub fn parser<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    (Block<'src>, Span),
-    extra::Err<Rich<'tokens, Token<'src>, Span>>,
-> + Clone {
+pub fn parser<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (Block<'src>, Span), ParseError<'tokens, 'src>>
+       + Clone {
     block()
         .map_with_span(|block, span| (block, span))
         .then_ignore(end())
@@ -520,6 +517,6 @@ fn function_arguments_parser<'tokens, 'src: 'tokens>(
         .separated_by(just(Token::Comma))
         .allow_trailing()
         .collect()
-        .map_with_span(move |args, span| (args, span))
+        .map_with_span(|args, span| (args, span))
         .delimited_by(just(Token::OpenParen), just(Token::CloseParen))
 }

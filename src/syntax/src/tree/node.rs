@@ -107,7 +107,7 @@ pub enum Callable<'src> {
     },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Local<'src> {
     Variable(&'src str),
     TableField {
@@ -116,7 +116,7 @@ pub enum Local<'src> {
     },
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum UnaryOp {
     Neg,
     Not,
@@ -134,7 +134,7 @@ pub enum UnaryOp {
 /// 6 : `Eq`, `NotEq`
 /// 7 : `And`
 /// 8 : `Or`
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum BinaryOp {
     // arithmetic
     Add,
