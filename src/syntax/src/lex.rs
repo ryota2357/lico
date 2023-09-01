@@ -1,7 +1,7 @@
 use chumsky::prelude::*;
 
 type Span = SimpleSpan<usize>;
-type Error<'a> = Rich<'a, char, Span>;
+type ParseError<'a> = extra::Err<Rich<'a, char, Span>>;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Token<'src> {
@@ -117,8 +117,7 @@ impl std::fmt::Display for Token<'_> {
     }
 }
 
-pub fn lexer<'src>(
-) -> impl Parser<'src, &'src str, Vec<(Token<'src>, Span)>, extra::Err<Error<'src>>> {
+pub fn lexer<'src>() -> impl Parser<'src, &'src str, Vec<(Token<'src>, Span)>, ParseError<'src>> {
     let int = text::digits(10)
         .slice()
         .from_str()
