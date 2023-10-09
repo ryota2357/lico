@@ -9,14 +9,14 @@ type LexerOutput<'a> = Vec<(Token<'a>, Span)>;
 pub(crate) fn lexer<'src>(
 ) -> impl Parser<'src, LexerInput<'src>, LexerOutput<'src>, LexerError<'src>> {
     let int = text::digits(10)
-        .slice()
+        .to_slice()
         .from_str()
         .unwrapped()
         .map(Token::Int);
 
     let float = text::digits(10)
         .then(just('.').then(text::digits(10)))
-        .slice()
+        .to_slice()
         .from_str()
         .unwrapped()
         .map(Token::Float);
@@ -42,10 +42,10 @@ pub(crate) fn lexer<'src>(
         //     .then_ignore(just('\''));
 
         let str1 = just('"')
-            .ignore_then(none_of("\"").repeated().slice())
+            .ignore_then(none_of("\"").repeated().to_slice())
             .then_ignore(just('"'));
         let str2 = just('\'')
-            .ignore_then(none_of("'").repeated().slice())
+            .ignore_then(none_of("'").repeated().to_slice())
             .then_ignore(just('\''));
 
         str1.or(str2).map(Token::String)
@@ -114,7 +114,7 @@ pub(crate) fn lexer<'src>(
     });
 
     let token = choice((float, int, string, symbol, word))
-        .map_with_span(|token, span| (token, span))
+        .map_with(|token, ext| (token, ext.span()))
         .padded();
 
     token.repeated().collect()
