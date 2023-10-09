@@ -3,12 +3,12 @@ use super::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum VariableStatement<'src> {
     Var {
-        lhs: Local<'src>,
-        rhs: Expression<'src>,
+        name: Ident<'src>,
+        expr: Expression<'src>,
     },
     Let {
-        lhs: Local<'src>,
-        rhs: Expression<'src>,
+        name: Ident<'src>,
+        expr: Expression<'src>,
     },
     Func {
         name: Local<'src>,
@@ -22,8 +22,8 @@ pub enum VariableStatement<'src> {
 }
 
 /// <VariableStatement> ::= <Var> | <Let> | <Func> | <Assign>
-/// <Var>               ::= 'var' <Local> '=' <Expression>
-/// <Let>               ::= 'let' <Local> '=' <Expression>
+/// <Var>               ::= 'var' <Ident> '=' <Expression>
+/// <Let>               ::= 'let' <Ident> '=' <Expression>
 /// <Func>              ::= 'func' <Local> '(' [ <Ident> { ',' <Ident> } [ ',' ] ] ')' <Block> 'end'
 /// <Assign>            ::= <Local> '=' <Expression>
 pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
@@ -40,15 +40,15 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
     ParserError<'tokens, 'src>,
 > + Clone {
     let var = just(Token::Var)
-        .ignore_then(local())
+        .ignore_then(ident())
         .then_ignore(just(Token::Assign))
         .then(expression.clone())
-        .map(|(lhs, rhs)| VariableStatement::Var { lhs, rhs });
+        .map(|(name, expr)| VariableStatement::Var { name, expr });
     let r#let = just(Token::Let)
-        .ignore_then(local())
+        .ignore_then(ident())
         .then_ignore(just(Token::Assign))
         .then(expression.clone())
-        .map(|(lhs, rhs)| VariableStatement::Let { lhs, rhs });
+        .map(|(name, expr)| VariableStatement::Let { name, expr });
     let func = just(Token::Func)
         .ignore_then(local())
         .then_ignore(just(Token::OpenParen))
@@ -77,19 +77,13 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
 impl<'a> TreeWalker<'a> for VariableStatement<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
-            VariableStatement::Var { lhs, rhs } => {
-                match lhs {
-                    Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Variable { name } => tracker.add_definition(name.str),
-                }
-                rhs.analyze(tracker);
+            VariableStatement::Var { name, expr } => {
+                tracker.add_definition(name.str);
+                expr.analyze(tracker);
             }
-            VariableStatement::Let { lhs, rhs } => {
-                match lhs {
-                    Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Variable { name } => tracker.add_definition(name.str),
-                }
-                rhs.analyze(tracker);
+            VariableStatement::Let { name, expr } => {
+                tracker.add_definition(name.str);
+                expr.analyze(tracker);
             }
             VariableStatement::Func { name, args, body } => {
                 match name {

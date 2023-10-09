@@ -10,13 +10,11 @@ fn define_variable_with_literal_by_va() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Variable(VariableStatement::Var {
-                lhs: Local::Variable {
-                    name: Ident {
-                        str: "x",
-                        span: (4..5).into(),
-                    },
+                name: Ident {
+                    str: "x",
+                    span: (4..5).into(),
                 },
-                rhs: Expression::Primitive(Primitive::Int(17)),
+                expr: Expression::Primitive(Primitive::Int(17)),
             })],
         },
     )
@@ -29,13 +27,11 @@ fn define_variable_with_literal_by_let() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Variable(VariableStatement::Let {
-                lhs: Local::Variable {
-                    name: Ident {
-                        str: "x",
-                        span: (4..5).into(),
-                    },
+                name: Ident {
+                    str: "x",
+                    span: (4..5).into(),
                 },
-                rhs: Expression::Primitive(Primitive::String("abc")),
+                expr: Expression::Primitive(Primitive::String("abc")),
             })],
         },
     )
