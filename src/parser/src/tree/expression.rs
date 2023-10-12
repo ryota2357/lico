@@ -1,4 +1,5 @@
 use super::*;
+use chumsky::pratt::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expression<'src> {
@@ -8,8 +9,8 @@ pub enum Expression<'src> {
     },
     Binary {
         op: BinaryOp,
-        rhs: Box<Expression<'src>>,
         lhs: Box<Expression<'src>>,
+        rhs: Box<Expression<'src>>,
     },
     Primitive(Primitive<'src>),
     TableObject(TableObject<'src>),
@@ -35,9 +36,6 @@ pub enum BinaryOp {
     Mod, // %
     Pow, // *
 
-    // table access
-    Dot, // .
-
     // comparison
     Eq,        // ==
     NotEq,     // !=
@@ -51,8 +49,19 @@ pub enum BinaryOp {
     Or,  // or
 }
 
+/// TODO: '(' <Expression> ')' を処理できないんだけど、どうする？
 /// <Expression> ::= '(' <Expression> ')' | <expression>
 /// <expression> ::= <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Call> | <Local>
+///
+/// <Unary> and <Binary> operators priority:
+/// (1 is lowest, 8 is highest.)
+/// 8 : `Neg`, `Not`
+/// 7 : `Pow`
+/// 6 : `Mul`, `Div`, `Mod`
+/// 5 : `Add`, `Sub`
+/// 4 : `Less`, `LessEq`, `Greater`, `GreaterEq`, `Eq`, `NotEq`
+/// 2 : `And`
+/// 1 : `Or`
 pub(super) fn expression<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
@@ -68,7 +77,99 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         let call = call(block, expr).map(Expression::Call);
         let local = local().map(Expression::Local);
 
+        let unary_or_binary = {
+            let atom = choice((primitive.clone(), call.clone(), local.clone()));
+            recursive(|pratt| {
+                let term = choice((
+                    atom.clone()
+                        .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
+                    pratt.delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
+                    atom,
+                ));
+                term.pratt((
+                    prefix(7, just(Token::Sub), |rhs| match rhs {
+                        Expression::Primitive(Primitive::Int(x)) => {
+                            Expression::Primitive(Primitive::Int(-x))
+                        }
+                        Expression::Primitive(Primitive::Float(x)) => {
+                            Expression::Primitive(Primitive::Float(-x))
+                        }
+                        _ => Expression::Unary {
+                            op: UnaryOp::Neg,
+                            expr: Box::new(rhs),
+                        },
+                    }),
+                    prefix(7, just(Token::Not), |rhs| match rhs {
+                        Expression::Primitive(Primitive::Bool(x)) => {
+                            Expression::Primitive(Primitive::Bool(!x))
+                        }
+                        _ => Expression::Unary {
+                            op: UnaryOp::Neg,
+                            expr: Box::new(rhs),
+                        },
+                    }),
+                    infix(right(6), just(Token::Pow), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Pow,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(5), just(Token::Mul), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Mul,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(5), just(Token::Div), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Div,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(5), just(Token::Mod), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Mod,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(4), just(Token::Add), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Add,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(4), just(Token::Sub), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Sub,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(3), just(Token::Less), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Less,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(3), just(Token::LessEq), |lhs, rhs| {
+                        Expression::Binary {
+                            op: BinaryOp::LessEq,
+                            lhs: Box::new(lhs),
+                            rhs: Box::new(rhs),
+                        }
+                    }),
+                    infix(left(3), just(Token::Greater), |lhs, rhs| {
+                        Expression::Binary {
+                            op: BinaryOp::Greater,
+                            lhs: Box::new(lhs),
+                            rhs: Box::new(rhs),
+                        }
+                    }),
+                    infix(left(3), just(Token::GreaterEq), |lhs, rhs| {
+                        Expression::Binary {
+                            op: BinaryOp::GreaterEq,
+                            lhs: Box::new(lhs),
+                            rhs: Box::new(rhs),
+                        }
+                    }),
+                ))
+            })
+        };
+
         choice((
+            unary_or_binary,
             primitive,
             table_object,
             array_object,
@@ -78,11 +179,12 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         ))
     });
 
-    let delimited_expr = expr
-        .clone()
-        .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
-
-    delimited_expr.or(expr)
+    expr
+    // let delimited_expr = expr
+    //     .clone()
+    //     .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
+    //
+    // delimited_expr.or(expr)
 }
 
 impl<'a> TreeWalker<'a> for Expression<'a> {

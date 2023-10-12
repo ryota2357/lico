@@ -1,11 +1,17 @@
 mod common;
 use parser::tree::*;
 
+fn do_chunk_test(src: &str, chunk: Chunk<'_>) {
+    let program = common::parse_program(src);
+    let res = program.body;
+    assert_eq!(res, chunk);
+}
+
 // Variable statement
 
 #[test]
 fn define_variable_with_literal_by_va() {
-    common::do_chunk_test(
+    do_chunk_test(
         "var x = 17",
         Chunk {
             capture: vec![],
@@ -22,7 +28,7 @@ fn define_variable_with_literal_by_va() {
 
 #[test]
 fn define_variable_with_literal_by_let() {
-    common::do_chunk_test(
+    do_chunk_test(
         "let x = 'abc'",
         Chunk {
             capture: vec![],
@@ -39,7 +45,7 @@ fn define_variable_with_literal_by_let() {
 
 #[test]
 fn assign_variable_with_literal() {
-    common::do_chunk_test(
+    do_chunk_test(
         "x = 1.23",
         Chunk {
             capture: vec!["x"],
@@ -58,7 +64,7 @@ fn assign_variable_with_literal() {
 
 #[test]
 fn define_function_without_args_and_body() {
-    common::do_chunk_test(
+    do_chunk_test(
         "func f() end",
         Chunk {
             capture: vec![],
@@ -81,7 +87,7 @@ fn define_function_without_args_and_body() {
 
 #[test]
 fn define_function_with_args_and_body() {
-    common::do_chunk_test(
+    do_chunk_test(
         "func f(a, b) return 'a' end",
         Chunk {
             capture: vec![],
@@ -117,7 +123,7 @@ fn define_function_with_args_and_body() {
 
 #[test]
 fn call_function_without_args() {
-    common::do_chunk_test(
+    do_chunk_test(
         "f()",
         Chunk {
             capture: vec!["f"],
@@ -136,7 +142,7 @@ fn call_function_without_args() {
 
 #[test]
 fn call_function_with_args() {
-    common::do_chunk_test(
+    do_chunk_test(
         "f(1, 'a', true)",
         Chunk {
             capture: vec!["f"],
@@ -159,7 +165,7 @@ fn call_function_with_args() {
 
 #[test]
 fn do_with_no_body() {
-    common::do_chunk_test(
+    do_chunk_test(
         "do end",
         Chunk {
             capture: vec![],
@@ -174,7 +180,7 @@ fn do_with_no_body() {
 
 #[test]
 fn if_empty() {
-    common::do_chunk_test(
+    do_chunk_test(
         "if true then end",
         Chunk {
             capture: vec![],
@@ -190,7 +196,7 @@ fn if_empty() {
 
 #[test]
 fn if_elif_else() {
-    common::do_chunk_test(
+    do_chunk_test(
         "if true then return 1 elif false then return 2 else return 3 end",
         Chunk {
             capture: vec![],
@@ -221,7 +227,7 @@ fn if_elif_else() {
 
 #[test]
 fn for_with_no_step_no_body() {
-    common::do_chunk_test(
+    do_chunk_test(
         "for i = 1, 10 do end",
         Chunk {
             capture: vec![],
@@ -241,55 +247,55 @@ fn for_with_no_step_no_body() {
     )
 }
 
-// #[test]
-// fn for_with_nuinus_step() {
-//     common::do_chunk_test(
-//         "for i = 10, 1, -1 do a = a + i end",
-//         Chunk {
-//             capture: vec!["a"],
-//             body: vec![Statement::Control(ControlStatement::For {
-//                 value: Local::Variable {
-//                     name: Ident {
-//                         str: "i",
-//                         span: (4..5).into(),
-//                     },
-//                 },
-//                 start: Expression::Primitive(Primitive::Int(10)),
-//                 stop: Expression::Primitive(Primitive::Int(1)),
-//                 step: Some(Expression::Primitive(Primitive::Int(-1))),
-//                 body: Block {
-//                     body: vec![Statement::Variable(VariableStatement::Assign {
-//                         lhs: Local::Variable {
-//                             name: Ident {
-//                                 str: "a",
-//                                 span: (12..13).into(),
-//                             },
-//                         },
-//                         rhs: Expression::Binary {
-//                             lhs: Box::new(Expression::Local(Local::Variable {
-//                                 name: Ident {
-//                                     str: "a",
-//                                     span: (12..13).into(),
-//                                 },
-//                             })),
-//                             op: BinaryOp::Add,
-//                             rhs: Box::new(Expression::Local(Local::Variable {
-//                                 name: Ident {
-//                                     str: "i",
-//                                     span: (16..17).into(),
-//                                 },
-//                             })),
-//                         },
-//                     })],
-//                 },
-//             })],
-//         },
-//     );
-// }
+#[test]
+fn for_with_nuinus_step() {
+    do_chunk_test(
+        "for i = 10, 1, -1 do a = a + i end",
+        Chunk {
+            capture: vec!["a"],
+            body: vec![Statement::Control(ControlStatement::For {
+                value: Local::Variable {
+                    name: Ident {
+                        str: "i",
+                        span: (4..5).into(),
+                    },
+                },
+                start: Expression::Primitive(Primitive::Int(10)),
+                stop: Expression::Primitive(Primitive::Int(1)),
+                step: Some(Expression::Primitive(Primitive::Int(-1))),
+                body: Block {
+                    body: vec![Statement::Variable(VariableStatement::Assign {
+                        lhs: Local::Variable {
+                            name: Ident {
+                                str: "a",
+                                span: (21..22).into(),
+                            },
+                        },
+                        rhs: Expression::Binary {
+                            lhs: Box::new(Expression::Local(Local::Variable {
+                                name: Ident {
+                                    str: "a",
+                                    span: (25..26).into(),
+                                },
+                            })),
+                            op: BinaryOp::Add,
+                            rhs: Box::new(Expression::Local(Local::Variable {
+                                name: Ident {
+                                    str: "i",
+                                    span: (29..30).into(),
+                                },
+                            })),
+                        },
+                    })],
+                },
+            })],
+        },
+    );
+}
 
 #[test]
 fn for_in() {
-    common::do_chunk_test(
+    do_chunk_test(
         "for i in [1, 2, 3] do end",
         Chunk {
             capture: vec![],
@@ -315,7 +321,7 @@ fn for_in() {
 
 #[test]
 fn while_() {
-    common::do_chunk_test(
+    do_chunk_test(
         "while ok() do break end",
         Chunk {
             capture: vec!["ok"],
@@ -339,7 +345,7 @@ fn while_() {
 
 #[test]
 fn return_none() {
-    common::do_chunk_test(
+    do_chunk_test(
         "return",
         Chunk {
             capture: vec![],

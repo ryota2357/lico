@@ -4,5 +4,5 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-chumsky = { git = "https://github.com/zesterer/chumsky.git" }
+chumsky = { git = "https://github.com/zesterer/chumsky.git", features = ["pratt"] }
 lexer = { path = "../lexer/" }
