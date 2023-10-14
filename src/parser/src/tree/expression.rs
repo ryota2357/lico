@@ -87,7 +87,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     atom,
                 ));
                 term.pratt((
-                    prefix(7, just(Token::Sub), |rhs| match rhs {
+                    prefix(7, just(Token::Minus), |rhs| match rhs {
                         Expression::Primitive(Primitive::Int(x)) => {
                             Expression::Primitive(Primitive::Int(-x))
                         }
@@ -128,12 +128,12 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                         lhs: Box::new(lhs),
                         rhs: Box::new(rhs),
                     }),
-                    infix(left(4), just(Token::Add), |lhs, rhs| Expression::Binary {
+                    infix(left(4), just(Token::Pluss), |lhs, rhs| Expression::Binary {
                         op: BinaryOp::Add,
                         lhs: Box::new(lhs),
                         rhs: Box::new(rhs),
                     }),
-                    infix(left(4), just(Token::Sub), |lhs, rhs| Expression::Binary {
+                    infix(left(4), just(Token::Minus), |lhs, rhs| Expression::Binary {
                         op: BinaryOp::Sub,
                         lhs: Box::new(lhs),
                         rhs: Box::new(rhs),

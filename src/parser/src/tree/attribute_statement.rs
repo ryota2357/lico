@@ -12,27 +12,41 @@ pub enum AttributeStatement<'src> {
 }
 
 /// <AttributeStatement> ::= <FunctionAttribute> | <VariableAttribute>
-/// <FunctionAttribute>  ::= '@' <Ident> '(' <Ident> { ',' <Ident> } ')'
-/// <VariableAttribute>  ::= '@' <Ident>
+/// <FunctionAttribute>  ::= __attribute '(' <attribute_fn_value> { ',' <attribute_fn_value> } ')'
+/// <VariableAttribute>  ::= __attribute
+/// <attribute_fn_value> ::= <Ident> | <Bool>
 pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
     'tokens,
     ParserInput<'tokens, 'src>,
     AttributeStatement<'src>,
     ParserError<'tokens, 'src>,
 > + Clone {
-    let function = just(Token::AtMark)
-        .ignore_then(ident())
+    let attr_name = select! {
+        Token::Attribute(x) => x
+    }
+    .map_with(|name, ext| Ident {
+        str: name,
+        span: ext.span(),
+    });
+
+    let function = attr_name
         .then(
-            ident()
-                .separated_by(just(Token::Comma))
-                .allow_trailing()
-                .collect()
-                .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
+            choice((
+                ident(),
+                select! { Token::Bool(x) => if x { "true" } else { "false" } }.map_with(
+                    |str, ext| Ident {
+                        str,
+                        span: ext.span(),
+                    },
+                ),
+            ))
+            .separated_by(just(Token::Comma))
+            .allow_trailing()
+            .collect()
+            .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
         )
         .map(|(name, args)| AttributeStatement::Function { name, args });
-    let variable = just(Token::AtMark)
-        .ignore_then(ident())
-        .map(|name| AttributeStatement::Variable { name });
+    let variable = attr_name.map(|name| AttributeStatement::Variable { name });
 
     function.or(variable)
 }
