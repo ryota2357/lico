@@ -58,7 +58,7 @@ pub enum Token<'src> {
 
     // other
     Identifier(&'src str),
-    AtMark,
+    Attribute(&'src str),
 }
 
 impl std::fmt::Display for Token<'_> {
@@ -111,7 +111,7 @@ impl std::fmt::Display for Token<'_> {
             Token::OpenBracket => write!(f, "["),
             Token::CloseBracket => write!(f, "]"),
             Token::Identifier(x) => write!(f, "{}", x),
-            Token::AtMark => write!(f, "@"),
+            Token::Attribute(x) => write!(f, "@{}", x),
         }
     }
 }

@@ -109,6 +109,8 @@ fn identifier() {
 }
 
 #[test]
-fn at_mark() {
-    do_test("@", vec![Token::AtMark]);
+fn attribute() {
+    do_test("@abc", vec![Token::Attribute("abc")]);
+    do_test("@_a", vec![Token::Attribute("_a")]);
+    do_test("@hoge_", vec![Token::Attribute("hoge_")]);
 }

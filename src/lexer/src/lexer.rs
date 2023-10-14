@@ -21,6 +21,10 @@ pub(crate) fn lexer<'src>(
         .unwrapped()
         .map(Token::Float);
 
+    let attribute = just('@')
+        .ignore_then(text::ascii::ident())
+        .map(Token::Attribute);
+
     let string = {
         // TODO: Support escape sequences
         // let escape = just('\\').ignore_then(
@@ -77,8 +81,6 @@ pub(crate) fn lexer<'src>(
         just('}').to(Token::CloseBrace),
         just('[').to(Token::OpenBracket),
         just(']').to(Token::CloseBracket),
-        // other
-        just('@').to(Token::AtMark),
     ));
 
     let word = text::ascii::ident().map(|ident: &str| match ident {
@@ -113,7 +115,7 @@ pub(crate) fn lexer<'src>(
         _ => Token::Identifier(ident),
     });
 
-    let token = choice((float, int, string, symbol, word))
+    let token = choice((float, int, string, symbol, attribute, word))
         .map_with(|token, ext| (token, ext.span()))
         .padded();
 
