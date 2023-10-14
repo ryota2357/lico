@@ -53,8 +53,8 @@ pub(crate) fn lexer<'src>(
 
     let symbol = choice((
         // operator
-        just('+').to(Token::Add),
-        just('-').to(Token::Sub),
+        just('+').to(Token::Pluss),
+        just('-').to(Token::Minus),
         just("**").to(Token::Pow),
         just('*').to(Token::Mul),
         just('/').to(Token::Div),

@@ -25,8 +25,8 @@ pub enum Token<'src> {
     Continue,
 
     // operators
-    Add,       // +
-    Sub,       // -
+    Pluss,     // +
+    Minus,     // -
     Mul,       // *
     Div,       // /
     Mod,       // %
@@ -84,8 +84,8 @@ impl std::fmt::Display for Token<'_> {
             Token::Return => write!(f, "return"),
             Token::Break => write!(f, "break"),
             Token::Continue => write!(f, "continue"),
-            Token::Add => write!(f, "+"),
-            Token::Sub => write!(f, "-"),
+            Token::Pluss => write!(f, "+"),
+            Token::Minus => write!(f, "-"),
             Token::Mul => write!(f, "*"),
             Token::Div => write!(f, "/"),
             Token::Mod => write!(f, "%"),

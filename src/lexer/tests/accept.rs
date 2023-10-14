@@ -63,8 +63,8 @@ fn keyword() {
 
 #[test]
 fn operator() {
-    do_test("+", vec![Token::Add]);
-    do_test("-", vec![Token::Sub]);
+    do_test("+", vec![Token::Pluss]);
+    do_test("-", vec![Token::Minus]);
     do_test("*", vec![Token::Mul]);
     do_test("/", vec![Token::Div]);
     do_test("%", vec![Token::Mod]);
