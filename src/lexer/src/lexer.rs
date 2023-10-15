@@ -69,7 +69,7 @@ pub(crate) fn lexer<'src>(
         just('<').to(Token::Less),
         just(">=").to(Token::GreaterEq),
         just('>').to(Token::Greater),
-        just("..").to(Token::SrtJoin),
+        just("..").to(Token::StrJoin),
         just('.').to(Token::Dot),
         just('=').to(Token::Assign),
         // delimiter

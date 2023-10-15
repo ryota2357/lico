@@ -38,7 +38,7 @@ pub enum Token<'src> {
     Greater,   // >
     GreaterEq, // >=
     Dot,       // .
-    SrtJoin,   // ..
+    StrJoin,   // ..
     Assign,    // =
 
     // keyword operators
@@ -97,7 +97,7 @@ impl std::fmt::Display for Token<'_> {
             Token::Greater => write!(f, ">"),
             Token::GreaterEq => write!(f, ">="),
             Token::Dot => write!(f, "."),
-            Token::SrtJoin => write!(f, ".."),
+            Token::StrJoin => write!(f, ".."),
             Token::Assign => write!(f, "="),
             Token::And => write!(f, "and"),
             Token::Or => write!(f, "or"),
