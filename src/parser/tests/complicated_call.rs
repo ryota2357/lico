@@ -12,7 +12,7 @@ fn do_statement_test(src: &str, statement: Statement<'_>) {
 fn complicated_func_with_trailing_comma() {
     do_statement_test(
         "f(g(),)",
-        Statement::Call(CallStatement::Call(Call::Local {
+        Statement::Call(Call::Local {
             local: Local::Variable {
                 name: Ident {
                     str: "f",
@@ -28,7 +28,7 @@ fn complicated_func_with_trailing_comma() {
                 },
                 args: vec![],
             })],
-        })),
+        }),
     );
 }
 
@@ -71,7 +71,7 @@ fn call_with_only_comma() {
     // );
     do_statement_test(
         "f(,)",
-        Statement::Call(CallStatement::Call(Call::Local {
+        Statement::Call(Call::Local {
             local: Local::Variable {
                 name: Ident {
                     str: "f",
@@ -79,7 +79,7 @@ fn call_with_only_comma() {
                 },
             },
             args: vec![],
-        })),
+        }),
     );
 }
 
@@ -114,7 +114,7 @@ fn call_with_only_comma_as_expression() {
 fn multiple_call() {
     do_statement_test(
         "f()()",
-        Statement::Call(CallStatement::Call(Call::Nested {
+        Statement::Call(Call::Nested {
             call: Box::new(Call::Local {
                 local: Local::Variable {
                     name: Ident {
@@ -125,7 +125,7 @@ fn multiple_call() {
                 args: vec![],
             }),
             args: vec![],
-        })),
+        }),
     );
 }
 
@@ -158,7 +158,7 @@ fn multiple_call_as_expression() {
 fn multiple_call_more() {
     do_statement_test(
         "f(1)(2)(3)",
-        Statement::Call(CallStatement::Call(Call::Nested {
+        Statement::Call(Call::Nested {
             call: Box::new(Call::Nested {
                 call: Box::new(Call::Local {
                     local: Local::Variable {
@@ -172,7 +172,7 @@ fn multiple_call_more() {
                 args: vec![Expression::Primitive(Primitive::Int(2))],
             }),
             args: vec![Expression::Primitive(Primitive::Int(3))],
-        })),
+        }),
     );
 }
 
@@ -208,7 +208,7 @@ fn multiple_call_more_as_expression() {
 fn delimited_call() {
     do_statement_test(
         "((f(1))(2))(3)",
-        Statement::Call(CallStatement::Call(Call::Nested {
+        Statement::Call(Call::Nested {
             call: Box::new(Call::Nested {
                 call: Box::new(Call::Local {
                     local: Local::Variable {
@@ -222,7 +222,7 @@ fn delimited_call() {
                 args: vec![Expression::Primitive(Primitive::Int(2))],
             }),
             args: vec![Expression::Primitive(Primitive::Int(3))],
-        })),
+        }),
     );
 }
 
@@ -258,7 +258,7 @@ fn delimited_call_as_expression() {
 fn multiple_call_with_delimited() {
     do_statement_test(
         "(f(1)(2))(3)(4)",
-        Statement::Call(CallStatement::Call(Call::Nested {
+        Statement::Call(Call::Nested {
             call: Box::new(Call::Nested {
                 call: Box::new(Call::Nested {
                     call: Box::new(Call::Local {
@@ -275,7 +275,7 @@ fn multiple_call_with_delimited() {
                 args: vec![Expression::Primitive(Primitive::Int(3))],
             }),
             args: vec![Expression::Primitive(Primitive::Int(4))],
-        })),
+        }),
     );
 }
 

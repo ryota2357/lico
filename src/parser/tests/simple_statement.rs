@@ -152,7 +152,7 @@ fn call_function_without_args() {
         "f()",
         Chunk {
             capture: vec!["f"],
-            body: vec![Statement::Call(CallStatement::Call(Call::Local {
+            body: vec![Statement::Call(Call::Local {
                 local: Local::Variable {
                     name: Ident {
                         str: "f",
@@ -160,7 +160,7 @@ fn call_function_without_args() {
                     },
                 },
                 args: vec![],
-            }))],
+            })],
         },
     );
 }
@@ -171,7 +171,7 @@ fn call_function_with_args() {
         "f(1, 'a', true)",
         Chunk {
             capture: vec!["f"],
-            body: vec![Statement::Call(CallStatement::Call(Call::Local {
+            body: vec![Statement::Call(Call::Local {
                 local: Local::Variable {
                     name: Ident {
                         str: "f",
@@ -183,19 +183,6 @@ fn call_function_with_args() {
                     Expression::Primitive(Primitive::String("a")),
                     Expression::Primitive(Primitive::Bool(true)),
                 ],
-            }))],
-        },
-    );
-}
-
-#[test]
-fn do_with_no_body() {
-    do_chunk_test(
-        "do end",
-        Chunk {
-            capture: vec![],
-            body: vec![Statement::Call(CallStatement::Do {
-                body: Block { body: vec![] },
             })],
         },
     );
@@ -363,6 +350,19 @@ fn while_() {
                 body: Block {
                     body: vec![Statement::Control(ControlStatement::Break)],
                 },
+            })],
+        },
+    );
+}
+
+#[test]
+fn do_with_no_body() {
+    do_chunk_test(
+        "do end",
+        Chunk {
+            capture: vec![],
+            body: vec![Statement::Control(ControlStatement::Do {
+                body: Block { body: vec![] },
             })],
         },
     );

@@ -5,7 +5,7 @@ pub enum Statement<'src> {
     Control(ControlStatement<'src>),
     Attribute(AttributeStatement<'src>),
     Variable(VariableStatement<'src>),
-    Call(CallStatement<'src>),
+    Call(Call<'src>),
 }
 
 /// <Statement> ::= <ControlStatement> | <AttributeStatement> | <VariableStatement> | <CallStatement>
@@ -21,9 +21,9 @@ pub(super) fn statement<'tokens, 'src: 'tokens>(
     let attribute = attribute_statement().map(Statement::Attribute);
     let variable =
         variable_statement(block.clone(), expression(block.clone())).map(Statement::Variable);
-    let call_statement = call_statement(block.clone(), expression(block)).map(Statement::Call);
+    let call = call(block.clone(), expression(block)).map(Statement::Call);
 
-    choice((control, attribute, variable, call_statement))
+    choice((control, attribute, variable, call))
 }
 
 impl<'a> TreeWalker<'a> for Statement<'a> {
@@ -32,7 +32,7 @@ impl<'a> TreeWalker<'a> for Statement<'a> {
             Statement::Control(stat) => stat.analyze(tracker),
             Statement::Attribute(stat) => stat.analyze(tracker),
             Statement::Variable(stat) => stat.analyze(tracker),
-            Statement::Call(stat) => stat.analyze(tracker),
+            Statement::Call(call) => call.analyze(tracker),
         }
     }
 }

@@ -24,6 +24,9 @@ pub enum ControlStatement<'src> {
         cond: Expression<'src>,
         body: Block<'src>,
     },
+    Do {
+        body: Block<'src>,
+    },
     Return {
         value: Option<Expression<'src>>,
     },
@@ -102,16 +105,22 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
     let r#while = just(Token::While)
         .ignore_then(expression.clone())
         .then_ignore(just(Token::Do))
-        .then(block)
+        .then(block.clone())
         .then_ignore(just(Token::End))
         .map(|(cond, body)| ControlStatement::While { cond, body });
+    let r#do = just(Token::Do)
+        .ignore_then(block)
+        .then_ignore(just(Token::End))
+        .map(|body| ControlStatement::Do { body });
     let r#return = just(Token::Return)
         .ignore_then(expression.or_not())
         .map(|value| ControlStatement::Return { value });
     let r#continue = just(Token::Continue).to(ControlStatement::Continue);
     let r#break = just(Token::Break).to(ControlStatement::Break);
 
-    choice((r#if, r#for, for_in, r#while, r#return, r#continue, r#break))
+    choice((
+        r#if, r#for, for_in, r#while, r#do, r#return, r#continue, r#break,
+    ))
 }
 
 impl<'a> TreeWalker<'a> for ControlStatement<'a> {
@@ -176,6 +185,11 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
             }
             ControlStatement::While { cond, body } => {
                 cond.analyze(tracker);
+                tracker.push_new_definition_scope();
+                body.analyze(tracker);
+                tracker.pop_current_definition_scope();
+            }
+            ControlStatement::Do { body } => {
                 tracker.push_new_definition_scope();
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
