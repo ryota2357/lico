@@ -94,11 +94,9 @@ fn define_function_without_args_and_body() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Variable(VariableStatement::Func {
-                name: Local::Variable {
-                    name: Ident {
-                        str: "f",
-                        span: (5..6).into(),
-                    },
+                name: Ident {
+                    str: "f",
+                    span: (5..6).into(),
                 },
                 args: vec![],
                 body: Chunk {
@@ -117,11 +115,9 @@ fn define_function_with_args_and_body() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Variable(VariableStatement::Func {
-                name: Local::Variable {
-                    name: Ident {
-                        str: "f",
-                        span: (5..6).into(),
-                    },
+                name: Ident {
+                    str: "f",
+                    span: (5..6).into(),
                 },
                 args: vec![
                     Ident {
@@ -138,6 +134,37 @@ fn define_function_with_args_and_body() {
                     body: vec![Statement::Control(ControlStatement::Return {
                         value: Some(Expression::Primitive(Primitive::String("a"))),
                     })],
+                },
+            })],
+        },
+    );
+}
+
+#[test]
+fn define_table_field_function() {
+    do_chunk_test(
+        "func t.a.b() end",
+        Chunk {
+            capture: vec!["t"],
+            body: vec![Statement::Variable(VariableStatement::FieldFunc {
+                table: Ident {
+                    str: "t",
+                    span: (5..6).into(),
+                },
+                fields: vec![
+                    Ident {
+                        str: "a",
+                        span: (7..8).into(),
+                    },
+                    Ident {
+                        str: "b",
+                        span: (9..10).into(),
+                    },
+                ],
+                args: vec![],
+                body: Chunk {
+                    capture: vec![],
+                    body: vec![],
                 },
             })],
         },
