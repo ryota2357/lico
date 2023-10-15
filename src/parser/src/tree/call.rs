@@ -10,11 +10,22 @@ pub enum Call<'src> {
         func: FunctionObject<'src>,
         args: Vec<Expression<'src>>,
     },
+    Nested {
+        call: Box<Call<'src>>,
+        args: Vec<Expression<'src>>,
+    },
 }
 
-/// <Call> ::= ( <Local> | '(' <FunctionObject> ')' ) '(' [ <Expression> { ',' <Expression> } [ ',' ] ] ')'
+/// <Call>   ::= <callee> '(' [ <Expression> { ',' <Expression> } [ ',' ] ] ')'
+/// <callee> ::= <Loca> | '(' <FunctionObject> ')' | '(' <Call> ')' | <Call>
 ///
-/// TODO: foo()() や (bar())() などの呼び出しに対応する
+/// new bnf
+/// <Call>                ::= <nested_call> | <local_call> | <immediate_call> | <delimited_call>
+/// <nested_call>         ::= <Call> <call_expr_arguments>
+/// <local_call>          ::= <Local> <call_expr_arguments>
+/// <immediate_call>      ::= '(' <FunctionObject> ')' <call_expr_arguments>
+/// <delimited_call>      ::= '(' <Call> ')' <call_expr_arguments>
+/// <call_expr_arguments> ::= '(' <Expression> { ',' <Expression> } [ ',' ] ')'
 pub(super) fn call<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
@@ -31,15 +42,41 @@ pub(super) fn call<'tokens, 'src: 'tokens>(
         .collect()
         .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
 
-    let local_call = local()
-        .then(expr_arguments.clone())
-        .map(|(local, args)| Call::Local { local, args });
-    let immediate_call = function_object(block.clone())
-        .delimited_by(just(Token::OpenParen), just(Token::CloseParen))
-        .then(expr_arguments)
-        .map(|(func, args)| Call::Immediate { func, args });
+    recursive(|call| {
+        let local_call = local()
+            .then(expr_arguments.clone())
+            .map(|(local, args)| Call::Local { local, args });
+        let immediate_call = function_object(block.clone())
+            .delimited_by(just(Token::OpenParen), just(Token::CloseParen))
+            .then(expr_arguments.clone())
+            .map(|(func, args)| Call::Immediate { func, args });
+        let delimited_call = call
+            .clone()
+            .delimited_by(just(Token::OpenParen), just(Token::CloseParen))
+            .then(expr_arguments.clone())
+            .map(|(call, args)| Call::Nested {
+                call: Box::new(call),
+                args,
+            });
+        let nested_call = choice((
+            local_call.clone(),
+            immediate_call.clone(),
+            delimited_call.clone(),
+        ))
+        .then(expr_arguments.repeated().at_least(1).collect())
+        .map(|(call, args_list): (Call<'src>, Vec<Vec<_>>)| {
+            let mut nested = call;
+            for args in args_list {
+                nested = Call::Nested {
+                    call: Box::new(nested),
+                    args,
+                };
+            }
+            nested
+        });
 
-    local_call.or(immediate_call)
+        choice((nested_call, local_call, immediate_call, delimited_call))
+    })
 }
 
 impl<'a> TreeWalker<'a> for Call<'a> {
@@ -56,6 +93,12 @@ impl<'a> TreeWalker<'a> for Call<'a> {
             }
             Call::Immediate { func, args } => {
                 func.analyze(tracker);
+                for arg in args.iter_mut() {
+                    arg.analyze(tracker);
+                }
+            }
+            Call::Nested { call, args } => {
+                call.analyze(tracker);
                 for arg in args.iter_mut() {
                     arg.analyze(tracker);
                 }

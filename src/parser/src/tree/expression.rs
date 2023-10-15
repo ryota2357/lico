@@ -50,8 +50,7 @@ pub enum BinaryOp {
 }
 
 /// TODO: '(' <Expression> ')' を処理できないんだけど、どうする？
-/// <Expression> ::= '(' <Expression> ')' | <expression>
-/// <expression> ::= <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Call> | <Local>
+/// <Expression> ::= <Call> | <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Local>
 ///
 /// <Unary> and <Binary> operators priority:
 /// (1 is lowest, 8 is highest.)
@@ -188,12 +187,12 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         };
 
         choice((
+            call,
             unary_or_binary,
             primitive,
             table_object,
             array_object,
             function_object,
-            call,
             local,
         ))
     });
