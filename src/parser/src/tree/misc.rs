@@ -9,14 +9,12 @@ pub enum Local<'src> {
         name: Ident<'src>,
         keys: Vec<Ident<'src>>,
     },
-    Variable {
-        name: Ident<'src>,
-    },
+    Ident(Ident<'src>),
 }
 pub(super) fn local<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Local<'src>, ParserError<'tokens, 'src>> + Clone
 {
-    let variable = ident().map(|name| Local::Variable { name });
+    let variable = ident().map(Local::Ident);
     let table = ident()
         .then(
             just(Token::Dot)

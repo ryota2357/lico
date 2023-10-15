@@ -139,7 +139,7 @@ impl<'a> TreeWalker<'a> for VariableStatement<'a> {
             VariableStatement::Assign { lhs, rhs } => {
                 match lhs {
                     Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Variable { name } => tracker.add_capture(name.str),
+                    Local::Ident(ident) => tracker.add_capture(ident.str),
                 }
                 rhs.analyze(tracker);
             }

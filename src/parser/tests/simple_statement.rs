@@ -38,12 +38,10 @@ fn define_variable_with_func_call() {
                     span: (4..5).into(),
                 },
                 expr: Expression::Call(Call::Local {
-                    local: Local::Variable {
-                        name: Ident {
-                            str: "f",
-                            span: (8..9).into(),
-                        },
-                    },
+                    local: Local::Ident(Ident {
+                        str: "f",
+                        span: (8..9).into(),
+                    }),
                     args: vec![],
                 }),
             })],
@@ -75,12 +73,10 @@ fn assign_variable_with_literal() {
         Chunk {
             capture: vec!["x"],
             body: vec![Statement::Variable(VariableStatement::Assign {
-                lhs: Local::Variable {
-                    name: Ident {
-                        str: "x",
-                        span: (0..1).into(),
-                    },
-                },
+                lhs: Local::Ident(Ident {
+                    str: "x",
+                    span: (0..1).into(),
+                }),
                 rhs: Expression::Primitive(Primitive::Float(1.23)),
             })],
         },
@@ -180,12 +176,10 @@ fn call_function_without_args() {
         Chunk {
             capture: vec!["f"],
             body: vec![Statement::Call(Call::Local {
-                local: Local::Variable {
-                    name: Ident {
-                        str: "f",
-                        span: (0..1).into(),
-                    },
-                },
+                local: Local::Ident(Ident {
+                    str: "f",
+                    span: (0..1).into(),
+                }),
                 args: vec![],
             })],
         },
@@ -199,12 +193,10 @@ fn call_function_with_args() {
         Chunk {
             capture: vec!["f"],
             body: vec![Statement::Call(Call::Local {
-                local: Local::Variable {
-                    name: Ident {
-                        str: "f",
-                        span: (0..1).into(),
-                    },
-                },
+                local: Local::Ident(Ident {
+                    str: "f",
+                    span: (0..1).into(),
+                }),
                 args: vec![
                     Expression::Primitive(Primitive::Int(1)),
                     Expression::Primitive(Primitive::String("a")),
@@ -271,12 +263,10 @@ fn for_with_no_step_no_body() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Control(ControlStatement::For {
-                value: Local::Variable {
-                    name: Ident {
-                        str: "i",
-                        span: (4..5).into(),
-                    },
-                },
+                value: Local::Ident(Ident {
+                    str: "i",
+                    span: (4..5).into(),
+                }),
                 start: Expression::Primitive(Primitive::Int(1)),
                 stop: Expression::Primitive(Primitive::Int(10)),
                 step: None,
@@ -293,37 +283,29 @@ fn for_with_nuinus_step() {
         Chunk {
             capture: vec!["a"],
             body: vec![Statement::Control(ControlStatement::For {
-                value: Local::Variable {
-                    name: Ident {
-                        str: "i",
-                        span: (4..5).into(),
-                    },
-                },
+                value: Local::Ident(Ident {
+                    str: "i",
+                    span: (4..5).into(),
+                }),
                 start: Expression::Primitive(Primitive::Int(10)),
                 stop: Expression::Primitive(Primitive::Int(1)),
                 step: Some(Expression::Primitive(Primitive::Int(-1))),
                 body: Block {
                     body: vec![Statement::Variable(VariableStatement::Assign {
-                        lhs: Local::Variable {
-                            name: Ident {
-                                str: "a",
-                                span: (21..22).into(),
-                            },
-                        },
+                        lhs: Local::Ident(Ident {
+                            str: "a",
+                            span: (21..22).into(),
+                        }),
                         rhs: Expression::Binary {
-                            lhs: Box::new(Expression::Local(Local::Variable {
-                                name: Ident {
-                                    str: "a",
-                                    span: (25..26).into(),
-                                },
-                            })),
+                            lhs: Box::new(Expression::Local(Local::Ident(Ident {
+                                str: "a",
+                                span: (25..26).into(),
+                            }))),
                             op: BinaryOp::Add,
-                            rhs: Box::new(Expression::Local(Local::Variable {
-                                name: Ident {
-                                    str: "i",
-                                    span: (29..30).into(),
-                                },
-                            })),
+                            rhs: Box::new(Expression::Local(Local::Ident(Ident {
+                                str: "i",
+                                span: (29..30).into(),
+                            }))),
                         },
                     })],
                 },
@@ -339,12 +321,10 @@ fn for_in() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Control(ControlStatement::ForIn {
-                value: Local::Variable {
-                    name: Ident {
-                        str: "i",
-                        span: (4..5).into(),
-                    },
-                },
+                value: Local::Ident(Ident {
+                    str: "i",
+                    span: (4..5).into(),
+                }),
                 iter: Expression::ArrayObject(ArrayObject {
                     elements: vec![
                         Expression::Primitive(Primitive::Int(1)),
@@ -366,12 +346,10 @@ fn while_() {
             capture: vec!["ok"],
             body: vec![Statement::Control(ControlStatement::While {
                 cond: Expression::Call(Call::Local {
-                    local: Local::Variable {
-                        name: Ident {
-                            str: "ok",
-                            span: (6..8).into(),
-                        },
-                    },
+                    local: Local::Ident(Ident {
+                        str: "ok",
+                        span: (6..8).into(),
+                    }),
                     args: vec![],
                 }),
                 body: Block {

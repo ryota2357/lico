@@ -85,7 +85,7 @@ impl<'a> TreeWalker<'a> for Call<'a> {
             Call::Local { local, args } => {
                 match local {
                     Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Variable { name } => tracker.add_capture(name.str),
+                    Local::Ident(ident) => tracker.add_capture(ident.str),
                 }
                 for arg in args.iter_mut() {
                     arg.analyze(tracker);

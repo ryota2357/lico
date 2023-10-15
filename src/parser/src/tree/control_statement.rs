@@ -167,7 +167,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                 tracker.push_new_definition_scope();
                 match value {
                     Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Variable { name } => tracker.add_definition(name.str),
+                    Local::Ident(ident) => tracker.add_definition(ident.str),
                 }
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
@@ -178,7 +178,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                 tracker.push_new_definition_scope();
                 match value {
                     Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Variable { name } => tracker.add_definition(name.str),
+                    Local::Ident(ident) => tracker.add_definition(ident.str),
                 }
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();

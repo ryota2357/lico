@@ -13,19 +13,15 @@ fn complicated_func_with_trailing_comma() {
     do_statement_test(
         "f(g(),)",
         Statement::Call(Call::Local {
-            local: Local::Variable {
-                name: Ident {
-                    str: "f",
-                    span: (0..1).into(),
-                },
-            },
+            local: Local::Ident(Ident {
+                str: "f",
+                span: (0..1).into(),
+            }),
             args: vec![Expression::Call(Call::Local {
-                local: Local::Variable {
-                    name: Ident {
-                        str: "g",
-                        span: (2..3).into(),
-                    },
-                },
+                local: Local::Ident(Ident {
+                    str: "g",
+                    span: (2..3).into(),
+                }),
                 args: vec![],
             })],
         }),
@@ -42,19 +38,15 @@ fn complicated_func_with_trailing_comma_as_expression() {
                 span: (4..5).into(),
             },
             expr: Expression::Call(Call::Local {
-                local: Local::Variable {
-                    name: Ident {
-                        str: "f",
-                        span: (8..9).into(),
-                    },
-                },
+                local: Local::Ident(Ident {
+                    str: "f",
+                    span: (8..9).into(),
+                }),
                 args: vec![Expression::Call(Call::Local {
-                    local: Local::Variable {
-                        name: Ident {
-                            str: "g",
-                            span: (10..11).into(),
-                        },
-                    },
+                    local: Local::Ident(Ident {
+                        str: "g",
+                        span: (10..11).into(),
+                    }),
                     args: vec![],
                 })],
             }),
@@ -72,12 +64,10 @@ fn call_with_only_comma() {
     do_statement_test(
         "f(,)",
         Statement::Call(Call::Local {
-            local: Local::Variable {
-                name: Ident {
-                    str: "f",
-                    span: (0..1).into(),
-                },
-            },
+            local: Local::Ident(Ident {
+                str: "f",
+                span: (0..1).into(),
+            }),
             args: vec![],
         }),
     );
@@ -98,12 +88,10 @@ fn call_with_only_comma_as_expression() {
                 span: (4..5).into(),
             },
             expr: Expression::Call(Call::Local {
-                local: Local::Variable {
-                    name: Ident {
-                        str: "f",
-                        span: (8..9).into(),
-                    },
-                },
+                local: Local::Ident(Ident {
+                    str: "f",
+                    span: (8..9).into(),
+                }),
                 args: vec![],
             }),
         }),
@@ -116,12 +104,10 @@ fn multiple_call() {
         "f()()",
         Statement::Call(Call::Nested {
             call: Box::new(Call::Local {
-                local: Local::Variable {
-                    name: Ident {
-                        str: "f",
-                        span: (0..1).into(),
-                    },
-                },
+                local: Local::Ident(Ident {
+                    str: "f",
+                    span: (0..1).into(),
+                }),
                 args: vec![],
             }),
             args: vec![],
@@ -140,12 +126,10 @@ fn multiple_call_as_expression() {
             },
             expr: Expression::Call(Call::Nested {
                 call: Box::new(Call::Local {
-                    local: Local::Variable {
-                        name: Ident {
-                            str: "f",
-                            span: (8..9).into(),
-                        },
-                    },
+                    local: Local::Ident(Ident {
+                        str: "f",
+                        span: (8..9).into(),
+                    }),
                     args: vec![],
                 }),
                 args: vec![],
@@ -161,12 +145,10 @@ fn multiple_call_more() {
         Statement::Call(Call::Nested {
             call: Box::new(Call::Nested {
                 call: Box::new(Call::Local {
-                    local: Local::Variable {
-                        name: Ident {
-                            str: "f",
-                            span: (0..1).into(),
-                        },
-                    },
+                    local: Local::Ident(Ident {
+                        str: "f",
+                        span: (0..1).into(),
+                    }),
                     args: vec![Expression::Primitive(Primitive::Int(1))],
                 }),
                 args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -188,12 +170,10 @@ fn multiple_call_more_as_expression() {
             expr: Expression::Call(Call::Nested {
                 call: Box::new(Call::Nested {
                     call: Box::new(Call::Local {
-                        local: Local::Variable {
-                            name: Ident {
-                                str: "f",
-                                span: (8..9).into(),
-                            },
-                        },
+                        local: Local::Ident(Ident {
+                            str: "f",
+                            span: (8..9).into(),
+                        }),
                         args: vec![Expression::Primitive(Primitive::Int(1))],
                     }),
                     args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -211,12 +191,10 @@ fn delimited_call() {
         Statement::Call(Call::Nested {
             call: Box::new(Call::Nested {
                 call: Box::new(Call::Local {
-                    local: Local::Variable {
-                        name: Ident {
-                            str: "f",
-                            span: (2..3).into(),
-                        },
-                    },
+                    local: Local::Ident(Ident {
+                        str: "f",
+                        span: (2..3).into(),
+                    }),
                     args: vec![Expression::Primitive(Primitive::Int(1))],
                 }),
                 args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -238,12 +216,10 @@ fn delimited_call_as_expression() {
             expr: Expression::Call(Call::Nested {
                 call: Box::new(Call::Nested {
                     call: Box::new(Call::Local {
-                        local: Local::Variable {
-                            name: Ident {
-                                str: "f",
-                                span: (10..11).into(),
-                            },
-                        },
+                        local: Local::Ident(Ident {
+                            str: "f",
+                            span: (10..11).into(),
+                        }),
                         args: vec![Expression::Primitive(Primitive::Int(1))],
                     }),
                     args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -262,12 +238,10 @@ fn multiple_call_with_delimited() {
             call: Box::new(Call::Nested {
                 call: Box::new(Call::Nested {
                     call: Box::new(Call::Local {
-                        local: Local::Variable {
-                            name: Ident {
-                                str: "f",
-                                span: (1..2).into(),
-                            },
-                        },
+                        local: Local::Ident(Ident {
+                            str: "f",
+                            span: (1..2).into(),
+                        }),
                         args: vec![Expression::Primitive(Primitive::Int(1))],
                     }),
                     args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -292,18 +266,14 @@ fn complicated_call_with_var() {
                 call: Box::new(Call::Nested {
                     call: Box::new(Call::Nested {
                         call: Box::new(Call::Local {
-                            local: Local::Variable {
-                                name: Ident {
-                                    str: "f",
-                                    span: (9..10).into(),
-                                },
-                            },
-                            args: vec![Expression::Local(Local::Variable {
-                                name: Ident {
-                                    str: "a",
-                                    span: (11..12).into(),
-                                },
-                            })],
+                            local: Local::Ident(Ident {
+                                str: "f",
+                                span: (9..10).into(),
+                            }),
+                            args: vec![Expression::Local(Local::Ident(Ident {
+                                str: "a",
+                                span: (11..12).into(),
+                            }))],
                         }),
                         args: vec![],
                     }),

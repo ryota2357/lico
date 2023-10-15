@@ -220,7 +220,7 @@ impl<'a> TreeWalker<'a> for Expression<'a> {
             Expression::Call(call) => call.analyze(tracker),
             Expression::Local(local) => match local {
                 Local::TableField { name, .. } => tracker.add_capture(name.str),
-                Local::Variable { name } => tracker.add_capture(name.str),
+                Local::Ident(ident) => tracker.add_capture(ident.str),
             },
         }
     }
