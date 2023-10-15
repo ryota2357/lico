@@ -55,11 +55,11 @@ pub enum BinaryOp {
 ///
 /// <Unary> and <Binary> operators priority:
 /// (1 is lowest, 8 is highest.)
-/// 8 : `Neg`, `Not`
-/// 7 : `Pow`
-/// 6 : `Mul`, `Div`, `Mod`
-/// 5 : `Add`, `Sub`
-/// 4 : `Less`, `LessEq`, `Greater`, `GreaterEq`, `Eq`, `NotEq`
+/// 7 : `Neg`, `Not`
+/// 6 : `Pow`
+/// 5 : `Mul`, `Div`, `Mod`
+/// 4 : `Add`, `Sub`
+/// 3 : `Less`, `LessEq`, `Greater`, `GreaterEq`, `Eq`, `NotEq`
 /// 2 : `And`
 /// 1 : `Or`
 pub(super) fn expression<'tokens, 'src: 'tokens>(
@@ -69,7 +69,6 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression<'src>, ParserError<'tokens, 'src>> + Clone
 {
     let expr = recursive(|expr| {
-        // TODO: unary と binary は pratt パーサー (ver2) がマージされたら
         let primitive = primitive().map(Expression::Primitive);
         let table_object = table_object(expr.clone()).map(Expression::TableObject);
         let array_object = array_object(expr.clone()).map(Expression::ArrayObject);
@@ -104,7 +103,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                             Expression::Primitive(Primitive::Bool(!x))
                         }
                         _ => Expression::Unary {
-                            op: UnaryOp::Neg,
+                            op: UnaryOp::Not,
                             expr: Box::new(rhs),
                         },
                     }),
@@ -163,6 +162,26 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                             lhs: Box::new(lhs),
                             rhs: Box::new(rhs),
                         }
+                    }),
+                    infix(left(3), just(Token::Eq), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Eq,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(3), just(Token::NotEq), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::NotEq,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(2), just(Token::And), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::And,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
+                    }),
+                    infix(left(1), just(Token::Or), |lhs, rhs| Expression::Binary {
+                        op: BinaryOp::Or,
+                        lhs: Box::new(lhs),
+                        rhs: Box::new(rhs),
                     }),
                 ))
             })
