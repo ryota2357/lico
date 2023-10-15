@@ -76,6 +76,7 @@ fn operator() {
     do_test(">", vec![Token::Greater]);
     do_test(">=", vec![Token::GreaterEq]);
     do_test(".", vec![Token::Dot]);
+    do_test("->", vec![Token::Arrow]);
     do_test("..", vec![Token::StrJoin]);
     do_test("=", vec![Token::Assign]);
 }
