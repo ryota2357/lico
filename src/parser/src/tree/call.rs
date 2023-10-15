@@ -36,7 +36,6 @@ pub(super) fn call<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Call<'src>, ParserError<'tokens, 'src>> + Clone
 {
     let expr_arguments = expression
-        .clone()
         .separated_by(just(Token::Comma))
         .allow_trailing()
         .collect()
@@ -46,12 +45,11 @@ pub(super) fn call<'tokens, 'src: 'tokens>(
         let local_call = local()
             .then(expr_arguments.clone())
             .map(|(local, args)| Call::Local { local, args });
-        let immediate_call = function_object(block.clone())
+        let immediate_call = function_object(block)
             .delimited_by(just(Token::OpenParen), just(Token::CloseParen))
             .then(expr_arguments.clone())
             .map(|(func, args)| Call::Immediate { func, args });
         let delimited_call = call
-            .clone()
             .delimited_by(just(Token::OpenParen), just(Token::CloseParen))
             .then(expr_arguments.clone())
             .map(|(call, args)| Call::Nested {
