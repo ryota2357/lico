@@ -49,7 +49,6 @@ pub enum BinaryOp {
     Or,  // or
 }
 
-/// TODO: '(' <Expression> ')' を処理できないんだけど、どうする？
 /// <Expression> ::= <Call> | <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Local>
 ///
 /// <Unary> and <Binary> operators priority:
@@ -67,12 +66,12 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         + 'tokens,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression<'src>, ParserError<'tokens, 'src>> + Clone
 {
-    let expr = recursive(|expr| {
+    recursive(|expr| {
         let primitive = primitive().map(Expression::Primitive);
         let table_object = table_object(expr.clone()).map(Expression::TableObject);
         let array_object = array_object(expr.clone()).map(Expression::ArrayObject);
         let function_object = function_object(block.clone()).map(Expression::FunctionObject);
-        let call = call(block, expr).map(Expression::Call);
+        let call = call(block, expr.clone()).map(Expression::Call);
         let local = local().map(Expression::Local);
 
         let unary_or_binary = {
@@ -189,20 +188,14 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         choice((
             call,
             unary_or_binary,
+            expr.delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
             primitive,
             table_object,
             array_object,
             function_object,
             local,
         ))
-    });
-
-    expr
-    // let delimited_expr = expr
-    //     .clone()
-    //     .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
-    //
-    // delimited_expr.or(expr)
+    })
 }
 
 impl<'a> TreeWalker<'a> for Expression<'a> {
