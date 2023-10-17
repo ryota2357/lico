@@ -21,9 +21,7 @@ pub(super) fn local<'tokens, 'src: 'tokens>(
     let field_accessor = {
         let field_accessor1 =
             expression.delimited_by(just(Token::OpenBracket), just(Token::CloseBracket));
-        let field_accessor2 = just(Token::Dot)
-            .ignore_then(ident())
-            .map(|ident| Expression::Local(Local::Ident(ident)));
+        let field_accessor2 = just(Token::Dot).ignore_then(ident()).map(Expression::Ident);
         field_accessor1.or(field_accessor2)
     };
 

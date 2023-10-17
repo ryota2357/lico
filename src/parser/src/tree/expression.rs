@@ -12,6 +12,7 @@ pub enum Expression<'src> {
         lhs: Box<Expression<'src>>,
         rhs: Box<Expression<'src>>,
     },
+    Ident(Ident<'src>),
     Primitive(Primitive<'src>),
     TableObject(TableObject<'src>),
     ArrayObject(ArrayObject<'src>),
@@ -25,7 +26,14 @@ pub enum Expression<'src> {
         name: Ident<'src>,
         args: Vec<Expression<'src>>,
     },
-    Local(Local<'src>),
+    IndexAccess {
+        expr: Box<Expression<'src>>,
+        accesser: Box<Expression<'src>>,
+    },
+    DotAccess {
+        expr: Box<Expression<'src>>,
+        accesser: Ident<'src>,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -55,9 +63,6 @@ pub enum BinaryOp {
     // logical
     And, // and
     Or,  // or
-
-    // other
-    Dot, // .
 }
 
 /// <Expression> ::= <Call> | <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Local>
@@ -82,7 +87,6 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         let table_object = table_object(expr.clone()).map(Expression::TableObject);
         let array_object = array_object(expr.clone()).map(Expression::ArrayObject);
         let function_object = function_object(block.clone()).map(Expression::FunctionObject);
-        let local = local(expr.clone()).map(Expression::Local);
 
         let pratt = {
             let atom = choice((
@@ -92,7 +96,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                 function_object
                     .clone()
                     .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
-                local.clone(),
+                ident().map(Expression::Ident),
             ));
             recursive(|pratt| {
                 let term = choice((
@@ -129,13 +133,23 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                             args,
                         },
                     ),
-                    postfix(8, just(Token::Dot).ignore_then(ident()), |lhs, rhs| {
-                        Expression::Binary {
-                            op: BinaryOp::Dot,
-                            lhs: Box::new(lhs),
-                            rhs: Box::new(Expression::Local(Local::Ident(rhs))),
-                        }
-                    }),
+                    postfix(
+                        8,
+                        just(Token::Dot).ignore_then(ident()),
+                        |expr, accesser| Expression::DotAccess {
+                            expr: Box::new(expr),
+                            accesser,
+                        },
+                    ),
+                    postfix(
+                        8,
+                        expr.clone()
+                            .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket)),
+                        |expr, accesser| Expression::IndexAccess {
+                            expr: Box::new(expr),
+                            accesser: Box::new(accesser),
+                        },
+                    ),
                     prefix(7, just(Token::Minus), |rhs| match rhs {
                         Expression::Primitive(Primitive::Int(x)) => {
                             Expression::Primitive(Primitive::Int(-x))
@@ -244,7 +258,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
             table_object,
             array_object,
             function_object,
-            local,
+            ident().map(Expression::Ident),
         ))
     })
 }
@@ -273,7 +287,17 @@ impl<'a> TreeWalker<'a> for Expression<'a> {
                     arg.analyze(tracker);
                 }
             }
-            Expression::Local(local) => local.analyze(tracker),
+            Expression::IndexAccess {
+                expr,
+                accesser: index,
+            } => {
+                expr.analyze(tracker);
+                index.analyze(tracker);
+            }
+            Expression::Ident(ident) => tracker.add_capture(ident.str),
+            Expression::DotAccess { expr, .. } => {
+                expr.analyze(tracker);
+            }
         }
     }
 }

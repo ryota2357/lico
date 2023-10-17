@@ -29,7 +29,7 @@ pub(super) fn call_statement<'tokens, 'src: 'tokens>(
         .at_least(1)
         .collect::<Vec<_>>();
     let ident_or_expr = {
-        let ident = ident().map(|ident| Expression::Local(Local::Ident(ident)));
+        let ident = ident().map(Expression::Ident);
         let delimited_expr = expression
             .clone()
             .delimited_by(just(Token::OpenParen), just(Token::CloseParen));

@@ -38,10 +38,10 @@ fn define_variable_with_func_call() {
                     span: (4..5).into(),
                 },
                 expr: Expression::Invoke {
-                    expr: Box::new(Expression::Local(Local::Ident(Ident {
+                    expr: Box::new(Expression::Ident(Ident {
                         str: "f",
                         span: (8..9).into(),
-                    }))),
+                    })),
                     args: vec![],
                 },
             })],
@@ -176,10 +176,10 @@ fn call_function_without_args() {
         Chunk {
             capture: vec!["f"],
             body: vec![Statement::Call(CallStatement::Invoke {
-                expr: Expression::Local(Local::Ident(Ident {
+                expr: Expression::Ident(Ident {
                     str: "f",
                     span: (0..1).into(),
-                })),
+                }),
                 args: vec![],
             })],
         },
@@ -193,10 +193,10 @@ fn call_function_with_args() {
         Chunk {
             capture: vec!["f"],
             body: vec![Statement::Call(CallStatement::Invoke {
-                expr: Expression::Local(Local::Ident(Ident {
+                expr: Expression::Ident(Ident {
                     str: "f",
                     span: (0..1).into(),
-                })),
+                }),
                 args: vec![
                     Expression::Primitive(Primitive::Int(1)),
                     Expression::Primitive(Primitive::String("a")),
@@ -297,15 +297,15 @@ fn for_with_nuinus_step() {
                             span: (21..22).into(),
                         }),
                         rhs: Expression::Binary {
-                            lhs: Box::new(Expression::Local(Local::Ident(Ident {
+                            lhs: Box::new(Expression::Ident(Ident {
                                 str: "a",
                                 span: (25..26).into(),
-                            }))),
+                            })),
                             op: BinaryOp::Add,
-                            rhs: Box::new(Expression::Local(Local::Ident(Ident {
+                            rhs: Box::new(Expression::Ident(Ident {
                                 str: "i",
                                 span: (29..30).into(),
-                            }))),
+                            })),
                         },
                     })],
                 },
@@ -346,10 +346,10 @@ fn while_() {
             capture: vec!["ok"],
             body: vec![Statement::Control(ControlStatement::While {
                 cond: Expression::Invoke {
-                    expr: Box::new(Expression::Local(Local::Ident(Ident {
+                    expr: Box::new(Expression::Ident(Ident {
                         str: "ok",
                         span: (6..8).into(),
-                    }))),
+                    })),
                     args: vec![],
                 },
                 body: Block {

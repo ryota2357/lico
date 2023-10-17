@@ -22,20 +22,20 @@ fn delimited_call() {
     do_expr_test(
         "(f())",
         Expression::Invoke {
-            expr: Box::new(Expression::Local(Local::Ident(Ident {
+            expr: Box::new(Expression::Ident(Ident {
                 str: "f",
                 span: (3..4).into(),
-            }))),
+            })),
             args: vec![],
         },
     );
     do_expr_test(
         "(((f(1))))",
         Expression::Invoke {
-            expr: Box::new(Expression::Local(Local::Ident(Ident {
+            expr: Box::new(Expression::Ident(Ident {
                 str: "f",
                 span: (5..6).into(),
-            }))),
+            })),
             args: vec![Expression::Primitive(Primitive::Int(1))],
         },
     );
@@ -78,65 +78,64 @@ fn delimited_primitive() {
 fn delimited_local() {
     do_expr_test(
         "(a)",
-        Expression::Local(Local::Ident(Ident {
+        Expression::Ident(Ident {
             str: "a",
             span: (3..4).into(),
-        })),
+        }),
     );
     do_expr_test(
         "(((a)))",
-        Expression::Local(Local::Ident(Ident {
+        Expression::Ident(Ident {
             str: "a",
             span: (5..6).into(),
-        })),
+        }),
     );
 }
 #[test]
 fn delimited_local_access() {
     do_expr_test(
         "((a.b).c)",
-        Expression::Binary {
-            op: BinaryOp::Dot,
-            lhs: Box::new(Expression::Local(Local::Access {
-                ident: Ident {
+        Expression::DotAccess {
+            expr: Box::new(Expression::DotAccess {
+                expr: Box::new(Expression::Ident(Ident {
                     str: "a",
                     span: (4..5).into(),
-                },
-                keys: vec![Expression::Local(Local::Ident(Ident {
+                })),
+                accesser: Ident {
                     str: "b",
                     span: (6..7).into(),
-                }))],
-            })),
-            rhs: Box::new(Expression::Local(Local::Ident(Ident {
+                },
+            }),
+            accesser: Ident {
                 str: "c",
                 span: (9..10).into(),
-            }))),
+            },
         },
     );
     do_expr_test(
         "(a['b'])",
-        Expression::Local(Local::Access {
-            ident: Ident {
+        Expression::IndexAccess {
+            expr: Box::new(Expression::Ident(Ident {
                 str: "a",
                 span: (3..4).into(),
-            },
-            keys: vec![Expression::Primitive(Primitive::String("b"))],
-        }),
+            })),
+            accesser: Box::new(Expression::Primitive(Primitive::String("b"))),
+        },
     );
 }
 
 #[test]
 fn composition_func() {
     let expr = Expression::Invoke {
-        expr: Box::new(Expression::Local(Local::Ident(Ident {
+        expr: Box::new(Expression::Ident(Ident {
             str: "f",
             span: (2..3).into(),
-        }))),
+        })),
         args: vec![Expression::Invoke {
-            expr: Box::new(Expression::Local(Local::Ident(Ident {
+            expr: Box::new(Expression::Ident(Ident {
                 str: "g",
                 span: (4..5).into(),
-            }))),
+            })),
             args: vec![],
         }],
     };
@@ -150,10 +149,10 @@ fn multiple_call() {
         "f()()",
         Expression::Invoke {
             expr: Box::new(Expression::Invoke {
-                expr: Box::new(Expression::Local(Local::Ident(Ident {
+                expr: Box::new(Expression::Ident(Ident {
                     str: "f",
                     span: (2..3).into(),
-                }))),
+                })),
                 args: vec![],
             }),
             args: vec![],
@@ -165,10 +164,10 @@ fn multiple_call() {
             expr: Box::new(Expression::Invoke {
                 expr: Box::new(Expression::Invoke {
                     expr: Box::new(Expression::Invoke {
-                        expr: Box::new(Expression::Local(Local::Ident(Ident {
+                        expr: Box::new(Expression::Ident(Ident {
                             str: "f",
                             span: (3..4).into(),
-                        }))),
+                        })),
                         args: vec![Expression::Primitive(Primitive::Int(1))],
                     }),
                     args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -186,11 +185,51 @@ fn error_func_call() {
     do_expr_test(
         "f(,)",
         Expression::Invoke {
-            expr: Box::new(Expression::Local(Local::Ident(Ident {
+            expr: Box::new(Expression::Ident(Ident {
                 str: "f",
                 span: (8..9).into(),
-            }))),
+            })),
             args: vec![],
+        },
+    );
+}
+
+#[test]
+fn multiple_dot_access() {
+    do_expr_test(
+        "a.b.c",
+        Expression::DotAccess {
+            expr: Box::new(Expression::DotAccess {
+                expr: Box::new(Expression::Ident(Ident {
+                    str: "a",
+                    span: (2..3).into(),
+                })),
+                accesser: Ident {
+                    str: "b",
+                    span: (4..5).into(),
+                },
+            }),
+            accesser: Ident {
+                str: "c",
+                span: (6..7).into(),
+            },
+        },
+    );
+}
+
+#[test]
+fn multiple_index_access() {
+    do_expr_test(
+        "a['b'][1]",
+        Expression::IndexAccess {
+            expr: Box::new(Expression::IndexAccess {
+                expr: Box::new(Expression::Ident(Ident {
+                    str: "a",
+                    span: (2..3).into(),
+                })),
+                accesser: Box::new(Expression::Primitive(Primitive::String("b"))),
+            }),
+            accesser: Box::new(Expression::Primitive(Primitive::Int(1))),
         },
     );
 }
@@ -281,10 +320,10 @@ fn logical_op() {
                 op: BinaryOp::Eq,
                 lhs: Box::new(Expression::Unary {
                     op: UnaryOp::Not,
-                    expr: Box::new(Expression::Local(Local::Ident(Ident {
+                    expr: Box::new(Expression::Ident(Ident {
                         str: "a",
                         span: (6..7).into(),
-                    }))),
+                    })),
                 }),
                 rhs: Box::new(Expression::Primitive(Primitive::Int(10))),
             }),
@@ -293,10 +332,10 @@ fn logical_op() {
                 lhs: Box::new(Expression::Binary {
                     op: BinaryOp::GreaterEq,
                     lhs: Box::new(Expression::Primitive(Primitive::Int(5))),
-                    rhs: Box::new(Expression::Local(Local::Ident(Ident {
+                    rhs: Box::new(Expression::Ident(Ident {
                         str: "b",
                         span: (22..23).into(),
-                    }))),
+                    })),
                 }),
                 rhs: Box::new(Expression::Primitive(Primitive::Bool(false))),
             }),
@@ -316,20 +355,20 @@ fn logical_op_with_paren() {
                     op: UnaryOp::Not,
                     expr: Box::new(Expression::Binary {
                         op: BinaryOp::NotEq,
-                        lhs: Box::new(Expression::Local(Local::Ident(Ident {
+                        lhs: Box::new(Expression::Ident(Ident {
                             str: "a",
                             span: (8..9).into(),
-                        }))),
+                        })),
                         rhs: Box::new(Expression::Primitive(Primitive::Int(10))),
                     }),
                 }),
                 rhs: Box::new(Expression::Binary {
                     op: BinaryOp::Less,
                     lhs: Box::new(Expression::Primitive(Primitive::Int(5))),
-                    rhs: Box::new(Expression::Local(Local::Ident(Ident {
+                    rhs: Box::new(Expression::Ident(Ident {
                         str: "b",
                         span: (24..25).into(),
-                    }))),
+                    })),
                 }),
             }),
             rhs: Box::new(Expression::Primitive(Primitive::Bool(false))),
@@ -337,3 +376,58 @@ fn logical_op_with_paren() {
     )
 }
 
+#[test]
+fn complicated_partt() {
+    do_expr_test(
+        "-(false or b).c[c.c() and -d()] ** 2",
+        Expression::Binary {
+            op: BinaryOp::Pow,
+            lhs: Box::new(Expression::Unary {
+                op: UnaryOp::Neg,
+                expr: Box::new(Expression::IndexAccess {
+                    expr: Box::new(Expression::DotAccess {
+                        expr: Box::new(Expression::Binary {
+                            op: BinaryOp::Or,
+                            lhs: Box::new(Expression::Primitive(Primitive::Bool(false))),
+                            rhs: Box::new(Expression::Ident(Ident {
+                                str: "b",
+                                span: (13..14).into(),
+                            })),
+                        }),
+                        accesser: Ident {
+                            str: "c",
+                            span: (16..17).into(),
+                        },
+                    }),
+                    accesser: Box::new(Expression::Binary {
+                        op: BinaryOp::And,
+                        lhs: Box::new(Expression::Invoke {
+                            expr: Box::new(Expression::DotAccess {
+                                expr: Box::new(Expression::Ident(Ident {
+                                    str: "c",
+                                    span: (18..19).into(),
+                                })),
+                                accesser: Ident {
+                                    str: "c",
+                                    span: (20..21).into(),
+                                },
+                            }),
+                            args: vec![],
+                        }),
+                        rhs: Box::new(Expression::Unary {
+                            op: UnaryOp::Neg,
+                            expr: Box::new(Expression::Invoke {
+                                expr: Box::new(Expression::Ident(Ident {
+                                    str: "d",
+                                    span: (29..30).into(),
+                                })),
+                                args: vec![],
+                            }),
+                        }),
+                    }),
+                }),
+            }),
+            rhs: Box::new(Expression::Primitive(Primitive::Int(2))),
+        },
+    );
+}

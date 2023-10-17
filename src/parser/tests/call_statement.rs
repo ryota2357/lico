@@ -13,15 +13,15 @@ fn complicated_func_with_trailing_comma() {
     do_statement_test(
         "f(g(),)",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Local(Local::Ident(Ident {
+            expr: Expression::Ident(Ident {
                 str: "f",
                 span: (0..1).into(),
-            })),
+            }),
             args: vec![Expression::Invoke {
-                expr: Box::new(Expression::Local(Local::Ident(Ident {
+                expr: Box::new(Expression::Ident(Ident {
                     str: "g",
                     span: (2..3).into(),
-                }))),
+                })),
                 args: vec![],
             }],
         }),
@@ -38,10 +38,10 @@ fn call_with_only_comma() {
     do_statement_test(
         "f(,)",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Local(Local::Ident(Ident {
+            expr: Expression::Ident(Ident {
                 str: "f",
                 span: (0..1).into(),
-            })),
+            }),
             args: vec![],
         }),
     );
@@ -53,10 +53,10 @@ fn multiple_call() {
         "f()()",
         Statement::Call(CallStatement::Invoke {
             expr: Expression::Invoke {
-                expr: Box::new(Expression::Local(Local::Ident(Ident {
+                expr: Box::new(Expression::Ident(Ident {
                     str: "f",
                     span: (0..1).into(),
-                }))),
+                })),
                 args: vec![],
             },
             args: vec![],
@@ -71,10 +71,10 @@ fn multiple_call_more() {
         Statement::Call(CallStatement::Invoke {
             expr: Expression::Invoke {
                 expr: Box::new(Expression::Invoke {
-                    expr: Box::new(Expression::Local(Local::Ident(Ident {
+                    expr: Box::new(Expression::Ident(Ident {
                         str: "f",
                         span: (0..1).into(),
-                    }))),
+                    })),
                     args: vec![Expression::Primitive(Primitive::Int(1))],
                 }),
                 args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -91,10 +91,10 @@ fn delimited_call() {
         Statement::Call(CallStatement::Invoke {
             expr: Expression::Invoke {
                 expr: Box::new(Expression::Invoke {
-                    expr: Box::new(Expression::Local(Local::Ident(Ident {
+                    expr: Box::new(Expression::Ident(Ident {
                         str: "f",
                         span: (2..3).into(),
-                    }))),
+                    })),
                     args: vec![Expression::Primitive(Primitive::Int(1))],
                 }),
                 args: vec![Expression::Primitive(Primitive::Int(2))],
@@ -112,10 +112,10 @@ fn multiple_call_with_delimited() {
             expr: Expression::Invoke {
                 expr: Box::new(Expression::Invoke {
                     expr: Box::new(Expression::Invoke {
-                        expr: Box::new(Expression::Local(Local::Ident(Ident {
+                        expr: Box::new(Expression::Ident(Ident {
                             str: "f",
                             span: (1..2).into(),
-                        }))),
+                        })),
                         args: vec![Expression::Primitive(Primitive::Int(1))],
                     }),
                     args: vec![Expression::Primitive(Primitive::Int(2))],
