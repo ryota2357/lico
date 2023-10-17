@@ -37,13 +37,13 @@ fn define_variable_with_func_call() {
                     str: "x",
                     span: (4..5).into(),
                 },
-                expr: Expression::Call(Call::Local {
-                    local: Local::Ident(Ident {
+                expr: Expression::Invoke {
+                    expr: Box::new(Expression::Local(Local::Ident(Ident {
                         str: "f",
                         span: (8..9).into(),
-                    }),
+                    }))),
                     args: vec![],
-                }),
+                },
             })],
         },
     )
@@ -175,11 +175,11 @@ fn call_function_without_args() {
         "f()",
         Chunk {
             capture: vec!["f"],
-            body: vec![Statement::Call(Call::Local {
-                local: Local::Ident(Ident {
+            body: vec![Statement::Call(CallStatement::Invoke {
+                expr: Expression::Local(Local::Ident(Ident {
                     str: "f",
                     span: (0..1).into(),
-                }),
+                })),
                 args: vec![],
             })],
         },
@@ -192,11 +192,11 @@ fn call_function_with_args() {
         "f(1, 'a', true)",
         Chunk {
             capture: vec!["f"],
-            body: vec![Statement::Call(Call::Local {
-                local: Local::Ident(Ident {
+            body: vec![Statement::Call(CallStatement::Invoke {
+                expr: Expression::Local(Local::Ident(Ident {
                     str: "f",
                     span: (0..1).into(),
-                }),
+                })),
                 args: vec![
                     Expression::Primitive(Primitive::Int(1)),
                     Expression::Primitive(Primitive::String("a")),
@@ -345,13 +345,13 @@ fn while_() {
         Chunk {
             capture: vec!["ok"],
             body: vec![Statement::Control(ControlStatement::While {
-                cond: Expression::Call(Call::Local {
-                    local: Local::Ident(Ident {
+                cond: Expression::Invoke {
+                    expr: Box::new(Expression::Local(Local::Ident(Ident {
                         str: "ok",
                         span: (6..8).into(),
-                    }),
+                    }))),
                     args: vec![],
-                }),
+                },
                 body: Block {
                     body: vec![Statement::Control(ControlStatement::Break)],
                 },

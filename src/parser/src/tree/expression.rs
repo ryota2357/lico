@@ -16,7 +16,15 @@ pub enum Expression<'src> {
     TableObject(TableObject<'src>),
     ArrayObject(ArrayObject<'src>),
     FunctionObject(FunctionObject<'src>),
-    Call(Call<'src>),
+    Invoke {
+        expr: Box<Expression<'src>>,
+        args: Vec<Expression<'src>>,
+    },
+    CallMethod {
+        expr: Box<Expression<'src>>,
+        name: Ident<'src>,
+        args: Vec<Expression<'src>>,
+    },
     Local(Local<'src>),
 }
 
@@ -47,6 +55,8 @@ pub enum BinaryOp {
     // logical
     And, // and
     Or,  // or
+
+    // other
 }
 
 /// <Expression> ::= <Call> | <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Local>
@@ -71,11 +81,18 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         let table_object = table_object(expr.clone()).map(Expression::TableObject);
         let array_object = array_object(expr.clone()).map(Expression::ArrayObject);
         let function_object = function_object(block.clone()).map(Expression::FunctionObject);
-        let call = call(block, expr.clone()).map(Expression::Call);
         let local = local().map(Expression::Local);
 
-        let unary_or_binary = {
-            let atom = choice((primitive.clone(), call.clone(), local.clone()));
+        let pratt = {
+            let atom = choice((
+                primitive.clone(),
+                table_object.clone(),
+                array_object.clone(),
+                function_object
+                    .clone()
+                    .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
+                local.clone(),
+            ));
             recursive(|pratt| {
                 let term = choice((
                     atom.clone()
@@ -84,6 +101,33 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     atom,
                 ));
                 term.pratt((
+                    postfix(
+                        8,
+                        expr.clone()
+                            .separated_by(just(Token::Comma))
+                            .allow_trailing()
+                            .collect()
+                            .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
+                        |lhs, args| Expression::Invoke {
+                            expr: Box::new(lhs),
+                            args,
+                        },
+                    ),
+                    postfix(
+                        8,
+                        just(Token::Arrow).ignore_then(ident()).then(
+                            expr.clone()
+                                .separated_by(just(Token::Comma))
+                                .allow_trailing()
+                                .collect()
+                                .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
+                        ),
+                        |expr, (name, args)| Expression::CallMethod {
+                            expr: Box::new(expr),
+                            name,
+                            args,
+                        },
+                    ),
                     prefix(7, just(Token::Minus), |rhs| match rhs {
                         Expression::Primitive(Primitive::Int(x)) => {
                             Expression::Primitive(Primitive::Int(-x))
@@ -186,8 +230,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         };
 
         choice((
-            call,
-            unary_or_binary,
+            pratt,
             expr.delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
             primitive,
             table_object,
@@ -210,7 +253,18 @@ impl<'a> TreeWalker<'a> for Expression<'a> {
             Expression::TableObject(table_object) => table_object.analyze(tracker),
             Expression::ArrayObject(array_object) => array_object.analyze(tracker),
             Expression::FunctionObject(function_object) => function_object.analyze(tracker),
-            Expression::Call(call) => call.analyze(tracker),
+            Expression::Invoke { expr, args } => {
+                expr.analyze(tracker);
+                for arg in args {
+                    arg.analyze(tracker);
+                }
+            }
+            Expression::CallMethod { expr, args, .. } => {
+                expr.analyze(tracker);
+                for arg in args {
+                    arg.analyze(tracker);
+                }
+            }
             Expression::Local(local) => match local {
                 Local::TableField { name, .. } => tracker.add_capture(name.str),
                 Local::Ident(ident) => tracker.add_capture(ident.str),

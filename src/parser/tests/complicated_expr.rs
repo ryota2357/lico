@@ -21,23 +21,23 @@ fn do_expr_test(src: &str, expression: Expression<'_>) {
 fn delimited_call() {
     do_expr_test(
         "(f())",
-        Expression::Call(Call::Local {
-            local: Local::Ident(Ident {
+        Expression::Invoke {
+            expr: Box::new(Expression::Local(Local::Ident(Ident {
                 str: "f",
                 span: (3..4).into(),
-            }),
+            }))),
             args: vec![],
-        }),
+        },
     );
     do_expr_test(
         "(((f(1))))",
-        Expression::Call(Call::Local {
-            local: Local::Ident(Ident {
+        Expression::Invoke {
+            expr: Box::new(Expression::Local(Local::Ident(Ident {
                 str: "f",
                 span: (5..6).into(),
-            }),
+            }))),
             args: vec![Expression::Primitive(Primitive::Int(1))],
-        }),
+        },
     );
 }
 

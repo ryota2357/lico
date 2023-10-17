@@ -25,11 +25,11 @@ pub use control_statement::*;
 mod variable_statement;
 pub use variable_statement::*;
 
+mod call_statement;
+pub use call_statement::*;
+
 mod expression;
 pub use expression::*;
-
-mod call;
-pub use call::*;
 
 mod table_object;
 pub use table_object::*;
