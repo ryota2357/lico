@@ -7,8 +7,8 @@ fn do_expr_test(src: &str, expression: Expression<'_>) {
     let stats = program.body.body;
     assert_eq!(stats.len(), 1);
     let statement = &stats[0];
-    if let Statement::Variable(VariableStatement::Assign { lhs: _, rhs }) = statement {
-        assert_eq!(rhs, &expression);
+    if let Statement::Variable(VariableStatement::Assign { expr, .. }) = statement {
+        assert_eq!(expr, &expression);
     } else {
         panic!(
             "Expected VariableStatement::Assign, but got {:?}",

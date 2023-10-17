@@ -40,9 +40,6 @@ pub use array_object::*;
 mod function_object;
 pub use function_object::*;
 
-mod local;
-pub use local::*;
-
 mod misc;
 pub use misc::*;
 

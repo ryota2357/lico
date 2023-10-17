@@ -22,8 +22,9 @@ pub enum VariableStatement<'src> {
         body: Chunk<'src>,
     },
     Assign {
-        lhs: Local<'src>,
-        rhs: Expression<'src>,
+        name: Ident<'src>,
+        accesser: Vec<Expression<'src>>,
+        expr: Expression<'src>,
     },
 }
 
@@ -31,7 +32,7 @@ pub enum VariableStatement<'src> {
 /// <Var>               ::= 'var' <Ident> '=' <Expression>
 /// <Let>               ::= 'let' <Ident> '=' <Expression>
 /// <Func>              ::= 'func' <Local> '(' [ <Ident> { ',' <Ident> } [ ',' ] ] ')' <Block> 'end'
-/// <Assign>            ::= <Local> '=' <Expression>
+/// <Assign>            ::= <Ident> { ( '[' <Expression> ']' ) | ( '.' <Ident> ) } '=' <Expression>
 pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
@@ -91,10 +92,24 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
                 body: block.into(),
             },
         );
-    let assign = local(expression.clone())
+    let assign = ident()
+        .then(
+            choice((
+                expression
+                    .clone()
+                    .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket)),
+                just(Token::Dot).ignore_then(ident()).map(Expression::Ident),
+            ))
+            .repeated()
+            .collect(),
+        )
         .then_ignore(just(Token::Assign))
         .then(expression)
-        .map(|(lhs, rhs)| VariableStatement::Assign { lhs, rhs });
+        .map(|((name, accesser), expr)| VariableStatement::Assign {
+            name,
+            accesser,
+            expr,
+        });
 
     choice((var, r#let, func, field_func, assign))
 }
@@ -136,9 +151,16 @@ impl<'a> TreeWalker<'a> for VariableStatement<'a> {
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
             }
-            VariableStatement::Assign { lhs, rhs } => {
-                lhs.analyze(tracker);
-                rhs.analyze(tracker);
+            VariableStatement::Assign {
+                name,
+                accesser,
+                expr,
+            } => {
+                tracker.add_capture(name.str);
+                for access in accesser.iter_mut() {
+                    access.analyze(tracker);
+                }
+                expr.analyze(tracker);
             }
         }
     }

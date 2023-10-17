@@ -73,11 +73,12 @@ fn assign_variable_with_literal() {
         Chunk {
             capture: vec!["x"],
             body: vec![Statement::Variable(VariableStatement::Assign {
-                lhs: Local::Ident(Ident {
+                name: Ident {
                     str: "x",
                     span: (0..1).into(),
-                }),
-                rhs: Expression::Primitive(Primitive::Float(1.23)),
+                },
+                accesser: vec![],
+                expr: Expression::Primitive(Primitive::Float(1.23)),
             })],
         },
     )
@@ -292,11 +293,12 @@ fn for_with_nuinus_step() {
                 step: Some(Expression::Primitive(Primitive::Int(-1))),
                 body: Block {
                     body: vec![Statement::Variable(VariableStatement::Assign {
-                        lhs: Local::Ident(Ident {
+                        name: Ident {
                             str: "a",
                             span: (21..22).into(),
-                        }),
-                        rhs: Expression::Binary {
+                        },
+                        accesser: vec![],
+                        expr: Expression::Binary {
                             lhs: Box::new(Expression::Ident(Ident {
                                 str: "a",
                                 span: (25..26).into(),
