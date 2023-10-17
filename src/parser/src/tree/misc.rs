@@ -1,33 +1,5 @@
 use super::*;
 
-/// <Local>      ::= <TableField> | <Variable>
-/// <TableField> ::= <Ident> '.' <Ident> { '.' <Ident> }
-/// <Variable>   ::= <Ident>
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Local<'src> {
-    TableField {
-        name: Ident<'src>,
-        keys: Vec<Ident<'src>>,
-    },
-    Ident(Ident<'src>),
-}
-pub(super) fn local<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Local<'src>, ParserError<'tokens, 'src>> + Clone
-{
-    let variable = ident().map(Local::Ident);
-    let table = ident()
-        .then(
-            just(Token::Dot)
-                .ignore_then(ident())
-                .repeated()
-                .at_least(1)
-                .collect(),
-        )
-        .map(|(name, keys)| Local::TableField { name, keys });
-
-    table.or(variable)
-}
-
 /// <Primitive> ::= <Int> | <Float> | <String> | <Bool> | <Nil>
 /// <Int>       ::= __int
 /// <Float>     ::= __float

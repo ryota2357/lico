@@ -57,6 +57,7 @@ pub enum BinaryOp {
     Or,  // or
 
     // other
+    Dot, // .
 }
 
 /// <Expression> ::= <Call> | <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Local>
@@ -81,7 +82,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         let table_object = table_object(expr.clone()).map(Expression::TableObject);
         let array_object = array_object(expr.clone()).map(Expression::ArrayObject);
         let function_object = function_object(block.clone()).map(Expression::FunctionObject);
-        let local = local().map(Expression::Local);
+        let local = local(expr.clone()).map(Expression::Local);
 
         let pratt = {
             let atom = choice((
@@ -128,6 +129,13 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                             args,
                         },
                     ),
+                    postfix(8, just(Token::Dot).ignore_then(ident()), |lhs, rhs| {
+                        Expression::Binary {
+                            op: BinaryOp::Dot,
+                            lhs: Box::new(lhs),
+                            rhs: Box::new(Expression::Local(Local::Ident(rhs))),
+                        }
+                    }),
                     prefix(7, just(Token::Minus), |rhs| match rhs {
                         Expression::Primitive(Primitive::Int(x)) => {
                             Expression::Primitive(Primitive::Int(-x))
@@ -265,10 +273,7 @@ impl<'a> TreeWalker<'a> for Expression<'a> {
                     arg.analyze(tracker);
                 }
             }
-            Expression::Local(local) => match local {
-                Local::TableField { name, .. } => tracker.add_capture(name.str),
-                Local::Ident(ident) => tracker.add_capture(ident.str),
-            },
+            Expression::Local(local) => local.analyze(tracker),
         }
     }
 }

@@ -9,14 +9,14 @@ pub enum ControlStatement<'src> {
         else_: Option<Block<'src>>,
     },
     For {
-        value: Local<'src>,
+        value: Ident<'src>,
         start: Expression<'src>,
         stop: Expression<'src>,
         step: Option<Expression<'src>>,
         body: Block<'src>,
     },
     ForIn {
-        value: Local<'src>,
+        value: Ident<'src>,
         iter: Expression<'src>,
         body: Block<'src>,
     },
@@ -76,7 +76,7 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
             else_,
         });
     let r#for = just(Token::For)
-        .ignore_then(local())
+        .ignore_then(ident())
         .then_ignore(just(Token::Assign))
         .then(expression.clone())
         .then_ignore(just(Token::Comma))
@@ -95,7 +95,7 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
             },
         );
     let for_in = just(Token::For)
-        .ignore_then(local())
+        .ignore_then(ident())
         .then_ignore(just(Token::In))
         .then(expression.clone())
         .then_ignore(just(Token::Do))
@@ -165,10 +165,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                 }
 
                 tracker.push_new_definition_scope();
-                match value {
-                    Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Ident(ident) => tracker.add_definition(ident.str),
-                }
+                tracker.add_definition(value.str);
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
             }
@@ -176,10 +173,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                 iter.analyze(tracker);
 
                 tracker.push_new_definition_scope();
-                match value {
-                    Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Ident(ident) => tracker.add_definition(ident.str),
-                }
+                tracker.add_definition(value.str);
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
             }

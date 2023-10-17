@@ -263,10 +263,10 @@ fn for_with_no_step_no_body() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Control(ControlStatement::For {
-                value: Local::Ident(Ident {
+                value: Ident {
                     str: "i",
                     span: (4..5).into(),
-                }),
+                },
                 start: Expression::Primitive(Primitive::Int(1)),
                 stop: Expression::Primitive(Primitive::Int(10)),
                 step: None,
@@ -283,10 +283,10 @@ fn for_with_nuinus_step() {
         Chunk {
             capture: vec!["a"],
             body: vec![Statement::Control(ControlStatement::For {
-                value: Local::Ident(Ident {
+                value: Ident {
                     str: "i",
                     span: (4..5).into(),
-                }),
+                },
                 start: Expression::Primitive(Primitive::Int(10)),
                 stop: Expression::Primitive(Primitive::Int(1)),
                 step: Some(Expression::Primitive(Primitive::Int(-1))),
@@ -321,10 +321,10 @@ fn for_in() {
         Chunk {
             capture: vec![],
             body: vec![Statement::Control(ControlStatement::ForIn {
-                value: Local::Ident(Ident {
+                value: Ident {
                     str: "i",
                     span: (4..5).into(),
-                }),
+                },
                 iter: Expression::ArrayObject(ArrayObject {
                     elements: vec![
                         Expression::Primitive(Primitive::Int(1)),

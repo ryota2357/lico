@@ -91,7 +91,7 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
                 body: block.into(),
             },
         );
-    let assign = local()
+    let assign = local(expression.clone())
         .then_ignore(just(Token::Assign))
         .then(expression)
         .map(|(lhs, rhs)| VariableStatement::Assign { lhs, rhs });
@@ -137,10 +137,7 @@ impl<'a> TreeWalker<'a> for VariableStatement<'a> {
                 tracker.pop_current_definition_scope();
             }
             VariableStatement::Assign { lhs, rhs } => {
-                match lhs {
-                    Local::TableField { name, .. } => tracker.add_capture(name.str),
-                    Local::Ident(ident) => tracker.add_capture(ident.str),
-                }
+                lhs.analyze(tracker);
                 rhs.analyze(tracker);
             }
         }
