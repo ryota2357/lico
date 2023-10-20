@@ -208,6 +208,50 @@ fn call_function_with_args() {
     );
 }
 
+#[test]
+fn method_call() {
+    do_chunk_test(
+        "a->b('a')",
+        Chunk {
+            capture: vec!["a"],
+            body: vec![Statement::Call(CallStatement::MethodCall {
+                expr: Expression::Ident(Ident {
+                    str: "a",
+                    span: (0..1).into(),
+                }),
+                name: Ident {
+                    str: "b",
+                    span: (3..4).into(),
+                },
+                args: vec![Expression::Primitive(Primitive::String("a"))],
+            })],
+        },
+    );
+}
+
+#[test]
+fn method_call_obj() {
+    do_chunk_test(
+        "[1, 2]->len()",
+        Chunk {
+            capture: vec![],
+            body: vec![Statement::Call(CallStatement::MethodCall {
+                expr: Expression::ArrayObject(ArrayObject {
+                    elements: vec![
+                        Expression::Primitive(Primitive::Int(1)),
+                        Expression::Primitive(Primitive::Int(2)),
+                    ],
+                }),
+                name: Ident {
+                    str: "len",
+                    span: (8..11).into(),
+                },
+                args: vec![],
+            })],
+        },
+    );
+}
+
 // Control statement
 
 #[test]

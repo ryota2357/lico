@@ -21,7 +21,7 @@ pub enum Expression<'src> {
         expr: Box<Expression<'src>>,
         args: Vec<Expression<'src>>,
     },
-    CallMethod {
+    MethodCall {
         expr: Box<Expression<'src>>,
         name: Ident<'src>,
         args: Vec<Expression<'src>>,
@@ -127,7 +127,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                                 .collect()
                                 .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
                         ),
-                        |expr, (name, args)| Expression::CallMethod {
+                        |expr, (name, args)| Expression::MethodCall {
                             expr: Box::new(expr),
                             name,
                             args,
@@ -281,7 +281,7 @@ impl<'a> TreeWalker<'a> for Expression<'a> {
                     arg.analyze(tracker);
                 }
             }
-            Expression::CallMethod { expr, args, .. } => {
+            Expression::MethodCall { expr, args, .. } => {
                 expr.analyze(tracker);
                 for arg in args {
                     arg.analyze(tracker);
