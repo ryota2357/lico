@@ -1,5 +1,5 @@
-# Lic
+# Lico
 
-> Lic is a simple programming language.
+> Lico is a simple programming language.
 
 **Under development**
