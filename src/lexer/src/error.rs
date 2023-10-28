@@ -1,4 +1,4 @@
-type Span = chumsky::span::SimpleSpan<usize>;
+use super::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Error {

@@ -1,6 +1,6 @@
 use lexer::{error::Error, Token};
 
-pub fn do_test(code: &str, tokens: Vec<Token>, errors: Vec<Error>) {
+fn do_test(code: &str, tokens: Vec<Token>, errors: Vec<Error>) {
     let (a_tokens, a_errors) = lexer::parse(code);
     let a_tokens = a_tokens
         .into_iter()

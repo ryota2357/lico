@@ -113,7 +113,7 @@ impl std::fmt::Display for Token<'_> {
             Token::CloseBracket => write!(f, "]"),
             Token::Identifier(x) => write!(f, "{}", x),
             Token::Attribute(x) => write!(f, "@{}", x),
-            Token::Error(c) => write!(f, "Error('{}')", c)
+            Token::Error(c) => write!(f, "Error('{}')", c),
         }
     }
 }

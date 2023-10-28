@@ -1,6 +1,6 @@
 use lexer::Token;
 
-pub fn do_test(code: &str, expected: Vec<Token>) {
+fn do_test(code: &str, expected: Vec<Token>) {
     let actual = lexer::parse(code)
         .0
         .into_iter()

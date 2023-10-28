@@ -1,13 +1,13 @@
-use crate::{error::Error, Token};
-use chumsky::prelude::*;
+use super::*;
 
-type Span = SimpleSpan<usize>;
+use crate::error::Error;
+
 type LexerInput<'a> = &'a str;
-type LexerError<'a> = extra::Err<Error>;
 type LexerOutput<'a> = Vec<(Token<'a>, Span)>;
+type LexerExtra<'a> = extra::Err<Error>;
 
-pub(crate) fn lexer<'src>(
-) -> impl Parser<'src, LexerInput<'src>, LexerOutput<'src>, LexerError<'src>> {
+pub(super) fn lexer<'src>(
+) -> impl Parser<'src, LexerInput<'src>, LexerOutput<'src>, LexerExtra<'src>> {
     let int = text::digits(10)
         .to_slice()
         .from_str()
