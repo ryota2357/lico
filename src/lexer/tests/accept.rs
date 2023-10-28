@@ -1,7 +1,13 @@
-mod common;
-
-use common::do_test;
 use lexer::Token;
+
+pub fn do_test(code: &str, expected: Vec<Token>) {
+    let actual = lexer::parse(code)
+        .0
+        .into_iter()
+        .map(|(token, _)| token)
+        .collect::<Vec<_>>();
+    assert_eq!(actual, expected);
+}
 
 #[test]
 fn int() {

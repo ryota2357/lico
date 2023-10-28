@@ -1,9 +1,9 @@
-use crate::Token;
+use crate::{error::Error, Token};
 use chumsky::prelude::*;
 
 type Span = SimpleSpan<usize>;
 type LexerInput<'a> = &'a str;
-type LexerError<'a> = extra::Err<Simple<'a, char, Span>>;
+type LexerError<'a> = extra::Err<Error>;
 type LexerOutput<'a> = Vec<(Token<'a>, Span)>;
 
 pub(crate) fn lexer<'src>(
@@ -116,6 +116,10 @@ pub(crate) fn lexer<'src>(
     });
 
     let token = choice((float, int, string, symbol, attribute, word))
+        .or(any().validate(|c, extra, emitter| {
+            emitter.emit(Error::invalid_character(c, extra.span()));
+            Token::Error(c)
+        }))
         .map_with(|token, ext| (token, ext.span()))
         .padded();
 
