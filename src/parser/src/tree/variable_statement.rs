@@ -6,10 +6,6 @@ pub enum VariableStatement<'src> {
         name: Ident<'src>,
         expr: Expression<'src>,
     },
-    Let {
-        name: Ident<'src>,
-        expr: Expression<'src>,
-    },
     Func {
         name: Ident<'src>,
         args: Vec<Ident<'src>>,
@@ -57,11 +53,6 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
         .then_ignore(just(Token::Assign))
         .then(expression.clone())
         .map(|(name, expr)| VariableStatement::Var { name, expr });
-    let r#let = just(Token::Let)
-        .ignore_then(ident())
-        .then_ignore(just(Token::Assign))
-        .then(expression.clone())
-        .map(|(name, expr)| VariableStatement::Let { name, expr });
     let func = just(Token::Func)
         .ignore_then(ident())
         .then(func_arguments.clone())
@@ -111,17 +102,13 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
             expr,
         });
 
-    choice((var, r#let, func, field_func, assign))
+    choice((var, func, field_func, assign))
 }
 
 impl<'a> TreeWalker<'a> for VariableStatement<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
             VariableStatement::Var { name, expr } => {
-                tracker.add_definition(name.str);
-                expr.analyze(tracker);
-            }
-            VariableStatement::Let { name, expr } => {
                 tracker.add_definition(name.str);
                 expr.analyze(tracker);
             }

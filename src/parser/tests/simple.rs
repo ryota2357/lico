@@ -10,7 +10,7 @@ fn do_chunk_test(src: &str, chunk: Chunk<'_>) {
 // Variable statement
 
 #[test]
-fn define_variable_with_literal_by_var() {
+fn define_variable_with_litera() {
     do_chunk_test(
         "var x = 17",
         Chunk {
@@ -44,23 +44,6 @@ fn define_variable_with_func_call() {
                     })),
                     args: vec![],
                 },
-            })],
-        },
-    )
-}
-
-#[test]
-fn define_variable_with_literal_by_let() {
-    do_chunk_test(
-        "let x = 'abc'",
-        Chunk {
-            capture: vec![],
-            body: vec![Statement::Variable(VariableStatement::Let {
-                name: Ident {
-                    str: "x",
-                    span: (4..5).into(),
-                },
-                expr: Expression::Primitive(Primitive::String("abc")),
             })],
         },
     )

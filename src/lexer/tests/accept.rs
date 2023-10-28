@@ -45,7 +45,6 @@ fn nil() {
 #[test]
 fn keyword() {
     do_test("var", vec![Token::Var]);
-    do_test("let", vec![Token::Let]);
     do_test("func", vec![Token::Func]);
     do_test("if", vec![Token::If]);
     do_test("then", vec![Token::Then]);

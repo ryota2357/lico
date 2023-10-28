@@ -92,7 +92,6 @@ pub(crate) fn lexer<'src>(
 
         // keywords
         "var" => Token::Var,
-        "let" => Token::Let,
         "func" => Token::Func,
         "if" => Token::If,
         "then" => Token::Then,

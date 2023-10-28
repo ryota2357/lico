@@ -9,7 +9,6 @@ pub enum Token<'src> {
 
     // keywords
     Var,
-    Let,
     Func,
     If,
     Then,
@@ -71,7 +70,6 @@ impl std::fmt::Display for Token<'_> {
             Token::Bool(x) => write!(f, "{}", if *x { "true" } else { "false" }),
             Token::Nil => write!(f, "nil"),
             Token::Var => write!(f, "var"),
-            Token::Let => write!(f, "let"),
             Token::Func => write!(f, "func"),
             Token::If => write!(f, "if"),
             Token::Then => write!(f, "then"),
