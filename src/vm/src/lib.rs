@@ -1,5 +1,5 @@
-mod code;
-mod runtime;
+pub mod code;
+pub mod runtime;
 
 use code::{BuiltinInstr, Code, Code::*};
 use runtime::{Object, Runtime, StackValue, TableObject};
