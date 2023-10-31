@@ -163,8 +163,7 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
                         }
                     }
                     StackValue::Object(Object::Function(func)) => {
-                        let func = std::borrow::Borrow::borrow(&func);
-                        execute_func(func, args, runtime);
+                        execute_func(&func, args, runtime);
                     }
                     StackValue::Object(Object::Table(table)) => {
                         let table = table.borrow();
@@ -450,7 +449,6 @@ mod tests {
         assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(11)));
         match runtime.variable_table.get("f").unwrap() {
             Object::Function(func) => {
-                let func: &runtime::FunctionObject = std::borrow::Borrow::borrow(&func);
                 assert_eq!(func.id, (2, 0));
             }
             _ => panic!("Expected Function, but got {:?}", runtime.variable_table.get("f")),
