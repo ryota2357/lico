@@ -24,7 +24,18 @@ pub enum Code<'src> {
     Call(u8),
     SetItem,
     GetItem,
-    Add,
+    Add,       // +
+    Sub,       // -
+    Mul,       // *
+    Div,       // /
+    Mod,       // %
+    Pow,       // *
+    Eq,        // ==
+    NotEq,     // !=
+    Less,      // <
+    LessEq,    // <=
+    Greater,   // >
+    GreaterEq, // >=
 
     Builtin(BuiltinInstr, u8),
 

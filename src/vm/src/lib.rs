@@ -286,6 +286,185 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
                 }
                 pc += 1;
             }
+            Sub => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Int(lhs - rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs as f64 - rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs - rhs as f64).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs - rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
+            Mul => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Int(lhs * rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs as f64 * rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs * rhs as f64).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs * rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
+            Div => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Int(lhs / rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs as f64 / rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs / rhs as f64).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs / rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
+            Mod => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Int(lhs % rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs as f64 % rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs % rhs as f64).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Float(lhs % rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
+            Pow => todo!("Pow"),
+            Eq => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                runtime.stack.push(Object::Bool(lhs == rhs).into());
+            }
+            NotEq => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                runtime.stack.push(Object::Bool(lhs != rhs).into());
+            }
+            Less => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs < rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool((lhs as f64) < rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs < (rhs as f64)).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs < rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
+            LessEq => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs <= rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool((lhs as f64) <= rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs <= (rhs as f64)).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs <= rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
+            Greater => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs > rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool((lhs as f64) > rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs > (rhs as f64)).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs > rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
+            GreaterEq => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs >= rhs).into());
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool((lhs as f64) >= rhs).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs >= (rhs as f64)).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        runtime.stack.push(Object::Bool(lhs >= rhs).into());
+                    }
+                    (lhs, rhs) => {
+                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
+                    }
+                }
+            }
             Builtin(instr, args_len) => {
                 let args = create_args_vec(*args_len, runtime);
                 match instr {
