@@ -47,7 +47,6 @@ pub enum Code<'src> {
     Nop,
     Return,
 
-    #[cfg(test)]
     Exit,
 }
 

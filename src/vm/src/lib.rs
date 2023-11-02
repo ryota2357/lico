@@ -536,8 +536,6 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
             Return => {
                 return runtime.stack.pop().ensure_object();
             }
-
-            #[cfg(test)]
             Exit => {
                 return Object::Nil;
             }
@@ -579,107 +577,4 @@ fn create_args_vec<'a>(args_len: u8, runtime: &mut Runtime<'a>) -> Vec<runtime::
     }
     args.reverse();
     args
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn case1() {
-        // var a = 1
-        let mut runtime = Runtime::new();
-        execute(&[LoadInt(1), MakeLocal("a"), Exit], &mut runtime);
-        assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(1)));
-    }
-
-    #[test]
-    fn case2() {
-        // a = 10
-        let mut runtime = Runtime::new();
-        runtime.variable_table.insert("a", Object::Int(1));
-        execute(&[LoadInt(10), SetLocal("a"), Exit], &mut runtime);
-        assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(10)));
-    }
-
-    #[test]
-    #[rustfmt::skip]
-    fn case3() {
-        // var a = 1
-        // vaf f = func() a = a + 10 end
-        // f()
-        let mut runtime = Runtime::new();
-        execute(
-            &[
-                LoadInt(1), MakeLocal("a"),
-
-                BeginFuncCreation,
-                  AddCapture("a"),
-                  LoadLocal("a"), LoadInt(10), Add, SetLocal("a"),
-                  LoadNil, Return,
-                EndFuncCreation,
-                MakeLocal("f"),
-
-                LoadLocal("f"), Call(0), Unload(1),
-                Exit,
-            ],
-            &mut runtime,
-        );
-        assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(11)));
-        match runtime.variable_table.get("f").unwrap() {
-            Object::Function(func) => {
-                assert_eq!(func.id, (2, 0));
-            }
-            _ => panic!("Expected Function, but got {:?}", runtime.variable_table.get("f")),
-        };
-    }
-
-    #[test]
-    #[rustfmt::skip]
-    fn case4() {
-        // var f = func(x)
-        //     return x
-        // end
-        // var ch = func()
-        //    f = func(x)
-        //        return x + 100
-        //    end
-        //    return 10
-        // end
-        // return f(ch()) + f(1)
-        let mut runtime = Runtime::new();
-        runtime.variable_table.insert(
-            "f",
-            Object::new_function(runtime::FunctionObject {
-                id: (0, 0),
-                env: vec![],
-                args: vec!["x"],
-                code: vec![LoadLocal("x"), Return],
-            }),
-        );
-        let res = execute(
-            &[
-                BeginFuncCreation,
-                  AddCapture("f"),
-                  BeginFuncCreation,
-                    AddArgument("x"),
-                    LoadLocal("x"), LoadInt(100), Add,
-                    Return,
-                  EndFuncCreation,
-                  SetLocal("f"),
-                  LoadInt(10), Return,
-                EndFuncCreation,
-                MakeLocal("ch"),
-
-                LoadLocal("f"),
-                  LoadLocal("ch"), Call(0),
-                Call(1),
-                LoadLocal("f"), LoadInt(1), Call(1),
-                Add,
-                Return,
-            ],
-            &mut runtime,
-        );
-        assert_eq!(res, Object::Int(111));
-    }
 }
