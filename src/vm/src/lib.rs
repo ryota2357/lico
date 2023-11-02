@@ -60,6 +60,7 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
                 for _ in 0..*count {
                     array.push(runtime.stack.pop().ensure_object());
                 }
+                array.reverse();
                 runtime.stack.push(array.into());
                 pc += 1;
             }
