@@ -65,17 +65,29 @@ pub enum BinaryOp {
     Or,  // or
 }
 
+macro_rules! infix_binary {
+    ($associativity:expr, $op_parser:expr => $op:ident) => {
+        infix($associativity, $op_parser, |lhs, rhs| Expression::Binary {
+            op: BinaryOp::$op,
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        })
+    };
+}
+
+macro_rules! prefix_unary {
+    ($binding_power:expr, $op_parser:expr => $op:ident $(, [ $($rhs:pat => $to:expr),* $(,)? ] )?) => {
+        prefix($binding_power, $op_parser, |rhs| match rhs {
+            $($($rhs => $to,)*)?
+            _ => Expression::Unary {
+                op: UnaryOp::$op,
+                expr: Box::new(rhs),
+            },
+        })
+    };
+}
+
 /// <Expression> ::= <Call> | <Unary> | <Binary> | <Primitive> | <TableObject> | <ArrayObject> | <FunctionObject> | <Local>
-///
-/// <Unary> and <Binary> operators priority:
-/// (1 is lowest, 8 is highest.)
-/// 7 : `Neg`, `Not`
-/// 6 : `Pow`
-/// 5 : `Mul`, `Div`, `Mod`
-/// 4 : `Add`, `Sub`
-/// 3 : `Less`, `LessEq`, `Greater`, `GreaterEq`, `Eq`, `NotEq`
-/// 2 : `And`
-/// 1 : `Or`
 pub(super) fn expression<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
@@ -105,148 +117,75 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     pratt.delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
                     atom,
                 ));
+
+                let invoke_post_op = expr
+                    .clone()
+                    .separated_by(just(Token::Comma))
+                    .allow_trailing()
+                    .collect()
+                    .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
+                let method_call_post_op = just(Token::Arrow)
+                    .ignore_then(ident())
+                    .then(invoke_post_op.clone());
+                let dot_access_post_op = just(Token::Dot).ignore_then(ident());
+                let index_access_post_op = expr
+                    .clone()
+                    .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket));
+
                 term.pratt((
-                    postfix(
-                        8,
-                        expr.clone()
-                            .separated_by(just(Token::Comma))
-                            .allow_trailing()
-                            .collect()
-                            .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
-                        |lhs, args| Expression::Invoke {
-                            expr: Box::new(lhs),
-                            args,
-                        },
-                    ),
-                    postfix(
-                        8,
-                        just(Token::Arrow).ignore_then(ident()).then(
-                            expr.clone()
-                                .separated_by(just(Token::Comma))
-                                .allow_trailing()
-                                .collect()
-                                .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
-                        ),
-                        |expr, (name, args)| Expression::MethodCall {
-                            expr: Box::new(expr),
-                            name,
-                            args,
-                        },
-                    ),
-                    postfix(
-                        8,
-                        just(Token::Dot).ignore_then(ident()),
-                        |expr, accesser| Expression::DotAccess {
-                            expr: Box::new(expr),
-                            accesser,
-                        },
-                    ),
-                    postfix(
-                        8,
-                        expr.clone()
-                            .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket)),
-                        |expr, accesser| Expression::IndexAccess {
-                            expr: Box::new(expr),
-                            accesser: Box::new(accesser),
-                        },
-                    ),
-                    prefix(7, just(Token::Minus), |rhs| match rhs {
-                        Expression::Primitive(Primitive::Int(x)) => {
-                            Expression::Primitive(Primitive::Int(-x))
-                        }
-                        Expression::Primitive(Primitive::Float(x)) => {
-                            Expression::Primitive(Primitive::Float(-x))
-                        }
-                        _ => Expression::Unary {
-                            op: UnaryOp::Neg,
-                            expr: Box::new(rhs),
-                        },
+                    // 8: Invoke, MethodCall, DotAccess, IndexAccess
+                    postfix(8, invoke_post_op, |lhs, args| Expression::Invoke {
+                        expr: Box::new(lhs),
+                        args,
                     }),
-                    prefix(7, just(Token::Not), |rhs| match rhs {
-                        Expression::Primitive(Primitive::Bool(x)) => {
-                            Expression::Primitive(Primitive::Bool(!x))
-                        }
-                        _ => Expression::Unary {
-                            op: UnaryOp::Not,
-                            expr: Box::new(rhs),
-                        },
+                    postfix(8, method_call_post_op, |expr, (name, args)| Expression::MethodCall {
+                        expr: Box::new(expr),
+                        name,
+                        args,
                     }),
-                    infix(right(6), just(Token::Pow), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Pow,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
+                    postfix(8, dot_access_post_op, |expr, accesser| Expression::DotAccess {
+                        expr: Box::new(expr),
+                        accesser,
                     }),
-                    infix(left(5), just(Token::Mul), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Mul,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
+                    postfix(8, index_access_post_op, |expr, accesser| Expression::IndexAccess {
+                        expr: Box::new(expr),
+                        accesser: Box::new(accesser),
                     }),
-                    infix(left(5), just(Token::Div), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Div,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(5), just(Token::Mod), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Mod,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(4), just(Token::Pluss), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Add,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(4), just(Token::Minus), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Sub,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(3), just(Token::Less), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Less,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(3), just(Token::LessEq), |lhs, rhs| {
-                        Expression::Binary {
-                            op: BinaryOp::LessEq,
-                            lhs: Box::new(lhs),
-                            rhs: Box::new(rhs),
-                        }
-                    }),
-                    infix(left(3), just(Token::Greater), |lhs, rhs| {
-                        Expression::Binary {
-                            op: BinaryOp::Greater,
-                            lhs: Box::new(lhs),
-                            rhs: Box::new(rhs),
-                        }
-                    }),
-                    infix(left(3), just(Token::GreaterEq), |lhs, rhs| {
-                        Expression::Binary {
-                            op: BinaryOp::GreaterEq,
-                            lhs: Box::new(lhs),
-                            rhs: Box::new(rhs),
-                        }
-                    }),
-                    infix(left(3), just(Token::Eq), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Eq,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(3), just(Token::NotEq), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::NotEq,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(2), just(Token::And), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::And,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
-                    infix(left(1), just(Token::Or), |lhs, rhs| Expression::Binary {
-                        op: BinaryOp::Or,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    }),
+
+                    // 7: Unary (-, not)
+                    prefix_unary!(7, just(Token::Minus) => Neg, [
+                        Expression::Primitive(Primitive::Int(x)) => Expression::Primitive(Primitive::Int(-x)),
+                        Expression::Primitive(Primitive::Float(x)) => Expression::Primitive(Primitive::Float(-x))
+                    ]),
+                    prefix_unary!(7, just(Token::Not) => Not),
+
+                    // 6: Exponential (**)
+                    infix_binary!(right(6), just(Token::Pow) => Pow),
+
+                    // 5: Multiplicative (*, /, %)
+                    infix_binary!(left(5), just(Token::Mul) => Mul),
+                    infix_binary!(left(5), just(Token::Div) => Div),
+                    infix_binary!(left(5), just(Token::Mod) => Mod),
+
+                    // 4: Additive (+, -)
+                    infix_binary!(left(4), just(Token::Pluss) => Add),
+                    infix_binary!(left(4), just(Token::Minus) => Sub),
+
+                    // 3: Relational (<, <=, >, >=)
+                    infix_binary!(left(3), just(Token::Less)      => Less),
+                    infix_binary!(left(3), just(Token::LessEq)    => LessEq),
+                    infix_binary!(left(3), just(Token::Greater)   => Greater),
+                    infix_binary!(left(3), just(Token::GreaterEq) => GreaterEq),
+
+                    // 2: Equality (==, !=)
+                    infix_binary!(left(2), just(Token::Eq)    => Eq),
+                    infix_binary!(left(2), just(Token::NotEq) => NotEq),
+
+                    // 1; Logical-AND (and)
+                    infix_binary!(left(1), just(Token::And) => And),
+
+                    // 0: Logical-OR (or)
+                    infix_binary!(left(0), just(Token::Or) => Or),
                 ))
             })
         };
