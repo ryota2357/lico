@@ -18,6 +18,106 @@ fn do_expr_test(src: &str, expression: Expression<'_>) {
 }
 
 #[test]
+fn function_object() {
+    do_expr_test(
+        "func() end",
+        Expression::FunctionObject(FunctionObject {
+            args: vec![],
+            body: Chunk {
+                capture: vec![],
+                body: vec![],
+            },
+        }),
+    );
+    do_expr_test(
+        "func(a, b) return c end",
+        Expression::FunctionObject(FunctionObject {
+            args: vec![
+                Ident {
+                    str: "a",
+                    span: (7..8).into(),
+                },
+                Ident {
+                    str: "b",
+                    span: (10..11).into(),
+                },
+            ],
+            body: Chunk {
+                capture: vec!["c"],
+                body: vec![Statement::Control(ControlStatement::Return {
+                    value: Some(Expression::Ident(Ident {
+                        str: "c",
+                        span: (20..21).into(),
+                    })),
+                })],
+            },
+        }),
+    )
+}
+
+#[test]
+fn array_object() {
+    do_expr_test(
+        "[]",
+        Expression::ArrayObject(ArrayObject { elements: vec![] }),
+    );
+    do_expr_test(
+        "[1, [true, 'a'], {}]",
+        Expression::ArrayObject(ArrayObject {
+            elements: vec![
+                Expression::Primitive(Primitive::Int(1)),
+                Expression::ArrayObject(ArrayObject {
+                    elements: vec![
+                        Expression::Primitive(Primitive::Bool(true)),
+                        Expression::Primitive(Primitive::String("a")),
+                    ],
+                }),
+                Expression::TableObject(TableObject {
+                    keys: vec![],
+                    values: vec![],
+                }),
+            ],
+        }),
+    )
+}
+
+#[test]
+fn table_object() {
+    do_expr_test(
+        "{}",
+        Expression::TableObject(TableObject {
+            keys: vec![],
+            values: vec![],
+        }),
+    );
+    do_expr_test(
+        "{ a = 1, b = {a=1}, }",
+        Expression::TableObject(TableObject {
+            keys: vec![
+                Ident {
+                    str: "a",
+                    span: (4..5).into(),
+                },
+                Ident {
+                    str: "b",
+                    span: (11..12).into(),
+                },
+            ],
+            values: vec![
+                Expression::Primitive(Primitive::Int(1)),
+                Expression::TableObject(TableObject {
+                    keys: vec![Ident {
+                        str: "a",
+                        span: (16..17).into(),
+                    }],
+                    values: vec![Expression::Primitive(Primitive::Int(1))],
+                }),
+            ],
+        }),
+    );
+}
+
+#[test]
 fn delimited_call() {
     do_expr_test(
         "(f())",
