@@ -13,16 +13,14 @@ pub(super) fn function_object<'tokens, 'src: 'tokens>(
         + 'tokens,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, FunctionObject<'src>, ParserError<'tokens, 'src>>
        + Clone {
+    let args = ident()
+        .separated_by(just(Token::Comma))
+        .allow_trailing()
+        .collect();
     just(Token::Func)
-        .ignore_then(just(Token::OpenParen))
-        .ignore_then(
-            ident()
-                .separated_by(just(Token::Comma))
-                .allow_trailing()
-                .collect(),
-        )
-        .then_ignore(just(Token::CloseParen))
+        .ignore_then(args.delimited_by(just(Token::OpenParen), just(Token::CloseParen)))
         .then(block)
+        .then_ignore(just(Token::End))
         .map(|(args, block)| FunctionObject {
             args,
             body: block.into(),

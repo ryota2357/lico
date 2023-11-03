@@ -12,14 +12,12 @@ pub(super) fn array_object<'tokens, 'src: 'tokens>(
         + 'tokens,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, ArrayObject<'src>, ParserError<'tokens, 'src>>
        + Clone {
-    just(Token::OpenBracket)
-        .ignore_then(
-            expression
-                .separated_by(just(Token::Comma))
-                .allow_trailing()
-                .collect(),
-        )
-        .then_ignore(just(Token::CloseBracket))
+    let elements = expression
+        .separated_by(just(Token::Comma))
+        .allow_trailing()
+        .collect();
+    elements
+        .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket))
         .map(|values| ArrayObject { elements: values })
 }
 
