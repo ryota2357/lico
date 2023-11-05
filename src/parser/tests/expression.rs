@@ -24,7 +24,7 @@ fn function_object() {
         Expression::FunctionObject(FunctionObject {
             args: vec![],
             body: Chunk {
-                capture: vec![],
+                captures: vec![],
                 body: vec![],
             },
         }),
@@ -43,7 +43,7 @@ fn function_object() {
                 },
             ],
             body: Chunk {
-                capture: vec!["c"],
+                captures: vec!["c"],
                 body: vec![Statement::Control(ControlStatement::Return {
                     value: Some(Expression::Ident(Ident {
                         str: "c",

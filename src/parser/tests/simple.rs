@@ -14,7 +14,7 @@ fn define_variable_with_litera() {
     do_chunk_test(
         "var x = 17",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Variable(VariableStatement::Var {
                 name: Ident {
                     str: "x",
@@ -31,7 +31,7 @@ fn define_variable_with_func_call() {
     do_chunk_test(
         "var x = f()",
         Chunk {
-            capture: vec!["f"],
+            captures: vec!["f"],
             body: vec![Statement::Variable(VariableStatement::Var {
                 name: Ident {
                     str: "x",
@@ -54,7 +54,7 @@ fn assign_variable_with_literal() {
     do_chunk_test(
         "x = 1.23",
         Chunk {
-            capture: vec!["x"],
+            captures: vec!["x"],
             body: vec![Statement::Variable(VariableStatement::Assign {
                 name: Ident {
                     str: "x",
@@ -72,7 +72,7 @@ fn define_function_without_args_and_body() {
     do_chunk_test(
         "func f() end",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Variable(VariableStatement::Func {
                 name: Ident {
                     str: "f",
@@ -80,7 +80,7 @@ fn define_function_without_args_and_body() {
                 },
                 args: vec![],
                 body: Chunk {
-                    capture: vec![],
+                    captures: vec![],
                     body: vec![],
                 },
             })],
@@ -93,7 +93,7 @@ fn define_function_with_args_and_body() {
     do_chunk_test(
         "func f(a, b) return 'a' end",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Variable(VariableStatement::Func {
                 name: Ident {
                     str: "f",
@@ -110,7 +110,7 @@ fn define_function_with_args_and_body() {
                     },
                 ],
                 body: Chunk {
-                    capture: vec![],
+                    captures: vec![],
                     body: vec![Statement::Control(ControlStatement::Return {
                         value: Some(Expression::Primitive(Primitive::String("a".to_string()))),
                     })],
@@ -125,7 +125,7 @@ fn define_table_field_function() {
     do_chunk_test(
         "func t.a.b() end",
         Chunk {
-            capture: vec!["t"],
+            captures: vec!["t"],
             body: vec![Statement::Variable(VariableStatement::FieldFunc {
                 table: Ident {
                     str: "t",
@@ -143,7 +143,7 @@ fn define_table_field_function() {
                 ],
                 args: vec![],
                 body: Chunk {
-                    capture: vec![],
+                    captures: vec![],
                     body: vec![],
                 },
             })],
@@ -158,7 +158,7 @@ fn call_function_without_args() {
     do_chunk_test(
         "f()",
         Chunk {
-            capture: vec!["f"],
+            captures: vec!["f"],
             body: vec![Statement::Call(CallStatement::Invoke {
                 expr: Expression::Ident(Ident {
                     str: "f",
@@ -175,7 +175,7 @@ fn call_function_with_args() {
     do_chunk_test(
         "f(1, 'a', true)",
         Chunk {
-            capture: vec!["f"],
+            captures: vec!["f"],
             body: vec![Statement::Call(CallStatement::Invoke {
                 expr: Expression::Ident(Ident {
                     str: "f",
@@ -196,7 +196,7 @@ fn method_call() {
     do_chunk_test(
         "a->b('a')",
         Chunk {
-            capture: vec!["a"],
+            captures: vec!["a"],
             body: vec![Statement::Call(CallStatement::MethodCall {
                 expr: Expression::Ident(Ident {
                     str: "a",
@@ -217,7 +217,7 @@ fn method_call_obj() {
     do_chunk_test(
         "[1, 2]->len()",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Call(CallStatement::MethodCall {
                 expr: Expression::ArrayObject(ArrayObject {
                     elements: vec![
@@ -242,7 +242,7 @@ fn if_empty() {
     do_chunk_test(
         "if true then end",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Control(ControlStatement::If {
                 cond: Expression::Primitive(Primitive::Bool(true)),
                 body: Block { body: vec![] },
@@ -258,7 +258,7 @@ fn if_elif_else() {
     do_chunk_test(
         "if true then return 1 elif false then return 2 else return 3 end",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Control(ControlStatement::If {
                 cond: Expression::Primitive(Primitive::Bool(true)),
                 body: Block {
@@ -289,7 +289,7 @@ fn for_with_no_step_no_body() {
     do_chunk_test(
         "for i = 1, 10 do end",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Control(ControlStatement::For {
                 value: Ident {
                     str: "i",
@@ -309,7 +309,7 @@ fn for_with_nuinus_step() {
     do_chunk_test(
         "for i = 10, 1, -1 do a = a + i end",
         Chunk {
-            capture: vec!["a"],
+            captures: vec!["a"],
             body: vec![Statement::Control(ControlStatement::For {
                 value: Ident {
                     str: "i",
@@ -348,7 +348,7 @@ fn for_in() {
     do_chunk_test(
         "for i in [1, 2, 3] do end",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Control(ControlStatement::ForIn {
                 value: Ident {
                     str: "i",
@@ -372,7 +372,7 @@ fn while_() {
     do_chunk_test(
         "while ok() do break end",
         Chunk {
-            capture: vec!["ok"],
+            captures: vec!["ok"],
             body: vec![Statement::Control(ControlStatement::While {
                 cond: Expression::Invoke {
                     expr: Box::new(Expression::Ident(Ident {
@@ -394,7 +394,7 @@ fn do_with_no_body() {
     do_chunk_test(
         "do end",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Control(ControlStatement::Do {
                 body: Block { body: vec![] },
             })],
@@ -407,7 +407,7 @@ fn return_none() {
     do_chunk_test(
         "return",
         Chunk {
-            capture: vec![],
+            captures: vec![],
             body: vec![Statement::Control(ControlStatement::Return { value: None })],
         },
     );

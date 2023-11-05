@@ -7,14 +7,14 @@ pub struct Block<'src> {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Chunk<'src> {
-    pub capture: Vec<&'src str>,
+    pub captures: Vec<&'src str>,
     pub body: Vec<Statement<'src>>,
 }
 
 impl<'a> From<Block<'a>> for Chunk<'a> {
     fn from(value: Block<'a>) -> Self {
         Self {
-            capture: vec![],
+            captures: vec![],
             body: value.body,
         }
     }
@@ -52,6 +52,6 @@ impl<'a> TreeWalker<'a> for Chunk<'a> {
         for statement in self.body.iter_mut() {
             statement.analyze(tracker);
         }
-        self.capture = tracker.end_current_capture_section();
+        self.captures = tracker.end_current_capture_section();
     }
 }
