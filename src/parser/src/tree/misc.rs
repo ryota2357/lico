@@ -7,15 +7,15 @@ use super::*;
 /// <Bool>      ::= __bool
 /// <Nil>       ::= __nil
 #[derive(Clone, Debug, PartialEq)]
-pub enum Primitive<'src> {
+pub enum Primitive {
     Int(i64),
     Float(f64),
-    String(&'src str),
+    String(String),
     Bool(bool),
     Nil,
 }
 pub(super) fn primitive<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Primitive<'src>, ParserError<'tokens, 'src>> + Clone
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Primitive, ParserError<'tokens, 'src>> + Clone
 {
     select! {
         Token::Int(x) => Primitive::Int(x),

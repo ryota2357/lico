@@ -112,7 +112,7 @@ fn define_function_with_args_and_body() {
                 body: Chunk {
                     capture: vec![],
                     body: vec![Statement::Control(ControlStatement::Return {
-                        value: Some(Expression::Primitive(Primitive::String("a"))),
+                        value: Some(Expression::Primitive(Primitive::String("a".to_string()))),
                     })],
                 },
             })],
@@ -183,7 +183,7 @@ fn call_function_with_args() {
                 }),
                 args: vec![
                     Expression::Primitive(Primitive::Int(1)),
-                    Expression::Primitive(Primitive::String("a")),
+                    Expression::Primitive(Primitive::String("a".to_string())),
                     Expression::Primitive(Primitive::Bool(true)),
                 ],
             })],
@@ -206,7 +206,7 @@ fn method_call() {
                     str: "b",
                     span: (3..4).into(),
                 },
-                args: vec![Expression::Primitive(Primitive::String("a"))],
+                args: vec![Expression::Primitive(Primitive::String("a".to_string()))],
             })],
         },
     );

@@ -199,7 +199,7 @@ fn multiple_call_with_method() {
                 str: "c",
                 span: (16..17).into(),
             },
-            args: vec![Expression::Primitive(Primitive::String("3"))],
+            args: vec![Expression::Primitive(Primitive::String("3".to_string()))],
         }),
     );
 }

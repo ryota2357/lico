@@ -69,7 +69,7 @@ fn array_object() {
                 Expression::ArrayObject(ArrayObject {
                     elements: vec![
                         Expression::Primitive(Primitive::Bool(true)),
-                        Expression::Primitive(Primitive::String("a")),
+                        Expression::Primitive(Primitive::String("a".to_string())),
                     ],
                 }),
                 Expression::TableObject(TableObject {
@@ -170,7 +170,7 @@ fn delimited_primitive() {
     do_expr_test("(1)", Expression::Primitive(Primitive::Int(1)));
     do_expr_test(
         "((('abc')))",
-        Expression::Primitive(Primitive::String("abc")),
+        Expression::Primitive(Primitive::String("abc".to_string())),
     );
 }
 
@@ -219,7 +219,7 @@ fn delimited_local_access() {
                 str: "a",
                 span: (3..4).into(),
             })),
-            accesser: Box::new(Expression::Primitive(Primitive::String("b"))),
+            accesser: Box::new(Expression::Primitive(Primitive::String("b".to_string()))),
         },
     );
 }
@@ -404,7 +404,7 @@ fn multiple_index_access() {
                     str: "a",
                     span: (2..3).into(),
                 })),
-                accesser: Box::new(Expression::Primitive(Primitive::String("b"))),
+                accesser: Box::new(Expression::Primitive(Primitive::String("b".to_string()))),
             }),
             accesser: Box::new(Expression::Primitive(Primitive::Int(1))),
         },

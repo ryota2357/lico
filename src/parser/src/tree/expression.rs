@@ -13,7 +13,7 @@ pub enum Expression<'src> {
         rhs: Box<Expression<'src>>,
     },
     Ident(Ident<'src>),
-    Primitive(Primitive<'src>),
+    Primitive(Primitive),
     TableObject(TableObject<'src>),
     ArrayObject(ArrayObject<'src>),
     FunctionObject(FunctionObject<'src>),
