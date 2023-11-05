@@ -27,6 +27,10 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
                 pc += 1;
             }
             LoadString(x) => {
+                runtime.stack.push(Object::String(x.clone()).into());
+                pc += 1;
+            }
+            LoadStringAsRef(x) => {
                 runtime.stack.push(Object::String(x.to_string()).into());
                 pc += 1;
             }

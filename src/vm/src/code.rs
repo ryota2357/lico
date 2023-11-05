@@ -4,6 +4,7 @@ pub enum Code<'src> {
     LoadFloat(f64),
     LoadBool(bool),
     LoadString(String),
+    LoadStringAsRef(&'src str),
     LoadNil,
     LoadLocal(&'src str),
     Unload(usize),

@@ -6,10 +6,11 @@ use vm::runtime::{Object, Runtime};
 fn load() {
     let mut runtime = Runtime::new();
     vm::execute(&[
-        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadNil,
+        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadStringAsRef("c"), LoadNil,
         Exit,
     ], &mut runtime);
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Nil);
+    assert_eq!(runtime.stack.pop().ensure_object(), Object::String("c".to_string()));
     assert_eq!(runtime.stack.pop().ensure_object(), Object::String("a b".to_string()));
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Bool(true));
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Float(42.0));
