@@ -72,10 +72,7 @@ fn array_object() {
                         Expression::Primitive(Primitive::String("a".to_string())),
                     ],
                 }),
-                Expression::TableObject(TableObject {
-                    keys: vec![],
-                    values: vec![],
-                }),
+                Expression::TableObject(TableObject { key_values: vec![] }),
             ],
         }),
     )
@@ -85,33 +82,34 @@ fn array_object() {
 fn table_object() {
     do_expr_test(
         "{}",
-        Expression::TableObject(TableObject {
-            keys: vec![],
-            values: vec![],
-        }),
+        Expression::TableObject(TableObject { key_values: vec![] }),
     );
     do_expr_test(
         "{ a = 1, b = {a=1}, }",
         Expression::TableObject(TableObject {
-            keys: vec![
-                Ident {
-                    str: "a",
-                    span: (4..5).into(),
-                },
-                Ident {
-                    str: "b",
-                    span: (11..12).into(),
-                },
-            ],
-            values: vec![
-                Expression::Primitive(Primitive::Int(1)),
-                Expression::TableObject(TableObject {
-                    keys: vec![Ident {
+            key_values: vec![
+                (
+                    Expression::Ident(Ident {
                         str: "a",
-                        span: (16..17).into(),
-                    }],
-                    values: vec![Expression::Primitive(Primitive::Int(1))],
-                }),
+                        span: (4..5).into(),
+                    }),
+                    Expression::Primitive(Primitive::Int(1)),
+                ),
+                (
+                    Expression::Ident(Ident {
+                        str: "b",
+                        span: (11..12).into(),
+                    }),
+                    Expression::TableObject(TableObject {
+                        key_values: vec![(
+                            Expression::Ident(Ident {
+                                str: "a",
+                                span: (16..17).into(),
+                            }),
+                            Expression::Primitive(Primitive::Int(1)),
+                        )],
+                    }),
+                ),
             ],
         }),
     );
