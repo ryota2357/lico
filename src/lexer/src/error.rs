@@ -10,6 +10,7 @@ pub struct Error {
 pub enum ErrorKind {
     InvalidCharacter(char),
     ExpectedFound(Vec<char>, Option<char>),
+    InvalidEscapeSequence(Vec<char>),
 }
 
 impl Error {
@@ -23,6 +24,13 @@ impl Error {
     pub fn expected_found(expected: Vec<char>, found: Option<char>, span: Span) -> Self {
         Self {
             kind: ErrorKind::ExpectedFound(expected, found),
+            span,
+        }
+    }
+
+    pub fn invalid_escape_sequence(escape: impl Into<Vec<char>>, span: Span) -> Self {
+        Self {
+            kind: ErrorKind::InvalidEscapeSequence(escape.into()),
             span,
         }
     }

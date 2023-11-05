@@ -9,6 +9,13 @@ fn do_test(code: &str, expected: Vec<Token>) {
     assert_eq!(actual, expected);
 }
 
+fn do_string_test(string: &str, expected: String) {
+    let string1 = format!(r#""{}""#, string);
+    let string2 = format!(r#"'{}'"#, string);
+    do_test(&string1, vec![Token::String(expected.clone())]);
+    do_test(&string2, vec![Token::String(expected)]);
+}
+
 #[test]
 fn int() {
     do_test("0", vec![Token::Int(0)]);
@@ -30,11 +37,29 @@ fn float() {
 
 #[test]
 fn string() {
-    do_test(r#""abc de g""#, vec![Token::String("abc de g")]);
-    do_test(r#""""#, vec![Token::String("")]);
+    do_string_test("abc de f", String::from("abc de f"));
+    do_string_test("", String::from(""));
+    do_string_test("あいうえお", String::from("あいうえお"));
 
-    do_test("'abc de g'", vec![Token::String("abc de g")]);
-    do_test("''", vec![Token::String("")]);
+    do_test(r#""'""#, vec![Token::String("'".to_string())]);
+    do_test(r#"'"'"#, vec![Token::String("\"".to_string())]);
+}
+
+#[test]
+fn string_escape() {
+    do_string_test(r"\x41", String::from("A"));
+    do_string_test(r"\x7e", String::from("~"));
+    do_string_test(r"\x7F", String::from("\x7f"));
+    do_string_test(r"\n", String::from("\n"));
+    do_string_test(r"\r", String::from("\r"));
+    do_string_test(r"\t", String::from("\t"));
+    do_string_test(r"\\", String::from("\\"));
+    do_string_test(r"\0", String::from("\0"));
+    do_string_test(r"\u{3042}", String::from("あ"));
+    do_string_test(r"\u{1f600}", String::from("😀"));
+
+    do_test(r"'\''", vec![Token::String("'".to_string())]);
+    do_test(r#""\"""#, vec![Token::String("\"".to_string())]);
 }
 
 #[test]

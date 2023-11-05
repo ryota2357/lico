@@ -1,9 +1,9 @@
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Token<'src> {
     // literals
     Int(i64),
     Float(f64),
-    String(&'src str),
+    String(String),
     Bool(bool),
     Nil,
 

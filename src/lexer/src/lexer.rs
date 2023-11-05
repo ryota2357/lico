@@ -26,30 +26,73 @@ pub(super) fn lexer<'src>(
         .map(Token::Attribute);
 
     let string = {
-        // TODO: Support escape sequences
-        // let escape = just('\\').ignore_then(
-        //     just('\\')
-        //         .or(just('/'))
-        //         .or(just('"'))
-        //         .or(just('\''))
-        //         .or(just('b').to('\x08'))
-        //         .or(just('f').to('\x0C'))
-        //         .or(just('n').to('\n'))
-        //         .or(just('r').to('\r'))
-        //         .or(just('t').to('\t')),
-        // );
-        // let str1 = just('"')
-        //     .ignore_then(none_of("\\\"").or(escape).repeated().slice())
-        //     .then_ignore(just('"'));
-        // let str2 = just('\'')
-        //     .ignore_then(none_of("\\\'").or(escape).repeated().slice())
-        //     .then_ignore(just('\''));
+        // TODO: Improve error handling in \x and \u
+        let escape = just('\\').ignore_then(choice((
+            just('\\'),
+            just('n').to('\n'),
+            just('r').to('\r'),
+            just('t').to('\t'),
+            just('0').to('\0'),
+            just('x')
+                .ignore_then(one_of("01234567"))
+                .then(one_of("0123456789abcdefABCDEF"))
+                .map(|(o, x): (char, char)| {
+                    let o = o.to_digit(16).unwrap();
+                    let x = x.to_digit(16).unwrap();
+                    std::char::from_u32(o * 16 + x).unwrap()
+                }),
+            just('u')
+                .ignore_then(just('{'))
+                .ignore_then(
+                    one_of("0123456789abcdefABCDEF")
+                        .repeated()
+                        .at_least(1)
+                        .at_most(6)
+                        .to_slice(),
+                )
+                .then_ignore(just('}'))
+                .validate(|digits, extra, emitter| {
+                    let num = u32::from_str_radix(digits, 16).unwrap();
+                    // NOTE: If the number is greater than 10FFFF, it is invalid.
+                    std::char::from_u32(num).unwrap_or_else(|| {
+                        let span = {
+                            let s: Span = extra.span();
+                            (s.start - 1..s.end).into() //  -1 means the position of `\`
+                        };
+                        emitter.emit(Error::invalid_escape_sequence(
+                            format!("\\u{{{}}}", digits).chars().collect::<Vec<_>>(),
+                            span,
+                        ));
+                        ' '
+                    })
+                }),
+            any().validate(|c, extra, emitter| {
+                let span = {
+                    let s: Span = extra.span();
+                    (s.start - 1..s.end).into() //  -1 means the position of `\`
+                };
+                emitter.emit(Error::invalid_escape_sequence(['\\', c], span));
+                c
+            }),
+        )));
 
         let str1 = just('"')
-            .ignore_then(none_of("\"").repeated().to_slice())
+            .ignore_then(
+                none_of(r#"\""#)
+                    .or(just(r#"\""#).to('"'))
+                    .or(escape)
+                    .repeated()
+                    .collect(),
+            )
             .then_ignore(just('"'));
         let str2 = just('\'')
-            .ignore_then(none_of("'").repeated().to_slice())
+            .ignore_then(
+                none_of(r"\'")
+                    .or(just(r"\'").to('\''))
+                    .or(escape)
+                    .repeated()
+                    .collect(),
+            )
             .then_ignore(just('\''));
 
         str1.or(str2).map(Token::String)

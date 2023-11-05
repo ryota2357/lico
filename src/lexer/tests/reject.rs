@@ -18,3 +18,20 @@ fn invalid_attribute() {
         vec![Error::invalid_character('@', (0..1).into())],
     );
 }
+
+#[test]
+fn invalid_string_escape() {
+    do_test(
+        r#""\a""#,
+        vec![Token::String("a".to_string())],
+        vec![Error::invalid_escape_sequence(['\\', 'a'], (1..3).into())],
+    );
+    do_test(
+        r#""\u{110000}""#,
+        vec![Token::String(" ".to_string())],
+        vec![Error::invalid_escape_sequence(
+            ['\\', 'u', '{', '1', '1', '0', '0', '0', '0', '}'],
+            (1..11).into(),
+        )],
+    );
+}
