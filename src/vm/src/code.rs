@@ -3,7 +3,7 @@ pub enum Code<'src> {
     LoadInt(i64),
     LoadFloat(f64),
     LoadBool(bool),
-    LoadString(&'src str),
+    LoadString(String),
     LoadNil,
     LoadLocal(&'src str),
     Unload(usize),

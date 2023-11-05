@@ -6,7 +6,7 @@ use vm::runtime::{Object, Runtime};
 fn load() {
     let mut runtime = Runtime::new();
     vm::execute(&[
-        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b"), LoadNil,
+        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadNil,
         Exit,
     ], &mut runtime);
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Nil);
@@ -71,7 +71,12 @@ fn make_named() {
 fn make_expr_named() {
     let mut runtime = Runtime::new();
     vm::execute(
-        &[LoadInt(1), LoadString("Key"), MakeExprNamed, Exit],
+        &[
+            LoadInt(1),
+            LoadString("Key".to_string()),
+            MakeExprNamed,
+            Exit,
+        ],
         &mut runtime,
     );
     assert_eq!(
