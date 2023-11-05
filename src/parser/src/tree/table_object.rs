@@ -1,4 +1,5 @@
 use super::*;
+use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableObject<'src> {
@@ -25,6 +26,14 @@ pub(super) fn table_object<'tokens, 'src: 'tokens>(
     elements
         .delimited_by(just(Token::OpenBrace), just(Token::CloseBrace))
         .map(|key_values| TableObject { key_values })
+}
+
+impl<'a> Deref for TableObject<'a> {
+    type Target = Vec<(Expression<'a>, Expression<'a>)>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.key_values
+    }
 }
 
 impl<'a> TreeWalker<'a> for TableObject<'a> {

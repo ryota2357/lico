@@ -1,4 +1,5 @@
 use super::*;
+use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ArrayObject<'src> {
@@ -19,6 +20,14 @@ pub(super) fn array_object<'tokens, 'src: 'tokens>(
     elements
         .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket))
         .map(|values| ArrayObject { elements: values })
+}
+
+impl<'a> Deref for ArrayObject<'a> {
+    type Target = Vec<Expression<'a>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.elements
+    }
 }
 
 impl<'a> TreeWalker<'a> for ArrayObject<'a> {

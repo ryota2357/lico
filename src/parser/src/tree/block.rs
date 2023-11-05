@@ -1,4 +1,5 @@
 use super::*;
+use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block<'src> {
@@ -31,6 +32,22 @@ pub(super) fn block<'tokens, 'src: 'tokens>(
             .collect()
             .map(|body| Block { body })
     })
+}
+
+impl<'a> Deref for Block<'a> {
+    type Target = Vec<Statement<'a>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.body
+    }
+}
+
+impl<'a> Deref for Chunk<'a> {
+    type Target = Vec<Statement<'a>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.body
+    }
 }
 
 impl<'a> TreeWalker<'a> for Block<'a> {
