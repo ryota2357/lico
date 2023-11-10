@@ -18,11 +18,11 @@ fn load() {
 }
 
 #[test]
-#[should_panic]
+#[should_panic(expected = "[INTERNAL] Stack is empty.")]
 fn unload() {
     let mut runtime = Runtime::new();
     runtime.stack.push(Object::Int(0).into());
-    vm::execute(&[Unload(1)], &mut runtime);
+    vm::execute(&[Unload(1), Exit], &mut runtime);
     runtime.stack.pop(); // panic
 }
 
