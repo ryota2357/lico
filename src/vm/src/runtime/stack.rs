@@ -10,12 +10,12 @@ impl<'a> Stack<'a> {
         Self { vec: Vec::new() }
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn push(&mut self, value: StackValue<'a>) {
         self.vec.push(value);
     }
 
-    #[inline(always)]
+    #[inline]
     pub fn pop(&mut self) -> StackValue<'a> {
         self.vec.pop().expect("[INTERNAL] Stack is empty.")
     }
