@@ -11,18 +11,20 @@ mod global;
 pub use global::*;
 
 #[derive(Default, Debug, PartialEq)]
-pub struct Runtime<'a> {
+pub struct Runtime<'a, Writer: std::io::Write> {
     pub stack: Stack<'a>,
     pub variable_table: VariableTable<'a>,
     pub global: Global,
+    pub writer: Writer,
 }
 
-impl Runtime<'_> {
-    pub fn new() -> Self {
+impl<W: std::io::Write> Runtime<'_, W> {
+    pub fn new(writer: W) -> Self {
         Self {
             stack: Stack::new(),
             variable_table: VariableTable::new(),
             global: Global::new(),
+            writer,
         }
     }
 

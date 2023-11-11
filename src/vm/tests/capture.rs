@@ -3,7 +3,7 @@ use vm::runtime::{Object, Runtime};
 
 #[test]
 fn case1() {
-    let mut runtime = Runtime::new();
+    let mut runtime = Runtime::new(vec![]);
 
     #[rustfmt::skip]
     vm::execute(
@@ -40,7 +40,7 @@ fn case1() {
 
 #[test]
 fn case2() {
-    let mut runtime = Runtime::new();
+    let mut runtime = Runtime::new(vec![]);
 
     // var f = func(x) return x end
     runtime.variable_table.insert(
@@ -88,7 +88,7 @@ fn case2() {
 
 #[test]
 fn case3() {
-    let mut runtime = Runtime::new();
+    let mut runtime = Runtime::new(vec![]);
 
     // var a = 7
     runtime.variable_table.insert("a", Object::Int(7));

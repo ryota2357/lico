@@ -54,5 +54,6 @@ pub enum Code<'src> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinInstr {
-    Print,
+    Write,
+    Flush,
 }

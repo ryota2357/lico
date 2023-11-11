@@ -5,7 +5,10 @@ use code::{BuiltinInstr, Code, Code::*};
 use runtime::{Object, Runtime, StackValue, TableObject};
 use std::{collections::HashMap, rc::Rc};
 
-pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object<'src> {
+pub fn execute<'src, W: std::io::Write>(
+    code: &[Code<'src>],
+    runtime: &mut Runtime<'src, W>,
+) -> Object<'src> {
     let mut pc = 0;
 
     loop {
@@ -479,11 +482,14 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
             Builtin(instr, args_len) => {
                 let args = create_args_vec(*args_len, runtime);
                 match instr {
-                    BuiltinInstr::Print => {
+                    BuiltinInstr::Write => {
                         if args.len() != 1 {
                             panic!("Expected 1 argument, but got {} arguments.", args.len());
                         }
-                        println!("{}", args[0]);
+                        write!(runtime.writer, "{}", args[0]).unwrap();
+                    }
+                    BuiltinInstr::Flush => {
+                        runtime.writer.flush().unwrap();
                     }
                 }
                 pc += 1;
@@ -554,10 +560,10 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
     }
 }
 
-fn execute_func<'a>(
+fn execute_func<'a, W: std::io::Write>(
     func: &runtime::FunctionObject<'a>,
     args: Vec<runtime::Object<'a>>,
-    runtime: &mut Runtime<'a>,
+    runtime: &mut Runtime<'a, W>,
 ) {
     if func.args.len() != args.len() {
         panic!(
@@ -581,7 +587,10 @@ fn execute_func<'a>(
     runtime.variable_table.pop_scope();
 }
 
-fn create_args_vec<'a>(args_len: u8, runtime: &mut Runtime<'a>) -> Vec<runtime::Object<'a>> {
+fn create_args_vec<'a, W: std::io::Write>(
+    args_len: u8,
+    runtime: &mut Runtime<'a, W>,
+) -> Vec<runtime::Object<'a>> {
     let mut args = Vec::with_capacity(args_len as usize);
     for _ in 0..args_len {
         args.push(runtime.stack.pop().ensure_object());
