@@ -491,6 +491,14 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
             BeginFuncCreation => {
                 let id = (pc, 0u8);
                 pc += 1;
+                let args = {
+                    let mut args = Vec::new();
+                    while let AddArgument(name) = code[pc] {
+                        args.push(name);
+                        pc += 1;
+                    }
+                    args
+                };
                 let env = {
                     let mut env = Vec::new();
                     while let AddCapture(name) = code[pc] {
@@ -501,14 +509,6 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
                         pc += 1;
                     }
                     env
-                };
-                let args = {
-                    let mut args = Vec::new();
-                    while let AddArgument(name) = code[pc] {
-                        args.push(name);
-                        pc += 1;
-                    }
-                    args
                 };
                 let code = {
                     let mut func_code = Vec::<Code>::new();

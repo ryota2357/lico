@@ -41,6 +41,8 @@ fn case1() {
 #[test]
 fn case2() {
     let mut runtime = Runtime::new();
+
+    // var f = func(x) return x end
     runtime.variable_table.insert(
         "f",
         Object::new_function(vm::runtime::FunctionObject {
@@ -53,7 +55,6 @@ fn case2() {
 
     #[rustfmt::skip]
     let res = vm::execute(
-        // var f = func(x) return x end
         // var ch = func()
         //    f = func(x) return x + 100 end
         //    return 10
@@ -81,5 +82,33 @@ fn case2() {
         ],
         &mut runtime,
     );
+
     assert_eq!(res, Object::Int(111));
+}
+
+#[test]
+fn case3() {
+    let mut runtime = Runtime::new();
+
+    // var a = 7
+    runtime.variable_table.insert("a", Object::Int(7));
+
+    #[rustfmt::skip]
+    let res = vm::execute(&[
+        // var c = func(b)
+        //   a + b
+        // end
+        // return c(13)
+        BeginFuncCreation,
+          AddArgument("b"),
+          AddCapture("a"),
+          LoadLocal("a"), LoadLocal("b"), Add,
+          Return,
+        EndFuncCreation,
+        MakeLocal("c"),
+        LoadLocal("c"), LoadInt(13), Call(1),
+        Return,
+    ], &mut runtime);
+
+    assert_eq!(res, Object::Int(20));
 }
