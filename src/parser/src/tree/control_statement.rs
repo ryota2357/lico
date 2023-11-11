@@ -10,13 +10,6 @@ pub enum ControlStatement<'src> {
     },
     For {
         value: Ident<'src>,
-        start: Expression<'src>,
-        stop: Expression<'src>,
-        step: Option<Expression<'src>>,
-        body: Block<'src>,
-    },
-    ForIn {
-        value: Ident<'src>,
         iter: Expression<'src>,
         body: Block<'src>,
     },
@@ -36,7 +29,6 @@ pub enum ControlStatement<'src> {
 
 /// <ControlStatement> ::= <If> | <For> | <ForIn> | <While> | <Return> | <Continue> | <Break>
 /// <If>               ::= 'if' <Expression> 'then' <Block> { 'elif' <Expression> 'then' <Block> } [ 'else' <Block> ] 'end'
-/// <For>              ::= 'for' <Local> '=' <Expression> ',' <Expression> [ ',' <Expression> ] 'do' <Block> 'end'
 /// <ForIn>            ::= 'for' <Local> 'in' <Expression> 'do' <Block> 'end'
 /// <While>            ::= 'while' <Expression> 'do' <Block> 'end'
 /// <Return>           ::= 'return' [ <Expression> ]
@@ -77,31 +69,12 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
         });
     let r#for = just(Token::For)
         .ignore_then(ident())
-        .then_ignore(just(Token::Assign))
-        .then(expression.clone())
-        .then_ignore(just(Token::Comma))
-        .then(expression.clone())
-        .then(just(Token::Comma).ignore_then(expression.clone()).or_not())
-        .then_ignore(just(Token::Do))
-        .then(block.clone())
-        .then_ignore(just(Token::End))
-        .map(
-            |((((value, start), stop), step), body)| ControlStatement::For {
-                value,
-                start,
-                stop,
-                step,
-                body,
-            },
-        );
-    let for_in = just(Token::For)
-        .ignore_then(ident())
         .then_ignore(just(Token::In))
         .then(expression.clone())
         .then_ignore(just(Token::Do))
         .then(block.clone())
         .then_ignore(just(Token::End))
-        .map(|((value, iter), body)| ControlStatement::ForIn { value, iter, body });
+        .map(|((value, iter), body)| ControlStatement::For { value, iter, body });
     let r#while = just(Token::While)
         .ignore_then(expression.clone())
         .then_ignore(just(Token::Do))
@@ -118,9 +91,7 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
     let r#continue = just(Token::Continue).to(ControlStatement::Continue);
     let r#break = just(Token::Break).to(ControlStatement::Break);
 
-    choice((
-        r#if, r#for, for_in, r#while, r#do, r#return, r#continue, r#break,
-    ))
+    choice((r#if, r#for, r#while, r#do, r#return, r#continue, r#break))
 }
 
 impl<'a> TreeWalker<'a> for ControlStatement<'a> {
@@ -151,25 +122,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                     tracker.pop_current_definition_scope();
                 }
             }
-            ControlStatement::For {
-                value,
-                start,
-                stop,
-                step,
-                body,
-            } => {
-                start.analyze(tracker);
-                stop.analyze(tracker);
-                if let Some(step) = step {
-                    step.analyze(tracker);
-                }
-
-                tracker.push_new_definition_scope();
-                tracker.add_definition(value.str);
-                body.analyze(tracker);
-                tracker.pop_current_definition_scope();
-            }
-            ControlStatement::ForIn { value, iter, body } => {
+            ControlStatement::For { value, iter, body } => {
                 iter.analyze(tracker);
 
                 tracker.push_new_definition_scope();

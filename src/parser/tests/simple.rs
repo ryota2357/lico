@@ -285,71 +285,12 @@ fn if_elif_else() {
 }
 
 #[test]
-fn for_with_no_step_no_body() {
-    do_chunk_test(
-        "for i = 1, 10 do end",
-        Chunk {
-            captures: vec![],
-            body: vec![Statement::Control(ControlStatement::For {
-                value: Ident {
-                    str: "i",
-                    span: (4..5).into(),
-                },
-                start: Expression::Primitive(Primitive::Int(1)),
-                stop: Expression::Primitive(Primitive::Int(10)),
-                step: None,
-                body: Block { body: vec![] },
-            })],
-        },
-    )
-}
-
-#[test]
-fn for_with_nuinus_step() {
-    do_chunk_test(
-        "for i = 10, 1, -1 do a = a + i end",
-        Chunk {
-            captures: vec!["a"],
-            body: vec![Statement::Control(ControlStatement::For {
-                value: Ident {
-                    str: "i",
-                    span: (4..5).into(),
-                },
-                start: Expression::Primitive(Primitive::Int(10)),
-                stop: Expression::Primitive(Primitive::Int(1)),
-                step: Some(Expression::Primitive(Primitive::Int(-1))),
-                body: Block {
-                    body: vec![Statement::Variable(VariableStatement::Assign {
-                        name: Ident {
-                            str: "a",
-                            span: (21..22).into(),
-                        },
-                        accesser: vec![],
-                        expr: Expression::Binary {
-                            lhs: Box::new(Expression::Ident(Ident {
-                                str: "a",
-                                span: (25..26).into(),
-                            })),
-                            op: BinaryOp::Add,
-                            rhs: Box::new(Expression::Ident(Ident {
-                                str: "i",
-                                span: (29..30).into(),
-                            })),
-                        },
-                    })],
-                },
-            })],
-        },
-    );
-}
-
-#[test]
-fn for_in() {
+fn for_in_array() {
     do_chunk_test(
         "for i in [1, 2, 3] do end",
         Chunk {
             captures: vec![],
-            body: vec![Statement::Control(ControlStatement::ForIn {
+            body: vec![Statement::Control(ControlStatement::For {
                 value: Ident {
                     str: "i",
                     span: (4..5).into(),
@@ -365,6 +306,50 @@ fn for_in() {
             })],
         },
     );
+}
+
+#[test]
+fn for_with_body() {
+    do_chunk_test(
+        "for i in 1->upto(10) do a = a + i end",
+        Chunk {
+            captures: vec!["a"],
+            body: vec![Statement::Control(ControlStatement::For {
+                value: Ident {
+                    str: "i",
+                    span: (4..5).into(),
+                },
+                iter: Expression::MethodCall {
+                    expr: Box::new(Expression::Primitive(Primitive::Int(1))),
+                    name: Ident {
+                        str: "upto",
+                        span: (12..16).into(),
+                    },
+                    args: vec![Expression::Primitive(Primitive::Int(10))],
+                },
+                body: Block {
+                    body: vec![Statement::Variable(VariableStatement::Assign {
+                        name: Ident {
+                            str: "a",
+                            span: (24..25).into(),
+                        },
+                        accesser: vec![],
+                        expr: Expression::Binary {
+                            op: BinaryOp::Add,
+                            lhs: Box::new(Expression::Ident(Ident {
+                                str: "a",
+                                span: (28..29).into(),
+                            })),
+                            rhs: Box::new(Expression::Ident(Ident {
+                                str: "i",
+                                span: (32..33).into(),
+                            })),
+                        },
+                    })],
+                },
+            })],
+        },
+    )
 }
 
 #[test]
