@@ -22,7 +22,7 @@ fn load() {
 fn unload() {
     let mut runtime = Runtime::new();
     runtime.stack.push(Object::Int(0).into());
-    vm::execute(&[Unload(1), Exit], &mut runtime);
+    vm::execute(&[UnloadTop, Exit], &mut runtime);
     runtime.stack.pop(); // panic
 }
 

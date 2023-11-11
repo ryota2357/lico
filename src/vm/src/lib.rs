@@ -43,10 +43,8 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
                 runtime.stack.push(object.into());
                 pc += 1;
             }
-            Unload(count) => {
-                for _ in 0..*count {
-                    runtime.stack.pop();
-                }
+            UnloadTop => {
+                runtime.stack.pop();
                 pc += 1;
             }
             SetLocal(name) => {

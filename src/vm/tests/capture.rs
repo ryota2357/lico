@@ -20,7 +20,7 @@ fn case1() {
             EndFuncCreation,
             MakeLocal("f"),
 
-            LoadLocal("f"), Call(0), Unload(1),
+            LoadLocal("f"), Call(0), UnloadTop,
             Exit,
         ],
         &mut runtime,

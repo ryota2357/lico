@@ -7,7 +7,7 @@ pub enum Code<'src> {
     LoadStringAsRef(&'src str),
     LoadNil,
     LoadLocal(&'src str),
-    Unload(usize),
+    UnloadTop,
 
     SetLocal(&'src str),
     MakeLocal(&'src str),
