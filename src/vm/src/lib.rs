@@ -376,6 +376,14 @@ pub fn execute<'src>(code: &[Code<'src>], runtime: &mut Runtime<'src>) -> Object
                 }
             }
             Pow => todo!("Pow"),
+            Unm => {
+                let obj = runtime.stack.pop().ensure_object();
+                match obj {
+                    Object::Int(x) => runtime.stack.push(Object::Int(-x).into()),
+                    Object::Float(x) => runtime.stack.push(Object::Float(-x).into()),
+                    x => panic!("Expected Int or Float, but got {:?}", x),
+                }
+            }
             Eq => {
                 let rhs = runtime.stack.pop().ensure_object();
                 let lhs = runtime.stack.pop().ensure_object();

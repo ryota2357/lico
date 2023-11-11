@@ -31,6 +31,7 @@ pub enum Code<'src> {
     Div,       // /
     Mod,       // %
     Pow,       // *
+    Unm,       // - (unary)
     Eq,        // ==
     NotEq,     // !=
     Less,      // <
