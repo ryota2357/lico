@@ -42,7 +42,16 @@ pub fn compile<'a>(program: &Program<'a>) -> Vec<Code<'a>> {
             _ => {}
         }
     }
-    fragment.append_compile(&program.body);
+
+    let eob = block::compile_statements(&program.body, &mut fragment, &mut Context::new());
+
+    match eob {
+        block::ExitControll::Return => {}
+        block::ExitControll::None => {
+            fragment.append_many([Code::LoadNil, Code::Return]);
+        }
+        block::ExitControll::Break | block::ExitControll::Continue => panic!(),
+    }
 
     fragment.into_code()
 }
