@@ -23,6 +23,14 @@ impl<'a> Fragment<'a> {
         fragment
     }
 
+    pub fn with_code(code: Vec<Code<'a>>) -> Self {
+        Self {
+            code,
+            forward_jump_pos: Vec::new(),
+            backward_jump_pos: Vec::new(),
+        }
+    }
+
     pub fn with_compile_with_context(
         compilable: &impl ContextCompilable<'a>,
         context: &mut Context,

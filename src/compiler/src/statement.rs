@@ -23,8 +23,22 @@ fn control_statement<'a>(
             elifs,
             else_,
         } => {
+            // `Set`: [cond]
+            //        [jump] // if cond is false, jump to next top of `Set``
+            //        [body]
+            //        [jump] // [body] is executed, so jump to end of `If`
+            //
+            // `If` is regarded as array of `Set` (length >= 1) and one `else_`
+            //    if `else_` is None, Code::Nop is appended, so `If` always has `else_` block
+            //
+            // i.e. `If` = `Set`
+            //           = `Set`
+            //            ...
+            //           = `else_`
+
             let mut new_fragments = {
-                let mut make_fragment = |cond: &Expression<'a>, body: &Block<'a>| {
+                // `make_snip` creates [cond] ~ [body]
+                let mut make_snip = |cond: &Expression<'a>, body: &Block<'a>| {
                     let body_fragment = Fragment::with_compile_with_context(body, context);
                     let mut fragment = Fragment::new();
                     fragment
@@ -34,17 +48,24 @@ fn control_statement<'a>(
                     fragment
                 };
 
+                // Applay `make_snip` to (`cond`, `body`) pair, and `elifs`.`
                 let mut res = Vec::new();
-                res.push(make_fragment(cond, body));
+                res.push(make_snip(cond, body));
                 for (cond, body) in elifs.iter() {
-                    res.push(make_fragment(cond, body));
+                    res.push(make_snip(cond, body));
                 }
+
+                // Append `else_` block
                 if let Some(body) = else_ {
                     res.push(Fragment::with_compile_with_context(body, context));
+                } else {
+                    res.push(Fragment::with_code(vec![Code::Nop]));
                 }
+
                 res
             };
 
+            // Add last [jump] of `Set`
             let mut jump_dist = new_fragments.last().unwrap().len() + 1;
             for new_frag in new_fragments.iter_mut().rev().skip(1) {
                 new_frag.append(Code::Jump(jump_dist as isize));
@@ -261,5 +282,128 @@ fn call_statement<'a>(statement: &CallStatement<'a>, fragment: &mut Fragment<'a>
                     Code::UnloadTop,
                 ]);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn r#if() {
+        let statement = Statement::Control(ControlStatement::If {
+            cond: Expression::Ident(Ident {
+                str: "a",
+                span: (0..0).into(),
+            }),
+            body: Block {
+                body: vec![Statement::Call(CallStatement::Invoke {
+                    expr: Expression::Ident(Ident {
+                        str: "print",
+                        span: (0..0).into(),
+                    }),
+                    args: vec![],
+                })],
+            },
+            elifs: vec![],
+            else_: None,
+        });
+        let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
+        assert_eq!(
+            fragment.into_code(),
+            vec![
+                Code::LoadLocal("a"),
+                Code::JumpIfFalse(5),
+                Code::LoadLocal("print"),
+                Code::Call(0),
+                Code::UnloadTop,
+                Code::Jump(2),
+                Code::Nop,
+            ]
+        );
+    }
+
+    #[test]
+    fn if_else() {
+        let statement = Statement::Control(ControlStatement::If {
+            cond: Expression::Ident(Ident {
+                str: "a",
+                span: (0..0).into(),
+            }),
+            body: Block {
+                body: vec![Statement::Control(ControlStatement::Return { value: None })],
+            },
+            elifs: vec![],
+            else_: Some(Block {
+                body: vec![Statement::Call(CallStatement::Invoke {
+                    expr: Expression::Ident(Ident {
+                        str: "print",
+                        span: (0..0).into(),
+                    }),
+                    args: vec![],
+                })],
+            }),
+        });
+        let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
+        assert_eq!(
+            fragment.into_code(),
+            vec![
+                Code::LoadLocal("a"),
+                Code::JumpIfFalse(4),
+                Code::LoadNil,
+                Code::Return,
+                Code::Jump(4),
+                Code::LoadLocal("print"),
+                Code::Call(0),
+                Code::UnloadTop,
+            ]
+        );
+    }
+
+    #[test]
+    fn if_elif() {
+        let statement = Statement::Control(ControlStatement::If {
+            cond: Expression::Ident(Ident {
+                str: "a",
+                span: (0..0).into(),
+            }),
+            body: Block {
+                body: vec![Statement::Control(ControlStatement::Return { value: None })],
+            },
+            elifs: vec![(
+                Expression::Ident(Ident {
+                    str: "b",
+                    span: (0..0).into(),
+                }),
+                Block {
+                    body: vec![Statement::Call(CallStatement::Invoke {
+                        expr: Expression::Ident(Ident {
+                            str: "print",
+                            span: (0..0).into(),
+                        }),
+                        args: vec![],
+                    })],
+                },
+            )],
+            else_: None,
+        });
+        let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
+        assert_eq!(
+            fragment.into_code(),
+            vec![
+                Code::LoadLocal("a"),
+                Code::JumpIfFalse(4),
+                Code::LoadNil,
+                Code::Return,
+                Code::Jump(8),
+                Code::LoadLocal("b"),
+                Code::JumpIfFalse(5),
+                Code::LoadLocal("print"),
+                Code::Call(0),
+                Code::UnloadTop,
+                Code::Jump(2),
+                Code::Nop,
+            ]
+        );
     }
 }
