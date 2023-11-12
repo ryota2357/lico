@@ -1,7 +1,7 @@
 use super::*;
 
 impl<'a> ContextCompilable<'a> for Statement<'a> {
-    fn compile(&self, fragment: &mut Fragment<'a>, context: &mut Context) {
+    fn compile(&'a self, fragment: &mut Fragment<'a>, context: &mut Context) {
         match self {
             Statement::Control(statement) => control_statement(statement, fragment, context),
             Statement::Attribute(statement) => attribute_statement(statement, fragment, context),
@@ -12,7 +12,7 @@ impl<'a> ContextCompilable<'a> for Statement<'a> {
 }
 
 fn control_statement<'a>(
-    statement: &ControlStatement<'a>,
+    statement: &'a ControlStatement<'a>,
     fragment: &mut Fragment<'a>,
     context: &mut Context,
 ) {
@@ -38,7 +38,7 @@ fn control_statement<'a>(
 
             let mut new_fragments = {
                 // `make_snip` creates [cond] ~ [body]
-                let mut make_snip = |cond: &Expression<'a>, body: &Block<'a>| {
+                let mut make_snip = |cond: &'a Expression<'a>, body: &'a Block<'a>| {
                     let body_fragment = Fragment::with_compile_with_context(body, context);
                     let mut fragment = Fragment::new();
                     fragment
@@ -196,7 +196,7 @@ fn attribute_statement<'a>(
 }
 
 fn variable_statement<'a>(
-    statement: &VariableStatement<'a>,
+    statement: &'a VariableStatement<'a>,
     fragment: &mut Fragment<'a>,
     context: &mut Context,
 ) {
@@ -265,7 +265,7 @@ fn variable_statement<'a>(
     }
 }
 
-fn call_statement<'a>(statement: &CallStatement<'a>, fragment: &mut Fragment<'a>) {
+fn call_statement<'a>(statement: &'a CallStatement<'a>, fragment: &mut Fragment<'a>) {
     match statement {
         CallStatement::Invoke { expr, args } => {
             fragment
@@ -297,13 +297,16 @@ mod tests {
                 span: (0..0).into(),
             }),
             body: Block {
-                body: vec![Statement::Call(CallStatement::Invoke {
-                    expr: Expression::Ident(Ident {
-                        str: "print",
-                        span: (0..0).into(),
+                body: vec![(
+                    Statement::Call(CallStatement::Invoke {
+                        expr: Expression::Ident(Ident {
+                            str: "print",
+                            span: (0..0).into(),
+                        }),
+                        args: vec![],
                     }),
-                    args: vec![],
-                })],
+                    0..0,
+                )],
             },
             elifs: vec![],
             else_: None,
@@ -331,17 +334,23 @@ mod tests {
                 span: (0..0).into(),
             }),
             body: Block {
-                body: vec![Statement::Control(ControlStatement::Return { value: None })],
+                body: vec![(
+                    Statement::Control(ControlStatement::Return { value: None }),
+                    0..0,
+                )],
             },
             elifs: vec![],
             else_: Some(Block {
-                body: vec![Statement::Call(CallStatement::Invoke {
-                    expr: Expression::Ident(Ident {
-                        str: "print",
-                        span: (0..0).into(),
+                body: vec![(
+                    Statement::Call(CallStatement::Invoke {
+                        expr: Expression::Ident(Ident {
+                            str: "print",
+                            span: (0..0).into(),
+                        }),
+                        args: vec![],
                     }),
-                    args: vec![],
-                })],
+                    0..0,
+                )],
             }),
         });
         let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
@@ -368,7 +377,10 @@ mod tests {
                 span: (0..0).into(),
             }),
             body: Block {
-                body: vec![Statement::Control(ControlStatement::Return { value: None })],
+                body: vec![(
+                    Statement::Control(ControlStatement::Return { value: None }),
+                    0..0,
+                )],
             },
             elifs: vec![(
                 Expression::Ident(Ident {
@@ -376,13 +388,16 @@ mod tests {
                     span: (0..0).into(),
                 }),
                 Block {
-                    body: vec![Statement::Call(CallStatement::Invoke {
-                        expr: Expression::Ident(Ident {
-                            str: "print",
-                            span: (0..0).into(),
+                    body: vec![(
+                        Statement::Call(CallStatement::Invoke {
+                            expr: Expression::Ident(Ident {
+                                str: "print",
+                                span: (0..0).into(),
+                            }),
+                            args: vec![],
                         }),
-                        args: vec![],
-                    })],
+                        0..0,
+                    )],
                 },
             )],
             else_: None,

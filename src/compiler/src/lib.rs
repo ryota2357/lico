@@ -8,18 +8,18 @@ mod context;
 use context::Context;
 
 trait Compilable<'a> {
-    fn compile(&self, fragment: &mut Fragment<'a>);
+    fn compile(&'a self, fragment: &mut Fragment<'a>);
 }
 
 trait ContextCompilable<'a> {
-    fn compile(&self, fragment: &mut Fragment<'a>, context: &mut Context);
+    fn compile(&'a self, fragment: &mut Fragment<'a>, context: &mut Context);
 }
 
 mod block;
 mod expression;
 mod statement;
 
-pub fn compile<'a>(program: &Program<'a>) -> Vec<Code<'a>> {
+pub fn compile<'a>(program: &'a Program<'a>) -> Vec<Code<'a>> {
     let mut fragment = Fragment::new();
 
     for capture in program.body.captures.iter() {
@@ -45,7 +45,11 @@ pub fn compile<'a>(program: &Program<'a>) -> Vec<Code<'a>> {
         }
     }
 
-    let eob = block::compile_statements(&program.body, &mut fragment, &mut Context::new());
+    let eob = block::compile_statements(
+        program.body.iter().map(|s| &s.0),
+        &mut fragment,
+        &mut Context::new(),
+    );
 
     match eob {
         block::ExitControll::Return => {}

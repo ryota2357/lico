@@ -17,7 +17,7 @@ impl<'a> Fragment<'a> {
         }
     }
 
-    pub fn with_compile(compilable: &impl Compilable<'a>) -> Self {
+    pub fn with_compile(compilable: &'a impl Compilable<'a>) -> Self {
         let mut fragment = Self::new();
         compilable.compile(&mut fragment);
         fragment
@@ -32,7 +32,7 @@ impl<'a> Fragment<'a> {
     }
 
     pub fn with_compile_with_context(
-        compilable: &impl ContextCompilable<'a>,
+        compilable: &'a impl ContextCompilable<'a>,
         context: &mut Context,
     ) -> Self {
         let mut fragment = Self::new();
@@ -77,7 +77,7 @@ impl<'a> Fragment<'a> {
     }
 
     #[inline]
-    pub fn append_compile(&mut self, compilable: &impl Compilable<'a>) -> &mut Self {
+    pub fn append_compile(&mut self, compilable: &'a impl Compilable<'a>) -> &mut Self {
         compilable.compile(self);
         self
     }
@@ -85,14 +85,14 @@ impl<'a> Fragment<'a> {
     #[inline]
     pub fn append_compile_with_context(
         &mut self,
-        compilable: &impl ContextCompilable<'a>,
+        compilable: &'a impl ContextCompilable<'a>,
         context: &mut Context,
     ) -> &mut Self {
         compilable.compile(self, context);
         self
     }
 
-    pub fn append_compile_many(&mut self, compilable: &[impl Compilable<'a>]) -> &mut Self {
+    pub fn append_compile_many(&mut self, compilable: &'a [impl Compilable<'a>]) -> &mut Self {
         for c in compilable.iter() {
             self.append_compile(c);
         }

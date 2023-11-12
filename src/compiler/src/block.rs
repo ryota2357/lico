@@ -8,11 +8,11 @@ pub(super) enum ExitControll {
 }
 
 pub(super) fn compile_statements<'a>(
-    statements: &[Statement<'a>],
+    statements: impl IntoIterator<Item = &'a Statement<'a>>,
     fragment: &mut Fragment<'a>,
     context: &mut Context,
 ) -> ExitControll {
-    for statement in statements.iter() {
+    for statement in statements.into_iter() {
         fragment.append_compile_with_context(statement, context);
         match statement {
             Statement::Control(ControlStatement::Return { .. }) => {
@@ -31,9 +31,9 @@ pub(super) fn compile_statements<'a>(
 }
 
 impl<'a> ContextCompilable<'a> for Block<'a> {
-    fn compile(&self, fragment: &mut Fragment<'a>, context: &mut Context) {
+    fn compile(&'a self, fragment: &mut Fragment<'a>, context: &mut Context) {
         context.start_block();
-        let end = compile_statements(self, fragment, context);
+        let end = compile_statements(self.iter().map(|s| &s.0), fragment, context);
         if let ExitControll::None = end {
             let drop_count = context.get_block_local_count().unwrap();
             if drop_count > 0 {
@@ -45,13 +45,13 @@ impl<'a> ContextCompilable<'a> for Block<'a> {
 }
 
 impl<'a> Compilable<'a> for Chunk<'a> {
-    fn compile(&self, fragment: &mut Fragment<'a>) {
+    fn compile(&'a self, fragment: &mut Fragment<'a>) {
         fragment.append_many(
             self.captures
                 .iter()
                 .map(|capture| Code::AddCapture(capture)),
         );
-        let end = compile_statements(self, fragment, &mut Context::new());
+        let end = compile_statements(self.iter().map(|s| &s.0), fragment, &mut Context::new());
 
         match end {
             ExitControll::Return => {}

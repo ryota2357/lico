@@ -1,18 +1,18 @@
 use super::*;
 
 impl<'a> Compilable<'a> for Expression<'a> {
-    fn compile(&self, fragment: &mut Fragment<'a>) {
+    fn compile(&'a self, fragment: &mut Fragment<'a>) {
         compile(self, fragment);
     }
 }
 
 impl<'a> Compilable<'a> for Box<Expression<'a>> {
-    fn compile(&self, fragment: &mut Fragment<'a>) {
+    fn compile(&'a self, fragment: &mut Fragment<'a>) {
         compile(self, fragment);
     }
 }
 
-fn compile<'a>(expr: &Expression<'a>, fragment: &mut Fragment<'a>) {
+fn compile<'a>(expr: &'a Expression<'a>, fragment: &mut Fragment<'a>) {
     match expr {
         Expression::Unary { op, expr } => match op {
             UnaryOp::Neg => {
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn and() {
-        let fragment = Fragment::with_compile(&Expression::Binary {
+        let expr = Expression::Binary {
             op: BinaryOp::And,
             lhs: Box::new(Expression::Ident(Ident {
                 str: "a",
@@ -229,7 +229,8 @@ mod tests {
                 str: "b",
                 span: (0..0).into(),
             })),
-        });
+        };
+        let fragment = Fragment::with_compile(&expr);
         assert_eq!(
             fragment.into_code(),
             vec![
@@ -244,7 +245,7 @@ mod tests {
 
     #[test]
     fn or() {
-        let fragment = Fragment::with_compile(&Expression::Binary {
+        let expr = Expression::Binary {
             op: BinaryOp::Or,
             lhs: Box::new(Expression::Ident(Ident {
                 str: "a",
@@ -254,7 +255,8 @@ mod tests {
                 str: "b",
                 span: (0..0).into(),
             })),
-        });
+        };
+        let fragment = Fragment::with_compile(&expr);
         assert_eq!(
             fragment.into_code(),
             vec![

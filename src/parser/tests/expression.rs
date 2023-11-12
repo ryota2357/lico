@@ -7,7 +7,7 @@ fn do_expr_test(src: &str, expression: Expression<'_>) {
     let stats = program.body.body;
     assert_eq!(stats.len(), 1);
     let statement = &stats[0];
-    if let Statement::Variable(VariableStatement::Assign { expr, .. }) = statement {
+    if let Statement::Variable(VariableStatement::Assign { expr, .. }) = &statement.0 {
         assert_eq!(expr, &expression);
     } else {
         panic!(
@@ -44,12 +44,15 @@ fn function_object() {
             ],
             body: Chunk {
                 captures: vec!["c"],
-                body: vec![Statement::Control(ControlStatement::Return {
-                    value: Some(Expression::Ident(Ident {
-                        str: "c",
-                        span: (20..21).into(),
-                    })),
-                })],
+                body: vec![(
+                    Statement::Control(ControlStatement::Return {
+                        value: Some(Expression::Ident(Ident {
+                            str: "c",
+                            span: (20..21).into(),
+                        })),
+                    }),
+                    13..21,
+                )],
             },
         }),
     )

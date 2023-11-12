@@ -5,7 +5,7 @@ fn do_statement_test(src: &str, statement: Statement<'_>) {
     let program = common::parse_program(src);
     let stats = program.body.body;
     assert_eq!(stats.len(), 1);
-    assert_eq!(stats[0], statement);
+    assert_eq!(stats[0].0, statement);
 }
 
 #[test]
