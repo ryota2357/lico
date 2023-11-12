@@ -117,7 +117,7 @@ fn compile<'a>(expr: &Expression<'a>, fragment: &mut Fragment<'a>) {
                 let rhs_fragment = Fragment::with_compile(rhs);
                 fragment
                     .append_compile(lhs)
-                    .append(Code::JumpIfFalse(rhs_fragment.len() as isize + 3))
+                    .append(Code::JumpIfFalse(rhs_fragment.len() as isize + 2))
                     .append_fragment(rhs_fragment)
                     .append(Code::Jump(2))
                     .append(Code::LoadBool(false));
@@ -133,7 +133,7 @@ fn compile<'a>(expr: &Expression<'a>, fragment: &mut Fragment<'a>) {
                 let rhs_fragment = Fragment::with_compile(rhs);
                 fragment
                     .append_compile(lhs)
-                    .append(Code::JumpIfTrue(rhs_fragment.len() as isize + 3))
+                    .append(Code::JumpIfTrue(rhs_fragment.len() as isize + 2))
                     .append_fragment(rhs_fragment)
                     .append(Code::Jump(2))
                     .append(Code::LoadBool(true));
@@ -210,5 +210,60 @@ fn compile<'a>(expr: &Expression<'a>, fragment: &mut Fragment<'a>) {
                 .append(Code::LoadStringAsRef(accesser.str))
                 .append(Code::GetItem);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn and() {
+        let fragment = Fragment::with_compile(&Expression::Binary {
+            op: BinaryOp::And,
+            lhs: Box::new(Expression::Ident(Ident {
+                str: "a",
+                span: (0..0).into(),
+            })),
+            rhs: Box::new(Expression::Ident(Ident {
+                str: "b",
+                span: (0..0).into(),
+            })),
+        });
+        assert_eq!(
+            fragment.into_code(),
+            vec![
+                Code::LoadLocal("a"),
+                Code::JumpIfFalse(3),
+                Code::LoadLocal("b"),
+                Code::Jump(2),
+                Code::LoadBool(false)
+            ]
+        );
+    }
+
+    #[test]
+    fn or() {
+        let fragment = Fragment::with_compile(&Expression::Binary {
+            op: BinaryOp::Or,
+            lhs: Box::new(Expression::Ident(Ident {
+                str: "a",
+                span: (0..0).into(),
+            })),
+            rhs: Box::new(Expression::Ident(Ident {
+                str: "b",
+                span: (0..0).into(),
+            })),
+        });
+        assert_eq!(
+            fragment.into_code(),
+            vec![
+                Code::LoadLocal("a"),
+                Code::JumpIfTrue(3),
+                Code::LoadLocal("b"),
+                Code::Jump(2),
+                Code::LoadBool(true)
+            ]
+        );
     }
 }
