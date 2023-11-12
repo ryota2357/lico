@@ -483,12 +483,12 @@ pub fn execute<'src, W: std::io::Write>(
                 let args = create_args_vec(*args_len, runtime);
                 match instr {
                     BuiltinInstr::Write => {
-                        if args.len() != 1 {
-                            panic!("Expected 1 argument, but got {} arguments.", args.len());
+                        for arg in args {
+                            write!(runtime.writer, "{}", arg).unwrap();
                         }
-                        write!(runtime.writer, "{}", args[0]).unwrap();
                     }
                     BuiltinInstr::Flush => {
+                        assert!(*args_len == 0, "Builtin::Flush takes no arguments.");
                         runtime.writer.flush().unwrap();
                     }
                 }
