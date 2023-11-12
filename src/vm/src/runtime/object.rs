@@ -24,7 +24,7 @@ impl Display for Object<'_> {
         match self {
             Object::Int(x) => write!(f, "{}", x),
             Object::Float(x) => write!(f, "{}", x),
-            Object::String(x) => write!(f, "\"{}\"", x.escape_debug()),
+            Object::String(x) => write!(f, "{}", x),
             Object::Bool(x) => write!(f, "{}", if *x { "true" } else { "false" }),
             Object::Nil => write!(f, "nil"),
             Object::Function(x) => {
