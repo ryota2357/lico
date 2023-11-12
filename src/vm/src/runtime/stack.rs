@@ -44,14 +44,14 @@ impl<'a> StackValue<'a> {
             StackValue::RawArray(array) => Object::new_array(array),
             StackValue::RawTable(table) => Object::new_table(table),
             StackValue::Object(obj) => obj,
-            x => panic!("Expected Object, but got {:?}", x),
+            x => panic!("[INTERNAL] Expected Object, but got {:?}", x),
         }
     }
 
     pub fn ensure_named(self) -> (String, Object<'a>) {
         match self {
             StackValue::Named(name, obj) => (name, obj),
-            x => panic!("Expected Named, but got {:?}", x),
+            x => panic!("[INTERNAL] Expected Named, but got {:?}", x),
         }
     }
 }

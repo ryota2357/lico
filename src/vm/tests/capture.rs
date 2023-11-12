@@ -24,7 +24,7 @@ fn case1() {
             Exit,
         ],
         &mut runtime,
-    );
+    ).unwrap();
 
     assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(11)));
     match runtime.variable_table.get("f").unwrap() {
@@ -83,7 +83,7 @@ fn case2() {
         &mut runtime,
     );
 
-    assert_eq!(res, Object::Int(111));
+    assert_eq!(res, Ok(Object::Int(111)));
 }
 
 #[test]
@@ -110,5 +110,5 @@ fn case3() {
         Return,
     ], &mut runtime);
 
-    assert_eq!(res, Object::Int(20));
+    assert_eq!(res, Ok(Object::Int(20)));
 }

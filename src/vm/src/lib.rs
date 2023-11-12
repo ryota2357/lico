@@ -8,7 +8,7 @@ use std::{collections::HashMap, rc::Rc};
 pub fn execute<'src, W: std::io::Write>(
     code: &[Code<'src>],
     runtime: &mut Runtime<'src, W>,
-) -> Object<'src> {
+) -> Result<Object<'src>, String> {
     let mut pc = 0;
 
     loop {
@@ -42,7 +42,10 @@ pub fn execute<'src, W: std::io::Write>(
                 pc += 1;
             }
             LoadLocal(name) => {
-                let object = runtime.variable_table.get(name).unwrap();
+                let object = match runtime.variable_table.get(name) {
+                    Some(x) => x,
+                    None => Err(format!("{} is not defined.", name))?,
+                };
                 runtime.stack.push(object.into());
                 pc += 1;
             }
@@ -52,7 +55,7 @@ pub fn execute<'src, W: std::io::Write>(
             }
             SetLocal(name) => {
                 let object = runtime.stack.pop().ensure_object();
-                runtime.variable_table.edit(name, object).unwrap();
+                runtime.variable_table.edit(name, object)?;
                 pc += 1;
             }
             MakeLocal(name) => {
@@ -77,7 +80,7 @@ pub fn execute<'src, W: std::io::Write>(
             MakeExprNamed => {
                 let name = match runtime.stack.pop().ensure_object() {
                     Object::String(x) => x,
-                    x => panic!("Expected String, but got {:?}", x),
+                    x => Err(format!("Expected String, but got {:?}", x))?,
                 };
                 let object = runtime.stack.pop().ensure_object();
                 runtime.stack.push((name, object).into());
@@ -106,7 +109,7 @@ pub fn execute<'src, W: std::io::Write>(
             JumpIfTrue(offset) => {
                 let boolean = match runtime.stack.pop().ensure_object() {
                     Object::Bool(x) => x,
-                    x => panic!("Expected Bool, but got {:?}", x),
+                    x => Err(format!("Expected Bool, but got {:?}", x))?,
                 };
                 if boolean {
                     if *offset < 0 {
@@ -121,7 +124,7 @@ pub fn execute<'src, W: std::io::Write>(
             JumpIfFalse(offset) => {
                 let boolean = match runtime.stack.pop().ensure_object() {
                     Object::Bool(x) => x,
-                    x => panic!("Expected Bool, but got {:?}", x),
+                    x => Err(format!("Expected Bool, but got {:?}", x))?,
                 };
                 if !boolean {
                     if *offset < 0 {
@@ -138,20 +141,20 @@ pub fn execute<'src, W: std::io::Write>(
                 match runtime.stack.pop() {
                     StackValue::RawTable(table) => {
                         if let Some(func) = table.get_method(name) {
-                            execute_func(func, args, runtime);
+                            execute_func(func, args, runtime)?;
                         } else {
-                            panic!("{} is not defined.", name);
+                            Err(format!("{} is not defined.", name))?;
                         }
                     }
                     StackValue::Object(Object::Table(table)) => {
                         let table = table.borrow();
                         if let Some(func) = table.get_method(name) {
-                            execute_func(func, args, runtime);
+                            execute_func(func, args, runtime)?;
                         } else {
-                            panic!("{} is not defined.", name);
+                            Err(format!("{} is not defined.", name))?;
                         }
                     }
-                    x => panic!("Expected Callable Object, but got {:?}", x),
+                    x => Err(format!("Expected Callable Object, but got {:?}", x))?,
                 }
                 pc += 1;
             }
@@ -159,38 +162,38 @@ pub fn execute<'src, W: std::io::Write>(
                 let args = create_args_vec(*args_len, runtime);
                 match runtime.stack.pop() {
                     StackValue::RawFunction(func) => {
-                        execute_func(&func, args, runtime);
+                        execute_func(&func, args, runtime)?;
                     }
                     StackValue::RawTable(table) => {
                         if let Some(func) = table.get_method("__call") {
-                            execute_func(func, args, runtime);
+                            execute_func(func, args, runtime)?;
                         } else {
-                            panic!("__call is not defined.");
+                            Err("__call is not defined.".to_string())?;
                         }
                     }
                     StackValue::Object(Object::Function(func)) => {
-                        execute_func(&func, args, runtime);
+                        execute_func(&func, args, runtime)?;
                     }
                     StackValue::Object(Object::Table(table)) => {
                         let table = table.borrow();
                         if let Some(func) = table.get_method("__call") {
-                            execute_func(func, args, runtime);
+                            execute_func(func, args, runtime)?;
                         } else {
-                            panic!("__call is not defined.");
+                            Err("__call is not defined.".to_string())?;
                         }
                     }
-                    x => panic!("Expected Callable Object, but got {:?}", x),
+                    x => Err(format!("Expected Callable Object, but got {:?}", x))?,
                 }
                 pc += 1;
             }
             SetItem => {
                 let get_int_index = |accesser| match accesser {
-                    StackValue::Object(Object::Int(x)) => x as usize,
-                    x => panic!("Expected Int, but got {:?}", x),
+                    StackValue::Object(Object::Int(x)) => Ok(x as usize),
+                    x => Err(format!("Expected Int, but got {:?}", x)),
                 };
                 let get_string_index = |accesser| match accesser {
-                    StackValue::Object(Object::String(x)) => x,
-                    x => panic!("Expected String, but got {:?}", x),
+                    StackValue::Object(Object::String(x)) => Ok(x),
+                    x => Err(format!("Expected String, but got {:?}", x)),
                 };
 
                 let accesser = runtime.stack.pop();
@@ -198,44 +201,44 @@ pub fn execute<'src, W: std::io::Write>(
                 let value = runtime.stack.pop().ensure_object();
                 match target {
                     StackValue::RawArray(mut array) => {
-                        let index = get_int_index(accesser);
+                        let index = get_int_index(accesser)?;
                         array[index] = value;
                         runtime.stack.push(array.into());
                     }
                     StackValue::RawTable(mut table) => {
-                        let index = get_string_index(accesser);
+                        let index = get_string_index(accesser)?;
                         table.insert(index, value);
                         runtime.stack.push(table.into());
                     }
                     StackValue::Object(Object::Array(array)) => {
-                        let index = get_int_index(accesser);
+                        let index = get_int_index(accesser)?;
                         array.borrow_mut()[index] = value;
                         runtime.stack.push(Object::Array(array).into());
                     }
                     StackValue::Object(Object::Table(table)) => {
-                        let index = get_string_index(accesser);
+                        let index = get_string_index(accesser)?;
                         table.borrow_mut().insert(index, value);
                         runtime.stack.push(Object::Table(table).into());
                     }
-                    x => panic!("Expected Array or Table, but got {:?}", x),
+                    x => Err(format!("Expected Array or Table, but got {:?}", x))?,
                 }
                 pc += 1;
             }
             GetItem => {
                 let get_int_index = |accesser| match accesser {
-                    StackValue::Object(Object::Int(x)) => x as usize,
-                    x => panic!("Expected Int, but got {:?}", x),
+                    StackValue::Object(Object::Int(x)) => Ok(x as usize),
+                    x => Err(format!("Expected Int, but got {:?}", x)),
                 };
                 let get_string_index = |accesser| match accesser {
-                    StackValue::Object(Object::String(x)) => x,
-                    x => panic!("Expected String, but got {:?}", x),
+                    StackValue::Object(Object::String(x)) => Ok(x),
+                    x => Err(format!("Expected String, but got {:?}", x)),
                 };
 
                 let accesser = runtime.stack.pop();
                 let target = runtime.stack.pop();
                 match target {
                     StackValue::RawArray(array) => {
-                        let index = get_int_index(accesser);
+                        let index = get_int_index(accesser)?;
                         let item = match array.get(index) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
@@ -243,7 +246,7 @@ pub fn execute<'src, W: std::io::Write>(
                         runtime.stack.push(item.into());
                     }
                     StackValue::RawTable(table) => {
-                        let index = get_string_index(accesser);
+                        let index = get_string_index(accesser)?;
                         let item = match table.get(&index) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
@@ -251,7 +254,7 @@ pub fn execute<'src, W: std::io::Write>(
                         runtime.stack.push(item.into());
                     }
                     StackValue::Object(Object::Array(array)) => {
-                        let index = get_int_index(accesser);
+                        let index = get_int_index(accesser)?;
                         let item = match array.borrow().get(index) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
@@ -259,14 +262,14 @@ pub fn execute<'src, W: std::io::Write>(
                         runtime.stack.push(item.into());
                     }
                     StackValue::Object(Object::Table(table)) => {
-                        let index = get_string_index(accesser);
+                        let index = get_string_index(accesser)?;
                         let item = match table.borrow().get(&index) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
                         };
                         runtime.stack.push(item.into());
                     }
-                    x => panic!("Expected Array or Table, but got {:?}", x),
+                    x => Err(format!("Expected Array or Table, but got {:?}", x))?,
                 }
                 pc += 1;
             }
@@ -286,9 +289,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Float(lhs + rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
                 pc += 1;
             }
@@ -308,9 +312,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Float(lhs - rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             Mul => {
@@ -329,9 +334,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Float(lhs * rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             Div => {
@@ -350,9 +356,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Float(lhs / rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             Mod => {
@@ -371,9 +378,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Float(lhs % rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             Pow => todo!("Pow"),
@@ -382,7 +390,7 @@ pub fn execute<'src, W: std::io::Write>(
                 match obj {
                     Object::Int(x) => runtime.stack.push(Object::Int(-x).into()),
                     Object::Float(x) => runtime.stack.push(Object::Float(-x).into()),
-                    x => panic!("Expected Int or Float, but got {:?}", x),
+                    x => Err(format!("Expected Int or Float, but got {:?}", x))?,
                 }
             }
             Eq => {
@@ -411,9 +419,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Bool(lhs < rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             LessEq => {
@@ -432,9 +441,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Bool(lhs <= rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             Greater => {
@@ -453,9 +463,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Bool(lhs > rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             GreaterEq => {
@@ -474,9 +485,10 @@ pub fn execute<'src, W: std::io::Write>(
                     (Object::Float(lhs), Object::Float(rhs)) => {
                         runtime.stack.push(Object::Bool(lhs >= rhs).into());
                     }
-                    (lhs, rhs) => {
-                        panic!("Expected Int or Float, but got {:?} and {:?}", lhs, rhs)
-                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
                 }
             }
             Builtin(instr, args_len) => {
@@ -544,17 +556,17 @@ pub fn execute<'src, W: std::io::Write>(
                 );
                 pc += 1;
             }
-            AddCapture(_) => panic!("AddCapture is not allowed here."),
-            AddArgument(_) => panic!("AddArgument is not allowed here."),
-            EndFuncCreation => panic!("EndFuncCreation is not allowed here."),
+            AddCapture(_) => panic!("[INTERNAL] AddCapture is not allowed here."),
+            AddArgument(_) => panic!("[INTERNAL] AddArgument is not allowed here."),
+            EndFuncCreation => panic!("[INTERNAL] EndFuncCreation is not allowed here."),
             Nop => {
                 pc += 1;
             }
             Return => {
-                return runtime.stack.pop().ensure_object();
+                return Ok(runtime.stack.pop().ensure_object());
             }
             Exit => {
-                return Object::Nil;
+                return Ok(Object::Nil);
             }
         }
     }
@@ -564,13 +576,13 @@ fn execute_func<'a, W: std::io::Write>(
     func: &runtime::FunctionObject<'a>,
     args: Vec<runtime::Object<'a>>,
     runtime: &mut Runtime<'a, W>,
-) {
+) -> Result<(), String> {
     if func.args.len() != args.len() {
-        panic!(
+        return Err(format!(
             "Expected {} arguments, but got {} arguments.",
             func.args.len(),
             args.len()
-        );
+        ));
     }
     runtime.variable_table.push_scope();
     for (name, value) in &func.env {
@@ -582,9 +594,10 @@ fn execute_func<'a, W: std::io::Write>(
     for (name, value) in func.args.iter().zip(args.iter()) {
         runtime.variable_table.insert(name, value.clone());
     }
-    let ret = execute(&func.code, runtime);
+    let ret = execute(&func.code, runtime)?;
     runtime.stack.push(ret.into());
     runtime.variable_table.pop_scope();
+    Ok(())
 }
 
 fn create_args_vec<'a, W: std::io::Write>(

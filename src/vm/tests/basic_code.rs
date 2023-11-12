@@ -8,7 +8,7 @@ fn load() {
     vm::execute(&[
         LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadStringAsRef("c"), LoadNil,
         Exit,
-    ], &mut runtime);
+    ], &mut runtime).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Nil);
     assert_eq!(runtime.stack.pop().ensure_object(), Object::String("c".to_string()));
     assert_eq!(runtime.stack.pop().ensure_object(), Object::String("a b".to_string()));
@@ -22,7 +22,7 @@ fn load() {
 fn unload() {
     let mut runtime = Runtime::new(vec![]);
     runtime.stack.push(Object::Int(0).into());
-    vm::execute(&[UnloadTop, Exit], &mut runtime);
+    vm::execute(&[UnloadTop, Exit], &mut runtime).unwrap();
     runtime.stack.pop(); // panic
 }
 
@@ -31,7 +31,7 @@ fn set_local() {
     // a = 10
     let mut runtime = Runtime::new(vec![]);
     runtime.variable_table.insert("a", Object::Int(1));
-    vm::execute(&[LoadInt(10), SetLocal("a"), Exit], &mut runtime);
+    vm::execute(&[LoadInt(10), SetLocal("a"), Exit], &mut runtime).unwrap();
     assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(10)));
 }
 
@@ -39,7 +39,7 @@ fn set_local() {
 fn make_local() {
     // var a = 1
     let mut runtime = Runtime::new(vec![]);
-    vm::execute(&[LoadInt(1), MakeLocal("a"), Exit], &mut runtime);
+    vm::execute(&[LoadInt(1), MakeLocal("a"), Exit], &mut runtime).unwrap();
     assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(1)));
 }
 
@@ -51,7 +51,8 @@ fn make_array() {
     vm::execute(
         &[LoadInt(1), LoadInt(2), LoadInt(3), MakeArray(3), Exit],
         &mut runtime,
-    );
+    )
+    .unwrap();
     assert_eq!(
         runtime.stack.pop(),
         StackValue::RawArray(vec![Object::Int(1), Object::Int(2), Object::Int(3)])
@@ -61,7 +62,7 @@ fn make_array() {
 #[test]
 fn make_named() {
     let mut runtime = Runtime::new(vec![]);
-    vm::execute(&[LoadNil, MakeNamed("NILL"), Exit], &mut runtime);
+    vm::execute(&[LoadNil, MakeNamed("NILL"), Exit], &mut runtime).unwrap();
     assert_eq!(
         runtime.stack.pop().ensure_named(),
         ("NILL".to_string(), Object::Nil)
@@ -79,7 +80,8 @@ fn make_expr_named() {
             Exit,
         ],
         &mut runtime,
-    );
+    )
+    .unwrap();
     assert_eq!(
         runtime.stack.pop().ensure_named(),
         ("Key".to_string(), Object::Int(1))
@@ -99,7 +101,7 @@ fn make_table() {
     ] {
         runtime.stack.push((key.to_string(), value).into());
     }
-    vm::execute(&[MakeTable(2), Exit], &mut runtime);
+    vm::execute(&[MakeTable(2), Exit], &mut runtime).unwrap();
 
     assert_eq!(
         runtime.stack.pop().ensure_object(),
@@ -125,7 +127,7 @@ fn drop_local() {
     runtime.variable_table.insert("a", Object::Int(2));
     runtime.variable_table.insert("a", Object::Int(3));
     assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(3)));
-    vm::execute(&[DropLocal(2), Exit], &mut runtime);
+    vm::execute(&[DropLocal(2), Exit], &mut runtime).unwrap();
     assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(1)));
 }
 
@@ -133,12 +135,12 @@ fn drop_local() {
 fn jump() {
     let mut runtime = Runtime::new(vec![]);
     runtime.variable_table.insert("a", Object::Int(1));
-    vm::execute(&[Jump(2), DropLocal(1), Exit], &mut runtime);
+    vm::execute(&[Jump(2), DropLocal(1), Exit], &mut runtime).unwrap();
     assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(1)));
 
     let mut runtime = Runtime::new(vec![]);
     runtime.variable_table.insert("a", Object::Int(1));
-    vm::execute(&[Jump(3), DropLocal(1), Exit, Jump(-2)], &mut runtime);
+    vm::execute(&[Jump(3), DropLocal(1), Exit, Jump(-2)], &mut runtime).unwrap();
     assert_eq!(runtime.variable_table.get("a"), None);
 }
 
@@ -149,28 +151,28 @@ fn jump_if_true() {
     vm::execute(
         &[LoadBool(true), JumpIfTrue(3), Nop, Exit, LoadInt(1), Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(1));
 
     let mut runtime = Runtime::new(vec![]);
     vm::execute(
         &[LoadBool(false), JumpIfTrue(3), LoadInt(2), Exit, Nop, Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(2));
 
     let mut runtime = Runtime::new(vec![]);
     vm::execute(
         &[Jump(3), LoadInt(3), Exit, LoadBool(true), JumpIfTrue(-3), Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(3));
 
     let mut runtime = Runtime::new(vec![]);
     vm::execute(
         &[Jump(2), Exit, LoadBool(false), JumpIfTrue(-2), LoadInt(4), Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(4));
 }
 
@@ -181,27 +183,27 @@ fn jump_if_false() {
     vm::execute(
         &[LoadBool(false), JumpIfFalse(3), Nop, Exit, LoadInt(1), Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(1));
 
     let mut runtime = Runtime::new(vec![]);
     vm::execute(
         &[LoadBool(true), JumpIfFalse(3), LoadInt(2), Exit, Nop, Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(2));
 
     let mut runtime = Runtime::new(vec![]);
     vm::execute(
         &[Jump(3), LoadInt(3), Exit, LoadBool(false), JumpIfFalse(-3), Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(3));
 
     let mut runtime = Runtime::new(vec![]);
     vm::execute(
         &[Jump(2), Exit, LoadBool(true), JumpIfFalse(-2), LoadInt(4), Exit],
         &mut runtime,
-    );
+    ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(4));
 }
