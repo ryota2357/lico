@@ -1,7 +1,7 @@
 use super::*;
 
-impl<'a> ContextCompilable<'a> for Statement<'a> {
-    fn compile(&'a self, fragment: &mut Fragment<'a>, context: &mut Context) {
+impl<'node, 'src: 'node> ContextCompilable<'node, 'src> for Statement<'src> {
+    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context) {
         match self {
             Statement::Control(statement) => control_statement(statement, fragment, context),
             Statement::Attribute(statement) => attribute_statement(statement, fragment, context),
@@ -11,9 +11,9 @@ impl<'a> ContextCompilable<'a> for Statement<'a> {
     }
 }
 
-fn control_statement<'a>(
-    statement: &'a ControlStatement<'a>,
-    fragment: &mut Fragment<'a>,
+fn control_statement<'node, 'src: 'node>(
+    statement: &'node ControlStatement<'src>,
+    fragment: &mut Fragment<'src>,
     context: &mut Context,
 ) {
     match statement {
@@ -38,7 +38,7 @@ fn control_statement<'a>(
 
             let mut new_fragments = {
                 // `make_snip` creates [cond] ~ [body]
-                let mut make_snip = |cond: &'a Expression<'a>, body: &'a Block<'a>| {
+                let mut make_snip = |cond: &'node Expression<'src>, body: &'node Block<'src>| {
                     let body_fragment = Fragment::with_compile_with_context(body, context);
                     let mut fragment = Fragment::new();
                     fragment
@@ -187,17 +187,17 @@ fn control_statement<'a>(
     }
 }
 
-fn attribute_statement<'a>(
-    _statement: &AttributeStatement<'a>,
-    _fragment: &mut Fragment<'a>,
+fn attribute_statement<'node, 'src: 'node>(
+    _statement: &'node AttributeStatement<'src>,
+    _fragment: &mut Fragment<'src>,
     _context: &mut Context,
 ) {
     unimplemented!("attribute_statement")
 }
 
-fn variable_statement<'a>(
-    statement: &'a VariableStatement<'a>,
-    fragment: &mut Fragment<'a>,
+fn variable_statement<'node, 'src: 'node>(
+    statement: &'node VariableStatement<'src>,
+    fragment: &mut Fragment<'src>,
     context: &mut Context,
 ) {
     match statement {
@@ -265,7 +265,10 @@ fn variable_statement<'a>(
     }
 }
 
-fn call_statement<'a>(statement: &'a CallStatement<'a>, fragment: &mut Fragment<'a>) {
+fn call_statement<'node, 'src: 'node>(
+    statement: &'node CallStatement<'src>,
+    fragment: &mut Fragment<'src>,
+) {
     match statement {
         CallStatement::Invoke { expr, args } => {
             fragment

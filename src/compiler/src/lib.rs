@@ -7,12 +7,12 @@ use fragment::Fragment;
 mod context;
 use context::Context;
 
-trait Compilable<'a> {
-    fn compile(&'a self, fragment: &mut Fragment<'a>);
+trait Compilable<'node, 'src: 'node> {
+    fn compile(&'node self, fragment: &mut Fragment<'src>);
 }
 
-trait ContextCompilable<'a> {
-    fn compile(&'a self, fragment: &mut Fragment<'a>, context: &mut Context);
+trait ContextCompilable<'node, 'src: 'node> {
+    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context);
 }
 
 mod block;

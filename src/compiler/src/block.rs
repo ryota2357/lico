@@ -7,9 +7,9 @@ pub(super) enum ExitControll {
     None,
 }
 
-pub(super) fn compile_statements<'a>(
-    statements: impl IntoIterator<Item = &'a Statement<'a>>,
-    fragment: &mut Fragment<'a>,
+pub(super) fn compile_statements<'node, 'src: 'node>(
+    statements: impl IntoIterator<Item = &'node Statement<'src>>,
+    fragment: &mut Fragment<'src>,
     context: &mut Context,
 ) -> ExitControll {
     for statement in statements.into_iter() {
@@ -30,8 +30,8 @@ pub(super) fn compile_statements<'a>(
     ExitControll::None
 }
 
-impl<'a> ContextCompilable<'a> for Block<'a> {
-    fn compile(&'a self, fragment: &mut Fragment<'a>, context: &mut Context) {
+impl<'node, 'src: 'node> ContextCompilable<'node, 'src> for Block<'src> {
+    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context) {
         context.start_block();
         let end = compile_statements(self.iter().map(|s| &s.0), fragment, context);
         if let ExitControll::None = end {
@@ -44,8 +44,8 @@ impl<'a> ContextCompilable<'a> for Block<'a> {
     }
 }
 
-impl<'a> Compilable<'a> for Chunk<'a> {
-    fn compile(&'a self, fragment: &mut Fragment<'a>) {
+impl<'node, 'src: 'node> Compilable<'node, 'src> for Chunk<'src> {
+    fn compile(&'node self, fragment: &mut Fragment<'src>) {
         fragment.append_many(
             self.captures
                 .iter()

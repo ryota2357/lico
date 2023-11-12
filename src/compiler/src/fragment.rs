@@ -2,13 +2,13 @@ use crate::{context::Context, Compilable, ContextCompilable};
 use vm::code::Code;
 
 #[derive(Default, Clone, Debug, PartialEq)]
-pub(super) struct Fragment<'a> {
-    code: Vec<Code<'a>>,
+pub(super) struct Fragment<'src> {
+    code: Vec<Code<'src>>,
     forward_jump_pos: Vec<usize>,
     backward_jump_pos: Vec<usize>,
 }
 
-impl<'a> Fragment<'a> {
+impl<'src> Fragment<'src> {
     pub fn new() -> Self {
         Self {
             code: Vec::new(),
@@ -17,13 +17,16 @@ impl<'a> Fragment<'a> {
         }
     }
 
-    pub fn with_compile(compilable: &'a impl Compilable<'a>) -> Self {
+    pub fn with_compile<'node>(compilable: &'node impl Compilable<'node, 'src>) -> Self
+    where
+        'src: 'node,
+    {
         let mut fragment = Self::new();
         compilable.compile(&mut fragment);
         fragment
     }
 
-    pub fn with_code(code: Vec<Code<'a>>) -> Self {
+    pub fn with_code(code: Vec<Code<'src>>) -> Self {
         Self {
             code,
             forward_jump_pos: Vec::new(),
@@ -31,10 +34,13 @@ impl<'a> Fragment<'a> {
         }
     }
 
-    pub fn with_compile_with_context(
-        compilable: &'a impl ContextCompilable<'a>,
+    pub fn with_compile_with_context<'node>(
+        compilable: &'node impl ContextCompilable<'node, 'src>,
         context: &mut Context,
-    ) -> Self {
+    ) -> Self
+    where
+        'src: 'node,
+    {
         let mut fragment = Self::new();
         compilable.compile(&mut fragment, context);
         fragment
@@ -65,35 +71,50 @@ impl<'a> Fragment<'a> {
     }
 
     #[inline]
-    pub fn append(&mut self, code: Code<'a>) -> &mut Self {
+    pub fn append(&mut self, code: Code<'src>) -> &mut Self {
         self.code.push(code);
         self
     }
 
     #[inline]
-    pub fn append_many(&mut self, code: impl IntoIterator<Item = Code<'a>>) -> &mut Self {
+    pub fn append_many(&mut self, code: impl IntoIterator<Item = Code<'src>>) -> &mut Self {
         self.code.extend(code);
         self
     }
 
     #[inline]
-    pub fn append_compile(&mut self, compilable: &'a impl Compilable<'a>) -> &mut Self {
+    pub fn append_compile<'node>(
+        &mut self,
+        compilable: &'node impl Compilable<'node, 'src>,
+    ) -> &mut Self
+    where
+        'src: 'node,
+    {
         compilable.compile(self);
         self
     }
 
     #[inline]
-    pub fn append_compile_with_context(
+    pub fn append_compile_with_context<'node>(
         &mut self,
-        compilable: &'a impl ContextCompilable<'a>,
+        compilable: &'node impl ContextCompilable<'node, 'src>,
         context: &mut Context,
-    ) -> &mut Self {
+    ) -> &mut Self
+    where
+        'src: 'node,
+    {
         compilable.compile(self, context);
         self
     }
 
-    pub fn append_compile_many(&mut self, compilable: &'a [impl Compilable<'a>]) -> &mut Self {
-        for c in compilable.iter() {
+    pub fn append_compile_many<'node>(
+        &mut self,
+        compilable: impl IntoIterator<Item = &'node (impl Compilable<'node, 'src> + 'node)>,
+    ) -> &mut Self
+    where
+        'src: 'node,
+    {
+        for c in compilable.into_iter() {
             self.append_compile(c);
         }
         self
@@ -109,7 +130,7 @@ impl<'a> Fragment<'a> {
         self.backward_jump_pos.push(self.code.len() - 1);
     }
 
-    pub fn append_fragment(&mut self, fragment: Fragment<'a>) -> &mut Self {
+    pub fn append_fragment(&mut self, fragment: Fragment<'src>) -> &mut Self {
         let len = self.code.len();
         let Fragment {
             code,
@@ -127,7 +148,7 @@ impl<'a> Fragment<'a> {
 
     pub fn append_fragment_many(
         &mut self,
-        fragments: impl IntoIterator<Item = Fragment<'a>>,
+        fragments: impl IntoIterator<Item = Fragment<'src>>,
     ) -> &mut Self {
         for fragment in fragments {
             self.append_fragment(fragment);
@@ -136,7 +157,7 @@ impl<'a> Fragment<'a> {
     }
 
     #[inline]
-    pub fn into_code(self) -> Vec<Code<'a>> {
+    pub fn into_code(self) -> Vec<Code<'src>> {
         if cfg!(debug_assertions) {
             for code in self.code.iter() {
                 assert!(!matches!(code, Code::Jump(0)));

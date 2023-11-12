@@ -1,18 +1,18 @@
 use super::*;
 
-impl<'a> Compilable<'a> for Expression<'a> {
-    fn compile(&'a self, fragment: &mut Fragment<'a>) {
+impl<'node, 'src: 'node> Compilable<'node, 'src> for Expression<'src> {
+    fn compile(&'node self, fragment: &mut Fragment<'src>) {
         compile(self, fragment);
     }
 }
 
-impl<'a> Compilable<'a> for Box<Expression<'a>> {
-    fn compile(&'a self, fragment: &mut Fragment<'a>) {
+impl<'node, 'src: 'node> Compilable<'node, 'src> for Box<Expression<'src>> {
+    fn compile(&'node self, fragment: &mut Fragment<'src>) {
         compile(self, fragment);
     }
 }
 
-fn compile<'a>(expr: &'a Expression<'a>, fragment: &mut Fragment<'a>) {
+fn compile<'node, 'src: 'node>(expr: &'node Expression<'src>, fragment: &mut Fragment<'src>) {
     match expr {
         Expression::Unary { op, expr } => match op {
             UnaryOp::Neg => {
@@ -176,7 +176,7 @@ fn compile<'a>(expr: &'a Expression<'a>, fragment: &mut Fragment<'a>) {
         }
         Expression::ArrayObject(array) => {
             fragment
-                .append_compile_many(array)
+                .append_compile_many(array.iter())
                 .append(Code::MakeArray(array.len() as u32));
         }
         Expression::FunctionObject(function) => {
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn and() {
-        let expr = Expression::Binary {
+        let fragment = Fragment::with_compile(&Expression::Binary {
             op: BinaryOp::And,
             lhs: Box::new(Expression::Ident(Ident {
                 str: "a",
@@ -229,8 +229,7 @@ mod tests {
                 str: "b",
                 span: (0..0).into(),
             })),
-        };
-        let fragment = Fragment::with_compile(&expr);
+        });
         assert_eq!(
             fragment.into_code(),
             vec![
@@ -245,7 +244,7 @@ mod tests {
 
     #[test]
     fn or() {
-        let expr = Expression::Binary {
+        let fragment = Fragment::with_compile(&Expression::Binary {
             op: BinaryOp::Or,
             lhs: Box::new(Expression::Ident(Ident {
                 str: "a",
@@ -255,8 +254,7 @@ mod tests {
                 str: "b",
                 span: (0..0).into(),
             })),
-        };
-        let fragment = Fragment::with_compile(&expr);
+        });
         assert_eq!(
             fragment.into_code(),
             vec![
