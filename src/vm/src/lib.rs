@@ -317,6 +317,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             Mul => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -339,6 +340,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             Div => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -361,6 +363,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             Mod => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -383,6 +386,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             Pow => todo!("Pow"),
             Unm => {
@@ -392,16 +396,19 @@ pub fn execute<'src, W: std::io::Write>(
                     Object::Float(x) => runtime.stack.push(Object::Float(-x).into()),
                     x => Err(format!("Expected Int or Float, but got {:?}", x))?,
                 }
+                pc += 1;
             }
             Eq => {
                 let rhs = runtime.stack.pop().ensure_object();
                 let lhs = runtime.stack.pop().ensure_object();
                 runtime.stack.push(Object::Bool(lhs == rhs).into());
+                pc += 1;
             }
             NotEq => {
                 let rhs = runtime.stack.pop().ensure_object();
                 let lhs = runtime.stack.pop().ensure_object();
                 runtime.stack.push(Object::Bool(lhs != rhs).into());
+                pc += 1;
             }
             Less => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -424,6 +431,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             LessEq => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -446,6 +454,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             Greater => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -468,6 +477,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             GreaterEq => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -490,6 +500,7 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
+                pc += 1;
             }
             Builtin(instr, args_len) => {
                 let args = create_args_vec(*args_len, runtime);
