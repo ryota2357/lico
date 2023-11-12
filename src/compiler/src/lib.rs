@@ -32,6 +32,8 @@ pub fn compile<'a>(program: &Program<'a>) -> Vec<Code<'a>> {
                     Code::LoadString("\n".to_string()),
                     Code::Builtin(BuiltinInstr::Write, 2),
                     Code::Builtin(BuiltinInstr::Flush, 0),
+                    Code::LoadNil,
+                    Code::Return,
                     Code::EndFuncCreation,
                     Code::MakeLocal("print"),
                 ]);
@@ -39,7 +41,7 @@ pub fn compile<'a>(program: &Program<'a>) -> Vec<Code<'a>> {
             "require" => {
                 unimplemented!("require")
             }
-            _ => {}
+            _ => { /* TODO: warning or ... */ }
         }
     }
 
