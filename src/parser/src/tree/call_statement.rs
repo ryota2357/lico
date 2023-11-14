@@ -3,19 +3,23 @@ use super::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum CallStatement<'src> {
     Invoke {
-        expr: Expression<'src>,
-        args: Vec<Expression<'src>>,
+        expr: (Expression<'src>, Span),
+        args: Vec<(Expression<'src>, Span)>,
     },
     MethodCall {
-        expr: Expression<'src>,
-        name: Ident<'src>,
-        args: Vec<Expression<'src>>,
+        expr: (Expression<'src>, Span),
+        name: (Ident<'src>, Span),
+        args: Vec<(Expression<'src>, Span)>,
     },
 }
 
 pub(super) fn call_statement<'tokens, 'src: 'tokens>(
-    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression<'src>, ParserError<'tokens, 'src>>
-        + Clone
+    expression: impl Parser<
+            'tokens,
+            ParserInput<'tokens, 'src>,
+            (Expression<'src>, Span),
+            ParserError<'tokens, 'src>,
+        > + Clone
         + 'tokens,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CallStatement<'src>, ParserError<'tokens, 'src>>
        + Clone {
@@ -27,7 +31,9 @@ pub(super) fn call_statement<'tokens, 'src: 'tokens>(
         let delimited_expr = expression
             .clone()
             .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
-        choice((ident, primitive, tabel_obj, arrya_obj, delimited_expr))
+        choice((ident, primitive, tabel_obj, arrya_obj))
+            .map_with(|expr, extra| (expr, extra.span().into()))
+            .or(delimited_expr)
     };
     let trigger = {
         let expr_args = expression
@@ -35,31 +41,30 @@ pub(super) fn call_statement<'tokens, 'src: 'tokens>(
             .allow_trailing()
             .collect()
             .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
-        let invoke = expr_args.clone().map(|args| (None, args));
+        let invoke = expr_args
+            .clone()
+            .map_with(|args, extra| (None, args, extra.span()));
         let method = just(Token::Arrow)
-            .ignore_then(ident())
+            .ignore_then(spanned_ident())
             .then(expr_args)
-            .map(|(name, args)| (Some(name), args));
+            .map_with(|(name, args), extra| (Some(name), args, extra.span()));
         invoke.or(method)
     };
 
     ident_or_expr
         .then(trigger.repeated().at_least(1).collect::<Vec<_>>())
-        .map(|(expr, mut triggers)| {
+        .map_with(|(expr, mut triggers), _extra| {
             // let (name, args) = unsafe { triggers.pop().unwrap_unchecked() };
-            let (name, args) = triggers.pop().unwrap();
+            let (name, args, _) = triggers.pop().unwrap();
             let expr = triggers
                 .into_iter()
-                .fold(expr, |expr, (name, args)| match name {
-                    Some(name) => Expression::MethodCall {
-                        expr: Box::new(expr),
-                        name,
-                        args,
-                    },
-                    None => Expression::Invoke {
-                        expr: Box::new(expr),
-                        args,
-                    },
+                .fold(expr, |(expr, expr_span), (name, args, span)| {
+                    let span = expr_span.start..span.end;
+                    let expr = (Box::new(expr), expr_span);
+                    match name {
+                        Some(name) => (Expression::MethodCall { expr, name, args }, span),
+                        None => (Expression::Invoke { expr, args }, span),
+                    }
                 });
             match name {
                 Some(name) => CallStatement::MethodCall { expr, name, args },
@@ -71,15 +76,22 @@ pub(super) fn call_statement<'tokens, 'src: 'tokens>(
 impl<'a> TreeWalker<'a> for CallStatement<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
-            CallStatement::Invoke { expr, args } => {
+            CallStatement::Invoke {
+                expr: (expr, _),
+                args,
+            } => {
                 expr.analyze(tracker);
-                for arg in args {
+                for (arg, _) in args {
                     arg.analyze(tracker);
                 }
             }
-            CallStatement::MethodCall { expr, args, .. } => {
+            CallStatement::MethodCall {
+                expr: (expr, _),
+                args,
+                ..
+            } => {
                 expr.analyze(tracker);
-                for arg in args {
+                for (arg, _) in args {
                     arg.analyze(tracker);
                 }
             }

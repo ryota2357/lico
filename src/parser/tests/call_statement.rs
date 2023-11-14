@@ -5,6 +5,7 @@ fn do_statement_test(src: &str, statement: Statement<'_>) {
     let program = common::parse_program(src);
     let stats = program.body.body;
     assert_eq!(stats.len(), 1);
+    assert_eq!(stats[0].1, (0..src.len()));
     assert_eq!(stats[0].0, statement);
 }
 
@@ -13,17 +14,14 @@ fn complicated_func_with_trailing_comma() {
     do_statement_test(
         "f(g(),)",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Ident(Ident {
-                str: "f",
-                span: (0..1).into(),
-            }),
-            args: vec![Expression::Invoke {
-                expr: Box::new(Expression::Ident(Ident {
-                    str: "g",
-                    span: (2..3).into(),
-                })),
-                args: vec![],
-            }],
+            expr: (Expression::Ident(Ident("f")), 0..1),
+            args: vec![(
+                Expression::Invoke {
+                    expr: (Box::new(Expression::Ident(Ident("g"))), 2..3),
+                    args: vec![],
+                },
+                2..5,
+            )],
         }),
     );
 }
@@ -31,17 +29,10 @@ fn complicated_func_with_trailing_comma() {
 #[test]
 #[should_panic] // TODO: 構文エラーレポートのテストを書く
 fn call_with_only_comma() {
-    // do_statement_test(
-    //     "f(,)",
-    //     None
-    // );
     do_statement_test(
         "f(,)",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Ident(Ident {
-                str: "f",
-                span: (0..1).into(),
-            }),
+            expr: (Expression::Ident(Ident("f")), 0..1),
             args: vec![],
         }),
     );
@@ -52,13 +43,13 @@ fn multiple_call() {
     do_statement_test(
         "f()()",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Invoke {
-                expr: Box::new(Expression::Ident(Ident {
-                    str: "f",
-                    span: (0..1).into(),
-                })),
-                args: vec![],
-            },
+            expr: (
+                Expression::Invoke {
+                    expr: (Box::new(Expression::Ident(Ident("f"))), 0..1),
+                    args: vec![],
+                },
+                0..3,
+            ),
             args: vec![],
         }),
     );
@@ -69,17 +60,20 @@ fn multiple_call_more() {
     do_statement_test(
         "f(1)(2)(3)",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Invoke {
-                expr: Box::new(Expression::Invoke {
-                    expr: Box::new(Expression::Ident(Ident {
-                        str: "f",
-                        span: (0..1).into(),
-                    })),
-                    args: vec![Expression::Primitive(Primitive::Int(1))],
-                }),
-                args: vec![Expression::Primitive(Primitive::Int(2))],
-            },
-            args: vec![Expression::Primitive(Primitive::Int(3))],
+            expr: (
+                Expression::Invoke {
+                    expr: (
+                        Box::new(Expression::Invoke {
+                            expr: (Box::new(Expression::Ident(Ident("f"))), 0..1),
+                            args: vec![(Expression::Primitive(Primitive::Int(1)), 2..3)],
+                        }),
+                        0..4,
+                    ),
+                    args: vec![(Expression::Primitive(Primitive::Int(2)), 5..6)],
+                },
+                0..7,
+            ),
+            args: vec![(Expression::Primitive(Primitive::Int(3)), 8..9)],
         }),
     );
 }
@@ -89,17 +83,20 @@ fn delimited_call() {
     do_statement_test(
         "((f(1))(2))(3)",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Invoke {
-                expr: Box::new(Expression::Invoke {
-                    expr: Box::new(Expression::Ident(Ident {
-                        str: "f",
-                        span: (2..3).into(),
-                    })),
-                    args: vec![Expression::Primitive(Primitive::Int(1))],
-                }),
-                args: vec![Expression::Primitive(Primitive::Int(2))],
-            },
-            args: vec![Expression::Primitive(Primitive::Int(3))],
+            expr: (
+                Expression::Invoke {
+                    expr: (
+                        Box::new(Expression::Invoke {
+                            expr: (Box::new(Expression::Ident(Ident("f"))), 2..3),
+                            args: vec![(Expression::Primitive(Primitive::Int(1)), 4..5)],
+                        }),
+                        2..6,
+                    ),
+                    args: vec![(Expression::Primitive(Primitive::Int(2)), 8..9)],
+                },
+                1..10,
+            ),
+            args: vec![(Expression::Primitive(Primitive::Int(3)), 12..13)],
         }),
     );
 }
@@ -109,20 +106,26 @@ fn multiple_call_with_delimited() {
     do_statement_test(
         "(f(1)(2))(3)(4)",
         Statement::Call(CallStatement::Invoke {
-            expr: Expression::Invoke {
-                expr: Box::new(Expression::Invoke {
-                    expr: Box::new(Expression::Invoke {
-                        expr: Box::new(Expression::Ident(Ident {
-                            str: "f",
-                            span: (1..2).into(),
-                        })),
-                        args: vec![Expression::Primitive(Primitive::Int(1))],
-                    }),
-                    args: vec![Expression::Primitive(Primitive::Int(2))],
-                }),
-                args: vec![Expression::Primitive(Primitive::Int(3))],
-            },
-            args: vec![Expression::Primitive(Primitive::Int(4))],
+            expr: (
+                Expression::Invoke {
+                    expr: (
+                        Box::new(Expression::Invoke {
+                            expr: (
+                                Box::new(Expression::Invoke {
+                                    expr: (Box::new(Expression::Ident(Ident("f"))), 1..2),
+                                    args: vec![(Expression::Primitive(Primitive::Int(1)), 3..4)],
+                                }),
+                                1..5,
+                            ),
+                            args: vec![(Expression::Primitive(Primitive::Int(2)), 6..7)],
+                        }),
+                        1..8,
+                    ),
+                    args: vec![(Expression::Primitive(Primitive::Int(3)), 10..11)],
+                },
+                1..12,
+            ),
+            args: vec![(Expression::Primitive(Primitive::Int(4)), 13..14)],
         }),
     );
 }
@@ -132,45 +135,33 @@ fn method_chain() {
     do_statement_test(
         "a->b()->c()",
         Statement::Call(CallStatement::MethodCall {
-            expr: Expression::MethodCall {
-                expr: Box::new(Expression::Ident(Ident {
-                    str: "a",
-                    span: (0..1).into(),
-                })),
-                name: Ident {
-                    str: "b",
-                    span: (3..4).into(),
+            expr: (
+                Expression::MethodCall {
+                    expr: (Box::new(Expression::Ident(Ident("a"))), 0..1),
+                    name: (Ident("b"), (3..4)),
+                    args: vec![],
                 },
-                args: vec![],
-            },
-            name: Ident {
-                str: "c",
-                span: (8..9).into(),
-            },
+                0..6,
+            ),
+            name: (Ident("c"), (8..9)),
             args: vec![],
         }),
     );
     do_statement_test(
         "(a->b(1))->c(2, 3)",
         Statement::Call(CallStatement::MethodCall {
-            expr: Expression::MethodCall {
-                expr: Box::new(Expression::Ident(Ident {
-                    str: "a",
-                    span: (1..2).into(),
-                })),
-                name: Ident {
-                    str: "b",
-                    span: (4..5).into(),
+            expr: (
+                Expression::MethodCall {
+                    expr: (Box::new(Expression::Ident(Ident("a"))), 1..2),
+                    name: (Ident("b"), (4..5)),
+                    args: vec![(Expression::Primitive(Primitive::Int(1)), 6..7)],
                 },
-                args: vec![Expression::Primitive(Primitive::Int(1))],
-            },
-            name: Ident {
-                str: "c",
-                span: (11..12).into(),
-            },
+                1..8,
+            ),
+            name: (Ident("c"), (11..12)),
             args: vec![
-                Expression::Primitive(Primitive::Int(2)),
-                Expression::Primitive(Primitive::Int(3)),
+                (Expression::Primitive(Primitive::Int(2)), 13..14),
+                (Expression::Primitive(Primitive::Int(3)), 16..17),
             ],
         }),
     );
@@ -181,25 +172,25 @@ fn multiple_call_with_method() {
     do_statement_test(
         "a->b(1)(false)->c('3')",
         Statement::Call(CallStatement::MethodCall {
-            expr: Expression::Invoke {
-                expr: Box::new(Expression::MethodCall {
-                    expr: Box::new(Expression::Ident(Ident {
-                        str: "a",
-                        span: (0..1).into(),
-                    })),
-                    name: Ident {
-                        str: "b",
-                        span: (3..4).into(),
-                    },
-                    args: vec![Expression::Primitive(Primitive::Int(1))],
-                }),
-                args: vec![Expression::Primitive(Primitive::Bool(false))],
-            },
-            name: Ident {
-                str: "c",
-                span: (16..17).into(),
-            },
-            args: vec![Expression::Primitive(Primitive::String("3".to_string()))],
+            expr: (
+                Expression::Invoke {
+                    expr: (
+                        Box::new(Expression::MethodCall {
+                            expr: (Box::new(Expression::Ident(Ident("a"))), 0..1),
+                            name: (Ident("b"), (3..4)),
+                            args: vec![(Expression::Primitive(Primitive::Int(1)), 5..6)],
+                        }),
+                        0..7,
+                    ),
+                    args: vec![(Expression::Primitive(Primitive::Bool(false)), 8..13)],
+                },
+                0..14,
+            ),
+            name: (Ident("c"), (16..17)),
+            args: vec![(
+                Expression::Primitive(Primitive::String("3".to_string())),
+                18..21,
+            )],
         }),
     );
 }

@@ -17,11 +17,8 @@ fn define_variable_with_litera() {
             captures: vec![],
             body: vec![(
                 Statement::Variable(VariableStatement::Var {
-                    name: Ident {
-                        str: "x",
-                        span: (4..5).into(),
-                    },
-                    expr: Expression::Primitive(Primitive::Int(17)),
+                    name: (Ident("x"), 4..5),
+                    expr: (Expression::Primitive(Primitive::Int(17)), 8..10),
                 }),
                 0..10,
             )],
@@ -37,17 +34,14 @@ fn define_variable_with_func_call() {
             captures: vec!["f"],
             body: vec![(
                 Statement::Variable(VariableStatement::Var {
-                    name: Ident {
-                        str: "x",
-                        span: (4..5).into(),
-                    },
-                    expr: Expression::Invoke {
-                        expr: Box::new(Expression::Ident(Ident {
-                            str: "f",
-                            span: (8..9).into(),
-                        })),
-                        args: vec![],
-                    },
+                    name: (Ident("x"), 4..5),
+                    expr: (
+                        Expression::Invoke {
+                            expr: (Box::new(Expression::Ident(Ident("f"))), 8..9),
+                            args: vec![],
+                        },
+                        (8..11),
+                    ),
                 }),
                 0..11,
             )],
@@ -63,12 +57,9 @@ fn assign_variable_with_literal() {
             captures: vec!["x"],
             body: vec![(
                 Statement::Variable(VariableStatement::Assign {
-                    name: Ident {
-                        str: "x",
-                        span: (0..1).into(),
-                    },
+                    name: (Ident("x"), 0..1),
                     accesser: vec![],
-                    expr: Expression::Primitive(Primitive::Float(1.23)),
+                    expr: (Expression::Primitive(Primitive::Float(1.23)), 4..8),
                 }),
                 0..8,
             )],
@@ -84,10 +75,7 @@ fn define_function_without_args_and_body() {
             captures: vec![],
             body: vec![(
                 Statement::Variable(VariableStatement::Func {
-                    name: Ident {
-                        str: "f",
-                        span: (5..6).into(),
-                    },
+                    name: (Ident("f"), 5..6),
                     args: vec![],
                     body: Chunk {
                         captures: vec![],
@@ -108,27 +96,16 @@ fn define_function_with_args_and_body() {
             captures: vec![],
             body: vec![(
                 Statement::Variable(VariableStatement::Func {
-                    name: Ident {
-                        str: "f",
-                        span: (5..6).into(),
-                    },
-                    args: vec![
-                        Ident {
-                            str: "a",
-                            span: (7..8).into(),
-                        },
-                        Ident {
-                            str: "b",
-                            span: (10..11).into(),
-                        },
-                    ],
+                    name: (Ident("f"), 5..6),
+                    args: vec![(Ident("a"), 7..8), (Ident("b"), 10..11)],
                     body: Chunk {
                         captures: vec![],
                         body: vec![(
                             Statement::Control(ControlStatement::Return {
-                                value: Some(Expression::Primitive(Primitive::String(
-                                    "a".to_string(),
-                                ))),
+                                value: Some((
+                                    (Expression::Primitive(Primitive::String("a".to_string()))),
+                                    20..23,
+                                )),
                             }),
                             13..23,
                         )],
@@ -148,20 +125,8 @@ fn define_table_field_function() {
             captures: vec!["t"],
             body: vec![(
                 Statement::Variable(VariableStatement::FieldFunc {
-                    table: Ident {
-                        str: "t",
-                        span: (5..6).into(),
-                    },
-                    fields: vec![
-                        Ident {
-                            str: "a",
-                            span: (7..8).into(),
-                        },
-                        Ident {
-                            str: "b",
-                            span: (9..10).into(),
-                        },
-                    ],
+                    table: (Ident("t"), 5..6),
+                    fields: vec![(Ident("a"), 7..8), (Ident("b"), 9..10)],
                     args: vec![],
                     body: Chunk {
                         captures: vec![],
@@ -184,10 +149,7 @@ fn call_function_without_args() {
             captures: vec!["f"],
             body: vec![(
                 Statement::Call(CallStatement::Invoke {
-                    expr: Expression::Ident(Ident {
-                        str: "f",
-                        span: (0..1).into(),
-                    }),
+                    expr: (Expression::Ident(Ident("f")), 0..1),
                     args: vec![],
                 }),
                 0..3,
@@ -204,14 +166,14 @@ fn call_function_with_args() {
             captures: vec!["f"],
             body: vec![(
                 Statement::Call(CallStatement::Invoke {
-                    expr: Expression::Ident(Ident {
-                        str: "f",
-                        span: (0..1).into(),
-                    }),
+                    expr: (Expression::Ident(Ident("f")), 0..1),
                     args: vec![
-                        Expression::Primitive(Primitive::Int(1)),
-                        Expression::Primitive(Primitive::String("a".to_string())),
-                        Expression::Primitive(Primitive::Bool(true)),
+                        (Expression::Primitive(Primitive::Int(1)), 2..3),
+                        (
+                            Expression::Primitive(Primitive::String("a".to_string())),
+                            5..8,
+                        ),
+                        (Expression::Primitive(Primitive::Bool(true)), 10..14),
                     ],
                 }),
                 0..15,
@@ -228,15 +190,12 @@ fn method_call() {
             captures: vec!["a"],
             body: vec![(
                 Statement::Call(CallStatement::MethodCall {
-                    expr: Expression::Ident(Ident {
-                        str: "a",
-                        span: (0..1).into(),
-                    }),
-                    name: Ident {
-                        str: "b",
-                        span: (3..4).into(),
-                    },
-                    args: vec![Expression::Primitive(Primitive::String("a".to_string()))],
+                    expr: (Expression::Ident(Ident("a")), 0..1),
+                    name: (Ident("b"), 3..4),
+                    args: vec![(
+                        Expression::Primitive(Primitive::String("a".to_string())),
+                        5..8,
+                    )],
                 }),
                 0..9,
             )],
@@ -252,16 +211,16 @@ fn method_call_obj() {
             captures: vec![],
             body: vec![(
                 Statement::Call(CallStatement::MethodCall {
-                    expr: Expression::ArrayObject(ArrayObject {
-                        elements: vec![
-                            Expression::Primitive(Primitive::Int(1)),
-                            Expression::Primitive(Primitive::Int(2)),
-                        ],
-                    }),
-                    name: Ident {
-                        str: "len",
-                        span: (8..11).into(),
-                    },
+                    expr: (
+                        Expression::ArrayObject(ArrayObject {
+                            elements: vec![
+                                (Expression::Primitive(Primitive::Int(1)), 1..2),
+                                (Expression::Primitive(Primitive::Int(2)), 4..5),
+                            ],
+                        }),
+                        0..6,
+                    ),
+                    name: (Ident("len"), 8..11),
                     args: vec![],
                 }),
                 0..13,
@@ -273,6 +232,7 @@ fn method_call_obj() {
 // Control statement
 
 #[test]
+#[allow(clippy::reversed_empty_ranges)]
 fn if_empty() {
     do_chunk_test(
         "if true then end",
@@ -280,7 +240,7 @@ fn if_empty() {
             captures: vec![],
             body: vec![(
                 Statement::Control(ControlStatement::If {
-                    cond: Expression::Primitive(Primitive::Bool(true)),
+                    cond: (Expression::Primitive(Primitive::Bool(true)), (3..7)),
                     body: Block { body: vec![] },
                     elifs: vec![],
                     else_: None,
@@ -299,21 +259,21 @@ fn if_elif_else() {
             captures: vec![],
             body: vec![(
                 Statement::Control(ControlStatement::If {
-                    cond: Expression::Primitive(Primitive::Bool(true)),
+                    cond: (Expression::Primitive(Primitive::Bool(true)), (3..7)),
                     body: Block {
                         body: vec![(
                             Statement::Control(ControlStatement::Return {
-                                value: Some(Expression::Primitive(Primitive::Int(1))),
+                                value: Some((Expression::Primitive(Primitive::Int(1)), 20..21)),
                             }),
                             13..21,
                         )],
                     },
                     elifs: vec![(
-                        Expression::Primitive(Primitive::Bool(false)),
+                        (Expression::Primitive(Primitive::Bool(false)), (27..32)),
                         Block {
                             body: vec![(
                                 Statement::Control(ControlStatement::Return {
-                                    value: Some(Expression::Primitive(Primitive::Int(2))),
+                                    value: Some((Expression::Primitive(Primitive::Int(2)), 45..46)),
                                 }),
                                 38..46,
                             )],
@@ -322,7 +282,7 @@ fn if_elif_else() {
                     else_: Some(Block {
                         body: vec![(
                             Statement::Control(ControlStatement::Return {
-                                value: Some(Expression::Primitive(Primitive::Int(3))),
+                                value: Some((Expression::Primitive(Primitive::Int(3)), 59..60)),
                             }),
                             52..60,
                         )],
@@ -335,6 +295,7 @@ fn if_elif_else() {
 }
 
 #[test]
+#[allow(clippy::reversed_empty_ranges)]
 fn for_in_array() {
     do_chunk_test(
         "for i in [1, 2, 3] do end",
@@ -342,17 +303,17 @@ fn for_in_array() {
             captures: vec![],
             body: vec![(
                 Statement::Control(ControlStatement::For {
-                    value: Ident {
-                        str: "i",
-                        span: (4..5).into(),
-                    },
-                    iter: Expression::ArrayObject(ArrayObject {
-                        elements: vec![
-                            Expression::Primitive(Primitive::Int(1)),
-                            Expression::Primitive(Primitive::Int(2)),
-                            Expression::Primitive(Primitive::Int(3)),
-                        ],
-                    }),
+                    value: (Ident("i"), 4..5),
+                    iter: (
+                        Expression::ArrayObject(ArrayObject {
+                            elements: vec![
+                                (Expression::Primitive(Primitive::Int(1)), (10..11)),
+                                (Expression::Primitive(Primitive::Int(2)), (13..14)),
+                                (Expression::Primitive(Primitive::Int(3)), (16..17)),
+                            ],
+                        }),
+                        9..18,
+                    ),
                     body: Block { body: vec![] },
                 }),
                 0..25,
@@ -369,37 +330,28 @@ fn for_with_body() {
             captures: vec!["a"],
             body: vec![(
                 Statement::Control(ControlStatement::For {
-                    value: Ident {
-                        str: "i",
-                        span: (4..5).into(),
-                    },
-                    iter: Expression::MethodCall {
-                        expr: Box::new(Expression::Primitive(Primitive::Int(1))),
-                        name: Ident {
-                            str: "upto",
-                            span: (12..16).into(),
+                    value: (Ident("i"), 4..5),
+                    iter: (
+                        Expression::MethodCall {
+                            expr: (Box::new(Expression::Primitive(Primitive::Int(1))), 9..10),
+                            name: (Ident("upto"), 12..16),
+                            args: vec![(Expression::Primitive(Primitive::Int(10)), 17..19)],
                         },
-                        args: vec![Expression::Primitive(Primitive::Int(10))],
-                    },
+                        9..20,
+                    ),
                     body: Block {
                         body: vec![(
                             Statement::Variable(VariableStatement::Assign {
-                                name: Ident {
-                                    str: "a",
-                                    span: (24..25).into(),
-                                },
+                                name: (Ident("a"), 24..25),
                                 accesser: vec![],
-                                expr: Expression::Binary {
-                                    op: BinaryOp::Add,
-                                    lhs: Box::new(Expression::Ident(Ident {
-                                        str: "a",
-                                        span: (28..29).into(),
-                                    })),
-                                    rhs: Box::new(Expression::Ident(Ident {
-                                        str: "i",
-                                        span: (32..33).into(),
-                                    })),
-                                },
+                                expr: (
+                                    Expression::Binary {
+                                        op: BinaryOp::Add,
+                                        lhs: (Box::new(Expression::Ident(Ident("a"))), 28..29),
+                                        rhs: (Box::new(Expression::Ident(Ident("i"))), 32..33),
+                                    },
+                                    28..33,
+                                ),
                             }),
                             24..33,
                         )],
@@ -419,13 +371,13 @@ fn while_() {
             captures: vec!["ok"],
             body: vec![(
                 Statement::Control(ControlStatement::While {
-                    cond: Expression::Invoke {
-                        expr: Box::new(Expression::Ident(Ident {
-                            str: "ok",
-                            span: (6..8).into(),
-                        })),
-                        args: vec![],
-                    },
+                    cond: (
+                        Expression::Invoke {
+                            expr: (Box::new(Expression::Ident(Ident("ok"))), 6..8),
+                            args: vec![],
+                        },
+                        (6..10),
+                    ),
                     body: Block {
                         body: vec![(Statement::Control(ControlStatement::Break), 14..19)],
                     },

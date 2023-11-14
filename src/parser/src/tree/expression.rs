@@ -5,12 +5,12 @@ use chumsky::pratt::*;
 pub enum Expression<'src> {
     Unary {
         op: UnaryOp,
-        expr: Box<Expression<'src>>,
+        expr: (Box<Expression<'src>>, Span),
     },
     Binary {
         op: BinaryOp,
-        lhs: Box<Expression<'src>>,
-        rhs: Box<Expression<'src>>,
+        lhs: (Box<Expression<'src>>, Span),
+        rhs: (Box<Expression<'src>>, Span),
     },
     Ident(Ident<'src>),
     Primitive(Primitive),
@@ -18,21 +18,21 @@ pub enum Expression<'src> {
     ArrayObject(ArrayObject<'src>),
     FunctionObject(FunctionObject<'src>),
     Invoke {
-        expr: Box<Expression<'src>>,
-        args: Vec<Expression<'src>>,
+        expr: (Box<Expression<'src>>, Span),
+        args: Vec<(Expression<'src>, Span)>,
     },
     MethodCall {
-        expr: Box<Expression<'src>>,
-        name: Ident<'src>,
-        args: Vec<Expression<'src>>,
+        expr: (Box<Expression<'src>>, Span),
+        name: (Ident<'src>, Span),
+        args: Vec<(Expression<'src>, Span)>,
     },
     IndexAccess {
-        expr: Box<Expression<'src>>,
-        accesser: Box<Expression<'src>>,
+        expr: (Box<Expression<'src>>, Span),
+        accesser: (Box<Expression<'src>>, Span),
     },
     DotAccess {
-        expr: Box<Expression<'src>>,
-        accesser: Ident<'src>,
+        expr: (Box<Expression<'src>>, Span),
+        accesser: (Ident<'src>, Span),
     },
 }
 
@@ -67,23 +67,55 @@ pub enum BinaryOp {
 
 macro_rules! infix_binary {
     ($associativity:expr, $op_parser:expr => $op:ident) => {
-        infix($associativity, $op_parser, |lhs, rhs| Expression::Binary {
-            op: BinaryOp::$op,
-            lhs: Box::new(lhs),
-            rhs: Box::new(rhs),
-        })
+        infix(
+            $associativity,
+            $op_parser,
+            |(lhs, lhs_span): (_, Span), (rhs, rhs_span): (_, Span)| {
+                let span = lhs_span.start..rhs_span.end;
+                (
+                    Expression::Binary {
+                        op: BinaryOp::$op,
+                        lhs: (Box::new(lhs), lhs_span),
+                        rhs: (Box::new(rhs), rhs_span),
+                    },
+                    span.into(),
+                )
+            },
+        )
     };
 }
 
 macro_rules! prefix_unary {
     ($binding_power:expr, $op_parser:expr => $op:ident $(, [ $($rhs:pat => $to:expr),* $(,)? ] )?) => {
-        prefix($binding_power, $op_parser, |rhs| match rhs {
-            $($($rhs => $to,)*)?
-            _ => Expression::Unary {
-                op: UnaryOp::$op,
-                expr: Box::new(rhs),
-            },
+        prefix(
+            $binding_power,
+            $op_parser,
+            |_, (rhs, rhs_span), extra: &mut chumsky::input::MapExtra<'tokens, '_, _, _>| {
+            let span: SimpleSpan = extra.span();
+            match rhs {
+                $($($rhs => ($to, span.into()),)*)?
+                _ => (
+                    Expression::Unary {
+                        op: UnaryOp::$op,
+                        expr: (Box::new(rhs), rhs_span),
+                    },
+                    span.into()
+                )
+            }
         })
+    };
+}
+
+macro_rules! postfix_expr {
+    ($binding_power:expr, $op_parser:expr, ($($args:tt),*) => { $node:expr }) => {
+        postfix(
+            $binding_power,
+            $op_parser,
+            |$($args),*, extra: &mut chumsky::input::MapExtra<'tokens, '_, _, _>| {
+                let span: SimpleSpan = extra.span();
+                ($node, span.into())
+            },
+        )
     };
 }
 
@@ -92,13 +124,25 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression<'src>, ParserError<'tokens, 'src>> + Clone
-{
+) -> impl Parser<
+    'tokens,
+    ParserInput<'tokens, 'src>,
+    (Expression<'src>, Span),
+    ParserError<'tokens, 'src>,
+> + Clone {
     recursive(|expr| {
-        let primitive = primitive().map(Expression::Primitive);
-        let table_object = table_object(expr.clone()).map(Expression::TableObject);
-        let array_object = array_object(expr.clone()).map(Expression::ArrayObject);
-        let function_object = function_object(block.clone()).map(Expression::FunctionObject);
+        let primitive = primitive()
+            .map(Expression::Primitive)
+            .map_with(|expr, ext| (expr, ext.span().into()));
+        let table_object = table_object(expr.clone())
+            .map(Expression::TableObject)
+            .map_with(|expr, ext| (expr, ext.span().into()));
+        let array_object = array_object(expr.clone())
+            .map(Expression::ArrayObject)
+            .map_with(|expr, ext| (expr, ext.span().into()));
+        let function_object = function_object(block.clone())
+            .map(Expression::FunctionObject)
+            .map_with(|expr, ext| (expr, ext.span().into()));
 
         let pratt = {
             let atom = choice((
@@ -108,7 +152,9 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                 function_object
                     .clone()
                     .delimited_by(just(Token::OpenParen), just(Token::CloseParen)),
-                ident().map(Expression::Ident),
+                ident()
+                    .map(Expression::Ident)
+                    .map_with(|expr, ext| (expr, ext.span().into())),
             ));
             recursive(|pratt| {
                 let term = choice((
@@ -125,32 +171,55 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     .collect()
                     .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
                 let method_call_post_op = just(Token::Arrow)
-                    .ignore_then(ident())
+                    .ignore_then(spanned_ident())
                     .then(invoke_post_op.clone());
-                let dot_access_post_op = just(Token::Dot).ignore_then(ident());
+                let dot_access_post_op = just(Token::Dot).ignore_then(spanned_ident());
                 let index_access_post_op = expr
                     .clone()
                     .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket));
 
                 term.pratt((
-                    // 8: Invoke, MethodCall, DotAccess, IndexAccess
-                    postfix(8, invoke_post_op, |lhs, args| Expression::Invoke {
-                        expr: Box::new(lhs),
-                        args,
-                    }),
-                    postfix(8, method_call_post_op, |expr, (name, args)| Expression::MethodCall {
-                        expr: Box::new(expr),
-                        name,
-                        args,
-                    }),
-                    postfix(8, dot_access_post_op, |expr, accesser| Expression::DotAccess {
-                        expr: Box::new(expr),
-                        accesser,
-                    }),
-                    postfix(8, index_access_post_op, |expr, accesser| Expression::IndexAccess {
-                        expr: Box::new(expr),
-                        accesser: Box::new(accesser),
-                    }),
+                    postfix_expr!(
+                        8,
+                        invoke_post_op,
+                        ((expr, expr_span), args) => {
+                            Expression::Invoke {
+                                expr: (Box::new(expr), expr_span),
+                                args,
+                            }
+                        }
+                    ),
+                    postfix_expr!(
+                        8,
+                        method_call_post_op,
+                        ((expr, expr_span), (name, args)) => {
+                            Expression::MethodCall {
+                                expr: (Box::new(expr), expr_span),
+                                name,
+                                args,
+                            }
+                        }
+                    ),
+                    postfix_expr!(
+                        8,
+                        dot_access_post_op,
+                        ((expr, expr_span), (accesser,accesser_span)) => {
+                            Expression::DotAccess {
+                                expr: (Box::new(expr), expr_span),
+                                accesser: (accesser, accesser_span),
+                            }
+                        }
+                    ),
+                    postfix_expr!(
+                        8,
+                        index_access_post_op,
+                        ((expr, expr_span), (accesser,accesser_span)) => {
+                            Expression::IndexAccess {
+                                expr: (Box::new(expr), expr_span),
+                                accesser: (Box::new(accesser), accesser_span),
+                            }
+                        }
+                    ),
 
                     // 7: Unary (-, not)
                     prefix_unary!(7, just(Token::Minus) => Neg, [
@@ -197,7 +266,9 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
             table_object,
             array_object,
             function_object,
-            ident().map(Expression::Ident),
+            ident()
+                .map(Expression::Ident)
+                .map_with(|expr, ext| (expr, ext.span().into())),
         ))
     })
 }
@@ -205,8 +276,14 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
 impl<'a> TreeWalker<'a> for Expression<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
-            Expression::Unary { expr, .. } => expr.analyze(tracker),
-            Expression::Binary { rhs, lhs, .. } => {
+            Expression::Unary {
+                expr: (expr, _), ..
+            } => expr.analyze(tracker),
+            Expression::Binary {
+                rhs: (rhs, _),
+                lhs: (lhs, _),
+                ..
+            } => {
                 rhs.analyze(tracker);
                 lhs.analyze(tracker);
             }
@@ -214,27 +291,36 @@ impl<'a> TreeWalker<'a> for Expression<'a> {
             Expression::TableObject(table_object) => table_object.analyze(tracker),
             Expression::ArrayObject(array_object) => array_object.analyze(tracker),
             Expression::FunctionObject(function_object) => function_object.analyze(tracker),
-            Expression::Invoke { expr, args } => {
+            Expression::Invoke {
+                expr: (expr, _),
+                args,
+            } => {
                 expr.analyze(tracker);
-                for arg in args {
+                for (arg, _) in args {
                     arg.analyze(tracker);
                 }
             }
-            Expression::MethodCall { expr, args, .. } => {
+            Expression::MethodCall {
+                expr: (expr, _),
+                args,
+                ..
+            } => {
                 expr.analyze(tracker);
-                for arg in args {
+                for (arg, _) in args {
                     arg.analyze(tracker);
                 }
             }
             Expression::IndexAccess {
-                expr,
-                accesser: index,
+                expr: (expr, _),
+                accesser: (index, _),
             } => {
                 expr.analyze(tracker);
                 index.analyze(tracker);
             }
-            Expression::Ident(ident) => tracker.add_capture(ident.str),
-            Expression::DotAccess { expr, .. } => {
+            Expression::Ident(ident) => tracker.add_capture(ident),
+            Expression::DotAccess {
+                expr: (expr, _), ..
+            } => {
                 expr.analyze(tracker);
             }
         }

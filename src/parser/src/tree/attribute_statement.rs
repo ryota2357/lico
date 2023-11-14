@@ -3,11 +3,11 @@ use super::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum AttributeStatement<'src> {
     Function {
-        name: Ident<'src>,
-        args: Vec<Ident<'src>>,
+        name: (Ident<'src>, Span),
+        args: Vec<(Ident<'src>, Span)>,
     },
     Variable {
-        name: Ident<'src>,
+        name: (Ident<'src>, Span),
     },
 }
 
@@ -26,23 +26,17 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
     }
     .map_with(|str, ext| {
         let span: SimpleSpan = ext.span();
-        Ident {
-            str,
-            span: span.into(),
-        }
+        (Ident(str), span.into())
     });
 
     let function = attr_name
         .then(
             choice((
-                ident(),
+                ident().map_with(|ident, ext| (ident, ext.span().into())),
                 select! { Token::Bool(x) => if x { "true" } else { "false" } }.map_with(
                     |str, ext| {
                         let span: SimpleSpan = ext.span();
-                        Ident {
-                            str,
-                            span: span.into(),
-                        }
+                        (Ident(str), span.into())
                     },
                 ),
             ))
@@ -60,11 +54,11 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
 impl<'a> TreeWalker<'a> for AttributeStatement<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
-            AttributeStatement::Function { name, .. } => {
-                tracker.add_attribute(name.str, name.span.clone())
-            }
-            AttributeStatement::Variable { name } => {
-                tracker.add_attribute(name.str, name.span.clone())
+            AttributeStatement::Function {
+                name: (name, span), ..
+            } => tracker.add_attribute(name.0, span.clone()),
+            AttributeStatement::Variable { name: (name, span) } => {
+                tracker.add_attribute(name.0, span.clone())
             }
         }
     }

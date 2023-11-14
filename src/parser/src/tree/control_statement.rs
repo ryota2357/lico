@@ -3,25 +3,25 @@ use super::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum ControlStatement<'src> {
     If {
-        cond: Expression<'src>,
+        cond: (Expression<'src>, Span),
         body: Block<'src>,
-        elifs: Vec<(Expression<'src>, Block<'src>)>,
+        elifs: Vec<((Expression<'src>, Span), Block<'src>)>,
         else_: Option<Block<'src>>,
     },
     For {
-        value: Ident<'src>,
-        iter: Expression<'src>,
+        value: (Ident<'src>, Span),
+        iter: (Expression<'src>, Span),
         body: Block<'src>,
     },
     While {
-        cond: Expression<'src>,
+        cond: (Expression<'src>, Span),
         body: Block<'src>,
     },
     Do {
         body: Block<'src>,
     },
     Return {
-        value: Option<Expression<'src>>,
+        value: Option<(Expression<'src>, Span)>,
     },
     Continue,
     Break,
@@ -38,8 +38,12 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
         + 'tokens,
-    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression<'src>, ParserError<'tokens, 'src>>
-        + Clone
+    expression: impl Parser<
+            'tokens,
+            ParserInput<'tokens, 'src>,
+            (Expression<'src>, Span),
+            ParserError<'tokens, 'src>,
+        > + Clone
         + 'tokens,
 ) -> impl Parser<
     'tokens,
@@ -68,7 +72,7 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
             else_,
         });
     let r#for = just(Token::For)
-        .ignore_then(ident())
+        .ignore_then(spanned_ident())
         .then_ignore(just(Token::In))
         .then(expression.clone())
         .then_ignore(just(Token::Do))
@@ -98,7 +102,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
             ControlStatement::If {
-                cond,
+                cond: (cond, _),
                 body,
                 elifs,
                 else_,
@@ -109,7 +113,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
 
-                for (cond, body) in elifs.iter_mut() {
+                for ((cond, _), body) in elifs.iter_mut() {
                     cond.analyze(tracker);
                     tracker.push_new_definition_scope();
                     body.analyze(tracker);
@@ -122,15 +126,22 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                     tracker.pop_current_definition_scope();
                 }
             }
-            ControlStatement::For { value, iter, body } => {
+            ControlStatement::For {
+                value: (value, _),
+                iter: (iter, _),
+                body,
+            } => {
                 iter.analyze(tracker);
 
                 tracker.push_new_definition_scope();
-                tracker.add_definition(value.str);
+                tracker.add_definition(value);
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
             }
-            ControlStatement::While { cond, body } => {
+            ControlStatement::While {
+                cond: (cond, _),
+                body,
+            } => {
                 cond.analyze(tracker);
                 tracker.push_new_definition_scope();
                 body.analyze(tracker);
@@ -142,7 +153,7 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                 tracker.pop_current_definition_scope();
             }
             ControlStatement::Return { value } => {
-                if let Some(value) = value {
+                if let Some((value, _)) = value {
                     value.analyze(tracker);
                 }
             }

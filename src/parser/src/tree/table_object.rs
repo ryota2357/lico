@@ -3,7 +3,7 @@ use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableObject<'src> {
-    pub key_values: Vec<(Expression<'src>, Expression<'src>)>,
+    pub key_values: Vec<((Expression<'src>, Span), (Expression<'src>, Span))>,
 }
 
 /// <TableObject> ::= '{' [ <table filed> { ',' <table filed> } [ ',' ] ] '}'
@@ -12,12 +12,18 @@ pub struct TableObject<'src> {
 ///  TODO: 次に対応する
 ///  <table filed> ::= ( <Ident> | '[' <Expression> ']' ) '=' <Expression>
 pub(super) fn table_object<'tokens, 'src: 'tokens>(
-    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression<'src>, ParserError<'tokens, 'src>>
-        + Clone
+    expression: impl Parser<
+            'tokens,
+            ParserInput<'tokens, 'src>,
+            (Expression<'src>, Span),
+            ParserError<'tokens, 'src>,
+        > + Clone
         + 'tokens,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, TableObject<'src>, ParserError<'tokens, 'src>>
        + Clone {
-    let key = ident().map(Expression::Ident);
+    let key = ident()
+        .map(Expression::Ident)
+        .map_with(|expr, ext| (expr, ext.span().into()));
     let table_field = key.then_ignore(just(Token::Assign)).then(expression);
     let elements = table_field
         .separated_by(just(Token::Comma))
@@ -29,7 +35,7 @@ pub(super) fn table_object<'tokens, 'src: 'tokens>(
 }
 
 impl<'a> Deref for TableObject<'a> {
-    type Target = Vec<(Expression<'a>, Expression<'a>)>;
+    type Target = Vec<((Expression<'a>, Span), (Expression<'a>, Span))>;
 
     fn deref(&self) -> &Self::Target {
         &self.key_values
@@ -38,7 +44,7 @@ impl<'a> Deref for TableObject<'a> {
 
 impl<'a> TreeWalker<'a> for TableObject<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
-        for (_, value) in &mut self.key_values {
+        for (_, (value, _)) in &mut self.key_values {
             value.analyze(tracker);
         }
     }

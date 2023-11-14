@@ -3,24 +3,24 @@ use super::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum VariableStatement<'src> {
     Var {
-        name: Ident<'src>,
-        expr: Expression<'src>,
+        name: (Ident<'src>, Span),
+        expr: (Expression<'src>, Span),
     },
     Func {
-        name: Ident<'src>,
-        args: Vec<Ident<'src>>,
+        name: (Ident<'src>, Span),
+        args: Vec<(Ident<'src>, Span)>,
         body: Chunk<'src>,
     },
     FieldFunc {
-        table: Ident<'src>,
-        fields: Vec<Ident<'src>>,
-        args: Vec<Ident<'src>>,
+        table: (Ident<'src>, Span),
+        fields: Vec<(Ident<'src>, Span)>,
+        args: Vec<(Ident<'src>, Span)>,
         body: Chunk<'src>,
     },
     Assign {
-        name: Ident<'src>,
-        accesser: Vec<Expression<'src>>,
-        expr: Expression<'src>,
+        name: (Ident<'src>, Span),
+        accesser: Vec<(Expression<'src>, Span)>,
+        expr: (Expression<'src>, Span),
     },
 }
 
@@ -33,8 +33,12 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
         + 'tokens,
-    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, Expression<'src>, ParserError<'tokens, 'src>>
-        + Clone
+    expression: impl Parser<
+            'tokens,
+            ParserInput<'tokens, 'src>,
+            (Expression<'src>, Span),
+            ParserError<'tokens, 'src>,
+        > + Clone
         + 'tokens,
 ) -> impl Parser<
     'tokens,
@@ -42,19 +46,19 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
     VariableStatement<'src>,
     ParserError<'tokens, 'src>,
 > + Clone {
-    let func_arguments = ident()
+    let func_arguments = spanned_ident()
         .separated_by(just(Token::Comma))
         .allow_trailing()
         .collect()
         .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
 
     let var = just(Token::Var)
-        .ignore_then(ident())
+        .ignore_then(spanned_ident())
         .then_ignore(just(Token::Assign))
         .then(expression.clone())
         .map(|(name, expr)| VariableStatement::Var { name, expr });
     let func = just(Token::Func)
-        .ignore_then(ident())
+        .ignore_then(spanned_ident())
         .then(func_arguments.clone())
         .then(block.clone())
         .then_ignore(just(Token::End))
@@ -64,10 +68,10 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
             body: block.into(),
         });
     let field_func = just(Token::Func)
-        .ignore_then(ident())
+        .ignore_then(spanned_ident())
         .then(
             just(Token::Dot)
-                .ignore_then(ident())
+                .ignore_then(spanned_ident())
                 .repeated()
                 .at_least(1)
                 .collect(),
@@ -83,13 +87,15 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
                 body: block.into(),
             },
         );
-    let assign = ident()
+    let assign = spanned_ident()
         .then(
             choice((
                 expression
                     .clone()
                     .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket)),
-                just(Token::Dot).ignore_then(ident()).map(Expression::Ident),
+                just(Token::Dot)
+                    .ignore_then(ident())
+                    .map_with(|ident, extra| (Expression::Ident(ident), extra.span().into())),
             ))
             .repeated()
             .collect(),
@@ -108,43 +114,50 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
 impl<'a> TreeWalker<'a> for VariableStatement<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
-            VariableStatement::Var { name, expr } => {
-                tracker.add_definition(name.str);
+            VariableStatement::Var {
+                name: (name, _),
+                expr: (expr, _),
+            } => {
+                tracker.add_definition(name);
                 expr.analyze(tracker);
             }
-            VariableStatement::Func { name, args, body } => {
-                tracker.add_definition(name.str);
+            VariableStatement::Func {
+                name: (name, _),
+                args,
+                body,
+            } => {
+                tracker.add_definition(name);
                 tracker.push_new_definition_scope();
-                for arg in args.iter() {
-                    tracker.add_definition(arg.str);
+                for (arg, _) in args.iter() {
+                    tracker.add_definition(arg);
                 }
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
             }
             VariableStatement::FieldFunc {
-                table,
+                table: (table, _),
                 fields,
                 args,
                 body,
             } => {
-                tracker.add_capture(table.str);
-                for field in fields.iter() {
-                    tracker.add_definition(field.str);
+                tracker.add_capture(table);
+                for (field, _) in fields.iter() {
+                    tracker.add_definition(field);
                 }
                 tracker.push_new_definition_scope();
-                for arg in args.iter() {
-                    tracker.add_definition(arg.str);
+                for (arg, _) in args.iter() {
+                    tracker.add_definition(arg);
                 }
                 body.analyze(tracker);
                 tracker.pop_current_definition_scope();
             }
             VariableStatement::Assign {
-                name,
+                name: (name, _),
                 accesser,
-                expr,
+                expr: (expr, _),
             } => {
-                tracker.add_capture(name.str);
-                for access in accesser.iter_mut() {
+                tracker.add_capture(name);
+                for (access, _) in accesser.iter_mut() {
                     access.analyze(tracker);
                 }
                 expr.analyze(tracker);
