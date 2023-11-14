@@ -24,9 +24,12 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
     let attr_name = select! {
         Token::Attribute(x) => x
     }
-    .map_with(|name, ext| Ident {
-        str: name,
-        span: ext.span(),
+    .map_with(|str, ext| {
+        let span: SimpleSpan = ext.span();
+        Ident {
+            str,
+            span: span.into(),
+        }
     });
 
     let function = attr_name
@@ -34,9 +37,12 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
             choice((
                 ident(),
                 select! { Token::Bool(x) => if x { "true" } else { "false" } }.map_with(
-                    |str, ext| Ident {
-                        str,
-                        span: ext.span(),
+                    |str, ext| {
+                        let span: SimpleSpan = ext.span();
+                        Ident {
+                            str,
+                            span: span.into(),
+                        }
                     },
                 ),
             ))
@@ -54,8 +60,12 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
 impl<'a> TreeWalker<'a> for AttributeStatement<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
         match self {
-            AttributeStatement::Function { name, .. } => tracker.add_attribute(name.str, name.span),
-            AttributeStatement::Variable { name } => tracker.add_attribute(name.str, name.span),
+            AttributeStatement::Function { name, .. } => {
+                tracker.add_attribute(name.str, name.span.clone())
+            }
+            AttributeStatement::Variable { name } => {
+                tracker.add_attribute(name.str, name.span.clone())
+            }
         }
     }
 }

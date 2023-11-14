@@ -38,8 +38,11 @@ pub(super) fn ident<'tokens, 'src: 'tokens>(
     select! {
         Token::Identifier(x) => x
     }
-    .map_with(|str, ext| Ident {
-        str,
-        span: ext.span(),
+    .map_with(|str, ext| {
+        let span: SimpleSpan = ext.span();
+        Ident {
+            str,
+            span: span.into(),
+        }
     })
 }
