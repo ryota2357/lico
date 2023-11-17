@@ -46,7 +46,7 @@ pub fn compile<'a>(program: &'a Program<'a>) -> Vec<Code<'a>> {
     }
 
     let eob = block::compile_statements(
-        program.body.iter().map(|s| &s.0),
+        program.body.block.iter().map(|s| &s.0),
         &mut fragment,
         &mut Context::new(),
     );

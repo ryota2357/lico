@@ -14,7 +14,10 @@ impl<'node, 'src: 'node> Compilable<'node, 'src> for Box<Expression<'src>> {
 
 fn compile<'node, 'src: 'node>(expr: &'node Expression<'src>, fragment: &mut Fragment<'src>) {
     match expr {
-        Expression::Unary { op, expr } => match op {
+        Expression::Unary {
+            op,
+            expr: (expr, _),
+        } => match op {
             UnaryOp::Neg => {
                 fragment.append_compile(expr).append(Code::Unm);
             }
@@ -33,7 +36,11 @@ fn compile<'node, 'src: 'node>(expr: &'node Expression<'src>, fragment: &mut Fra
                 ]);
             }
         },
-        Expression::Binary { op, lhs, rhs } => match op {
+        Expression::Binary {
+            op,
+            lhs: (lhs, _),
+            rhs: (rhs, _),
+        } => match op {
             BinaryOp::Add => {
                 fragment
                     .append_compile(lhs)
@@ -140,7 +147,7 @@ fn compile<'node, 'src: 'node>(expr: &'node Expression<'src>, fragment: &mut Fra
             }
         },
         Expression::Ident(ident) => {
-            fragment.append(Code::LoadLocal(ident.str));
+            fragment.append(Code::LoadLocal(ident));
         }
         Expression::Primitive(primitive) => match primitive {
             Primitive::Int(x) => {
@@ -160,11 +167,11 @@ fn compile<'node, 'src: 'node>(expr: &'node Expression<'src>, fragment: &mut Fra
             }
         },
         Expression::TableObject(table) => {
-            for (key, value) in table.iter() {
+            for ((key, _), (value, _)) in table.iter() {
                 if let Expression::Ident(ident) = key {
                     fragment
                         .append_compile(value)
-                        .append(Code::MakeNamed(ident.str));
+                        .append(Code::MakeNamed(ident));
                 } else {
                     fragment
                         .append_compile(value)
@@ -172,42 +179,55 @@ fn compile<'node, 'src: 'node>(expr: &'node Expression<'src>, fragment: &mut Fra
                         .append(Code::MakeExprNamed);
                 }
             }
-            fragment.append(Code::MakeTable(table.key_values.len() as u32));
+            fragment.append(Code::MakeTable(table.len() as u32));
         }
         Expression::ArrayObject(array) => {
             fragment
-                .append_compile_many(array.iter())
+                .append_compile_many(array.iter().map(|(expr, _)| expr))
                 .append(Code::MakeArray(array.len() as u32));
         }
         Expression::FunctionObject(function) => {
             fragment
                 .append(Code::BeginFuncCreation)
-                .append_many(function.args.iter().map(|arg| Code::AddArgument(arg.str)))
+                .append_many(function.args.iter().map(|(arg, _)| Code::AddArgument(arg)))
                 .append_compile(&function.body)
                 .append(Code::EndFuncCreation);
         }
-        Expression::Invoke { expr, args } => {
+        Expression::Invoke {
+            expr: (expr, _),
+            args,
+        } => {
             fragment
                 .append_compile(expr)
-                .append_compile_many(args)
+                .append_compile_many(args.iter().map(|(expr, _)| expr))
                 .append(Code::Call(args.len() as u8));
         }
-        Expression::MethodCall { expr, name, args } => {
+        Expression::MethodCall {
+            expr: (expr, _),
+            name: (name, _),
+            args,
+        } => {
             fragment
                 .append_compile(expr)
-                .append_compile_many(args)
-                .append(Code::CustomMethod(name.str, args.len() as u8));
+                .append_compile_many(args.iter().map(|(expr, _)| expr))
+                .append(Code::CustomMethod(name, args.len() as u8));
         }
-        Expression::IndexAccess { expr, accesser } => {
+        Expression::IndexAccess {
+            expr: (expr, _),
+            accesser: (accesser, _),
+        } => {
             fragment
                 .append_compile(expr)
                 .append_compile(accesser)
                 .append(Code::GetItem);
         }
-        Expression::DotAccess { expr, accesser } => {
+        Expression::DotAccess {
+            expr: (expr, _),
+            accesser: (accesser, _),
+        } => {
             fragment
                 .append_compile(expr)
-                .append(Code::LoadStringAsRef(accesser.str))
+                .append(Code::LoadStringAsRef(accesser))
                 .append(Code::GetItem);
         }
     }
@@ -221,14 +241,8 @@ mod tests {
     fn and() {
         let fragment = Fragment::with_compile(&Expression::Binary {
             op: BinaryOp::And,
-            lhs: Box::new(Expression::Ident(Ident {
-                str: "a",
-                span: (0..0).into(),
-            })),
-            rhs: Box::new(Expression::Ident(Ident {
-                str: "b",
-                span: (0..0).into(),
-            })),
+            lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
+            rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
         });
         assert_eq!(
             fragment.into_code(),
@@ -246,14 +260,8 @@ mod tests {
     fn or() {
         let fragment = Fragment::with_compile(&Expression::Binary {
             op: BinaryOp::Or,
-            lhs: Box::new(Expression::Ident(Ident {
-                str: "a",
-                span: (0..0).into(),
-            })),
-            rhs: Box::new(Expression::Ident(Ident {
-                str: "b",
-                span: (0..0).into(),
-            })),
+            lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
+            rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
         });
         assert_eq!(
             fragment.into_code(),

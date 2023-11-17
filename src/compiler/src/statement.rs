@@ -18,7 +18,7 @@ fn control_statement<'node, 'src: 'node>(
 ) {
     match statement {
         ControlStatement::If {
-            cond,
+            cond: (cond, _),
             body,
             elifs,
             else_,
@@ -51,7 +51,7 @@ fn control_statement<'node, 'src: 'node>(
                 // Applay `make_snip` to (`cond`, `body`) pair, and `elifs`.`
                 let mut res = Vec::new();
                 res.push(make_snip(cond, body));
-                for (cond, body) in elifs.iter() {
+                for ((cond, _), body) in elifs.iter() {
                     res.push(make_snip(cond, body));
                 }
 
@@ -74,7 +74,11 @@ fn control_statement<'node, 'src: 'node>(
 
             fragment.append_fragment_many(new_fragments);
         }
-        ControlStatement::For { value, iter, body } => {
+        ControlStatement::For {
+            value: (value, _),
+            iter: (iter, _),
+            body,
+        } => {
             //            0: make_local    <>iter = [iter]->__getIterator()
             //            1: eval          <>iter->__moveNext()
             //            2: jump_if_false 11
@@ -111,7 +115,7 @@ fn control_statement<'node, 'src: 'node>(
                         Code::JumpIfFalse(3 + body_fragment_len + 2), // 5
                         Code::LoadLocal("<>iter"),                    // 6
                         Code::CustomMethod("__getCurrent", 0),        // |
-                        Code::MakeLocal(value.str),                   // |
+                        Code::MakeLocal(value),                       // |
                     ])
                     .append_fragment(body_fragment)
                     .append_many([
@@ -129,7 +133,10 @@ fn control_statement<'node, 'src: 'node>(
                 .append_fragment(iter_fragment)
                 .append_fragment(loop_fragment);
         }
-        ControlStatement::While { cond, body } => {
+        ControlStatement::While {
+            cond: (cond, _),
+            body,
+        } => {
             let while_fragment = {
                 let cond_fragment = Fragment::with_compile(cond);
                 let cond_fragment_len = cond_fragment.len() as isize;
@@ -159,7 +166,7 @@ fn control_statement<'node, 'src: 'node>(
             fragment.append_compile_with_context(body, context);
         }
         ControlStatement::Return { value } => {
-            if let Some(value) = value {
+            if let Some((value, _)) = value {
                 fragment.append_compile(value);
             } else {
                 fragment.append(Code::LoadNil);
@@ -201,64 +208,71 @@ fn variable_statement<'node, 'src: 'node>(
     context: &mut Context,
 ) {
     match statement {
-        VariableStatement::Var { name, expr } => {
-            fragment
-                .append_compile(expr)
-                .append(Code::MakeLocal(name.str));
+        VariableStatement::Var {
+            name: (name, _),
+            expr: (expr, _),
+        } => {
+            fragment.append_compile(expr).append(Code::MakeLocal(name));
             context.inc_local_count();
         }
-        VariableStatement::Func { name, args, body } => {
-            let recusive = body.captures.contains(&name.str);
+        VariableStatement::Func {
+            name: (name, _),
+            args,
+            body,
+        } => {
+            let recusive = body.captures.contains(&name);
             if recusive {
-                fragment.append_many([Code::LoadNil, Code::MakeLocal(name.str)]);
+                fragment.append_many([Code::LoadNil, Code::MakeLocal(name)]);
             }
             fragment
                 .append(Code::BeginFuncCreation)
-                .append_many(args.iter().map(|arg| Code::AddArgument(arg.str)))
+                .append_many(args.iter().map(|(arg, _)| Code::AddArgument(arg)))
                 .append_compile(body)
                 .append(Code::EndFuncCreation)
                 .append(if recusive {
-                    Code::SetLocal(name.str)
+                    Code::SetLocal(name)
                 } else {
-                    Code::MakeLocal(name.str)
+                    Code::MakeLocal(name)
                 });
             context.inc_local_count();
         }
         VariableStatement::FieldFunc {
-            table,
+            table: (table, _),
             fields,
             args,
             body,
         } => {
             fragment
                 .append(Code::BeginFuncCreation)
-                .append_many(args.iter().map(|arg| Code::AddArgument(arg.str)))
+                .append_many(args.iter().map(|(arg, _)| Code::AddArgument(arg)))
                 .append_compile(body)
                 .append(Code::EndFuncCreation)
-                .append(Code::LoadLocal(table.str))
+                .append(Code::LoadLocal(table))
                 .append_many(
                     fields
                         .iter()
                         .take(fields.len() - 1)
-                        .flat_map(|field| [Code::LoadStringAsRef(field.str), Code::GetItem]),
+                        .flat_map(|(field, _)| [Code::LoadStringAsRef(field), Code::GetItem]),
                 )
-                .append(Code::LoadStringAsRef(fields.last().unwrap().str))
+                .append(Code::LoadStringAsRef(
+                    fields.last().map(|(field, _)| field).unwrap(),
+                ))
                 .append(Code::SetItem);
         }
         VariableStatement::Assign {
-            name,
+            name: (name, _),
             accesser,
-            expr,
+            expr: (expr, _),
         } => {
             fragment.append_compile(expr);
             if accesser.is_empty() {
-                fragment.append(Code::SetLocal(name.str));
+                fragment.append(Code::SetLocal(name));
             } else {
-                for acc in accesser.iter().take(accesser.len() - 1) {
+                for (acc, _) in accesser.iter().take(accesser.len() - 1) {
                     fragment.append_compile(acc).append(Code::GetItem);
                 }
                 fragment
-                    .append_compile(accesser.last().unwrap())
+                    .append_compile(accesser.last().map(|(acc, _)| acc).unwrap())
                     .append(Code::SetItem);
             }
         }
@@ -270,20 +284,24 @@ fn call_statement<'node, 'src: 'node>(
     fragment: &mut Fragment<'src>,
 ) {
     match statement {
-        CallStatement::Invoke { expr, args } => {
+        CallStatement::Invoke {
+            expr: (expr, _),
+            args,
+        } => {
             fragment
                 .append_compile(expr)
-                .append_compile_many(args)
+                .append_compile_many(args.iter().map(|(expr, _)| expr))
                 .append_many([Code::Call(args.len() as u8), Code::UnloadTop]);
         }
-        CallStatement::MethodCall { expr, name, args } => {
+        CallStatement::MethodCall {
+            expr: (expr, _),
+            name: (name, _),
+            args,
+        } => {
             fragment
                 .append_compile(expr)
-                .append_compile_many(args)
-                .append_many([
-                    Code::CustomMethod(name.str, args.len() as u8),
-                    Code::UnloadTop,
-                ]);
+                .append_compile_many(args.iter().map(|(expr, _)| expr))
+                .append_many([Code::CustomMethod(name, args.len() as u8), Code::UnloadTop]);
         }
     }
 }
@@ -295,22 +313,14 @@ mod tests {
     #[test]
     fn r#if() {
         let statement = Statement::Control(ControlStatement::If {
-            cond: Expression::Ident(Ident {
-                str: "a",
-                span: (0..0).into(),
-            }),
-            body: Block {
-                body: vec![(
-                    Statement::Call(CallStatement::Invoke {
-                        expr: Expression::Ident(Ident {
-                            str: "print",
-                            span: (0..0).into(),
-                        }),
-                        args: vec![],
-                    }),
-                    0..0,
-                )],
-            },
+            cond: (Expression::Ident(Ident("a")), 0..0),
+            body: Block(vec![(
+                Statement::Call(CallStatement::Invoke {
+                    expr: (Expression::Ident(Ident("print")), 0..0),
+                    args: vec![],
+                }),
+                0..0,
+            )]),
             elifs: vec![],
             else_: None,
         });
@@ -332,29 +342,19 @@ mod tests {
     #[test]
     fn if_else() {
         let statement = Statement::Control(ControlStatement::If {
-            cond: Expression::Ident(Ident {
-                str: "a",
-                span: (0..0).into(),
-            }),
-            body: Block {
-                body: vec![(
-                    Statement::Control(ControlStatement::Return { value: None }),
-                    0..0,
-                )],
-            },
+            cond: (Expression::Ident(Ident("a")), 0..0),
+            body: Block(vec![(
+                Statement::Control(ControlStatement::Return { value: None }),
+                0..0,
+            )]),
             elifs: vec![],
-            else_: Some(Block {
-                body: vec![(
-                    Statement::Call(CallStatement::Invoke {
-                        expr: Expression::Ident(Ident {
-                            str: "print",
-                            span: (0..0).into(),
-                        }),
-                        args: vec![],
-                    }),
-                    0..0,
-                )],
-            }),
+            else_: Some(Block(vec![(
+                Statement::Call(CallStatement::Invoke {
+                    expr: (Expression::Ident(Ident("print")), 0..0),
+                    args: vec![],
+                }),
+                0..0,
+            )])),
         });
         let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
         assert_eq!(
@@ -375,33 +375,20 @@ mod tests {
     #[test]
     fn if_elif() {
         let statement = Statement::Control(ControlStatement::If {
-            cond: Expression::Ident(Ident {
-                str: "a",
-                span: (0..0).into(),
-            }),
-            body: Block {
-                body: vec![(
-                    Statement::Control(ControlStatement::Return { value: None }),
-                    0..0,
-                )],
-            },
+            cond: (Expression::Ident(Ident("a")), 0..0),
+            body: Block(vec![(
+                Statement::Control(ControlStatement::Return { value: None }),
+                0..0,
+            )]),
             elifs: vec![(
-                Expression::Ident(Ident {
-                    str: "b",
-                    span: (0..0).into(),
-                }),
-                Block {
-                    body: vec![(
-                        Statement::Call(CallStatement::Invoke {
-                            expr: Expression::Ident(Ident {
-                                str: "print",
-                                span: (0..0).into(),
-                            }),
-                            args: vec![],
-                        }),
-                        0..0,
-                    )],
-                },
+                (Expression::Ident(Ident("b")), 0..0),
+                Block(vec![(
+                    Statement::Call(CallStatement::Invoke {
+                        expr: (Expression::Ident(Ident("print")), 0..0),
+                        args: vec![],
+                    }),
+                    0..0,
+                )]),
             )],
             else_: None,
         });

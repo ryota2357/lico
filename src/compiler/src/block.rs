@@ -51,7 +51,11 @@ impl<'node, 'src: 'node> Compilable<'node, 'src> for Chunk<'src> {
                 .iter()
                 .map(|capture| Code::AddCapture(capture)),
         );
-        let end = compile_statements(self.iter().map(|s| &s.0), fragment, &mut Context::new());
+        let end = compile_statements(
+            self.block.iter().map(|s| &s.0),
+            fragment,
+            &mut Context::new(),
+        );
 
         match end {
             ExitControll::Return => {}
