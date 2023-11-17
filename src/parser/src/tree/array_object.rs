@@ -2,9 +2,7 @@ use super::*;
 use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ArrayObject<'src> {
-    pub elements: Vec<(Expression<'src>, Span)>,
-}
+pub struct ArrayObject<'src>(pub Vec<(Expression<'src>, Span)>);
 
 /// <ArrayObject> ::= '[' [ <Expression> { ',' <Expression> } [ ',' ] ] ']'
 pub(super) fn array_object<'tokens, 'src: 'tokens>(
@@ -23,20 +21,20 @@ pub(super) fn array_object<'tokens, 'src: 'tokens>(
         .collect();
     elements
         .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket))
-        .map(|values| ArrayObject { elements: values })
+        .map(ArrayObject)
 }
 
 impl<'a> Deref for ArrayObject<'a> {
     type Target = Vec<(Expression<'a>, Span)>;
 
     fn deref(&self) -> &Self::Target {
-        &self.elements
+        &self.0
     }
 }
 
 impl<'a> TreeWalker<'a> for ArrayObject<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
-        for (value, _) in &mut self.elements {
+        for (value, _) in &mut self.0 {
             value.analyze(tracker);
         }
     }

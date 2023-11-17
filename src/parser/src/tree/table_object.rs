@@ -2,9 +2,7 @@ use super::*;
 use std::ops::Deref;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct TableObject<'src> {
-    pub key_values: Vec<((Expression<'src>, Span), (Expression<'src>, Span))>,
-}
+pub struct TableObject<'src>(pub Vec<((Expression<'src>, Span), (Expression<'src>, Span))>);
 
 /// <TableObject> ::= '{' [ <table filed> { ',' <table filed> } [ ',' ] ] '}'
 /// <table filed> ::= <Ident> '=' <Expression>
@@ -31,20 +29,20 @@ pub(super) fn table_object<'tokens, 'src: 'tokens>(
         .collect();
     elements
         .delimited_by(just(Token::OpenBrace), just(Token::CloseBrace))
-        .map(|key_values| TableObject { key_values })
+        .map(TableObject)
 }
 
 impl<'a> Deref for TableObject<'a> {
     type Target = Vec<((Expression<'a>, Span), (Expression<'a>, Span))>;
 
     fn deref(&self) -> &Self::Target {
-        &self.key_values
+        &self.0
     }
 }
 
 impl<'a> TreeWalker<'a> for TableObject<'a> {
     fn analyze(&mut self, tracker: &mut Tracker<'a>) {
-        for (_, (value, _)) in &mut self.key_values {
+        for (_, (value, _)) in &mut self.0 {
             value.analyze(tracker);
         }
     }

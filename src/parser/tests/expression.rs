@@ -4,7 +4,7 @@ use parser::tree::*;
 fn do_expr_test(src: &str, expression: Expression<'_>) {
     let src = format!("_={}", src);
     let program = common::parse_program(&src);
-    let stats = program.body.body;
+    let stats = program.body.block;
     assert_eq!(stats.len(), 1);
     let statement = &stats[0];
     if let Statement::Variable(VariableStatement::Assign { expr, .. }) = &statement.0 {
@@ -25,7 +25,7 @@ fn function_object() {
             args: vec![],
             body: Chunk {
                 captures: vec![],
-                body: vec![],
+                block: vec![],
             },
         }),
     );
@@ -35,7 +35,7 @@ fn function_object() {
             args: vec![(Ident("a"), 7..8), (Ident("b"), 10..11)],
             body: Chunk {
                 captures: vec!["c"],
-                body: vec![(
+                block: vec![(
                     Statement::Control(ControlStatement::Return {
                         value: Some((Expression::Ident(Ident("c")), 20..21)),
                     }),
@@ -48,64 +48,47 @@ fn function_object() {
 
 #[test]
 fn array_object() {
-    do_expr_test(
-        "[]",
-        Expression::ArrayObject(ArrayObject { elements: vec![] }),
-    );
+    do_expr_test("[]", Expression::ArrayObject(ArrayObject(vec![])));
     do_expr_test(
         "[1, [true, 'a'], {}]",
-        Expression::ArrayObject(ArrayObject {
-            elements: vec![
-                (Expression::Primitive(Primitive::Int(1)), 3..4),
-                (
-                    Expression::ArrayObject(ArrayObject {
-                        elements: vec![
-                            (Expression::Primitive(Primitive::Bool(true)), 7..11),
-                            (
-                                Expression::Primitive(Primitive::String("a".to_string())),
-                                13..16,
-                            ),
-                        ],
-                    }),
-                    6..17,
-                ),
-                (
-                    Expression::TableObject(TableObject { key_values: vec![] }),
-                    19..21,
-                ),
-            ],
-        }),
-    )
+        Expression::ArrayObject(ArrayObject(vec![
+            (Expression::Primitive(Primitive::Int(1)), 3..4),
+            (
+                Expression::ArrayObject(ArrayObject(vec![
+                    (Expression::Primitive(Primitive::Bool(true)), 7..11),
+                    (
+                        Expression::Primitive(Primitive::String("a".to_string())),
+                        13..16,
+                    ),
+                ])),
+                6..17,
+            ),
+            (Expression::TableObject(TableObject(vec![])), 19..21),
+        ])),
+    );
 }
 
 #[test]
 fn table_object() {
-    do_expr_test(
-        "{}",
-        Expression::TableObject(TableObject { key_values: vec![] }),
-    );
+    do_expr_test("{}", Expression::TableObject(TableObject(vec![])));
     do_expr_test(
         "{ a = 1, b = {a=1}, }",
-        Expression::TableObject(TableObject {
-            key_values: vec![
+        Expression::TableObject(TableObject(vec![
+            (
+                (Expression::Ident(Ident("a")), 4..5),
+                (Expression::Primitive(Primitive::Int(1)), 8..9),
+            ),
+            (
+                (Expression::Ident(Ident("b")), 11..12),
                 (
-                    (Expression::Ident(Ident("a")), 4..5),
-                    (Expression::Primitive(Primitive::Int(1)), 8..9),
+                    Expression::TableObject(TableObject(vec![(
+                        (Expression::Ident(Ident("a")), 16..17),
+                        (Expression::Primitive(Primitive::Int(1)), 18..19),
+                    )])),
+                    15..20,
                 ),
-                (
-                    (Expression::Ident(Ident("b")), 11..12),
-                    (
-                        Expression::TableObject(TableObject {
-                            key_values: vec![(
-                                (Expression::Ident(Ident("a")), 16..17),
-                                (Expression::Primitive(Primitive::Int(1)), 18..19),
-                            )],
-                        }),
-                        15..20,
-                    ),
-                ),
-            ],
-        }),
+            ),
+        ])),
     );
 }
 

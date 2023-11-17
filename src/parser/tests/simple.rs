@@ -15,7 +15,7 @@ fn define_variable_with_litera() {
         "var x = 17",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Variable(VariableStatement::Var {
                     name: (Ident("x"), 4..5),
                     expr: (Expression::Primitive(Primitive::Int(17)), 8..10),
@@ -32,7 +32,7 @@ fn define_variable_with_func_call() {
         "var x = f()",
         Chunk {
             captures: vec!["f"],
-            body: vec![(
+            block: vec![(
                 Statement::Variable(VariableStatement::Var {
                     name: (Ident("x"), 4..5),
                     expr: (
@@ -55,7 +55,7 @@ fn assign_variable_with_literal() {
         "x = 1.23",
         Chunk {
             captures: vec!["x"],
-            body: vec![(
+            block: vec![(
                 Statement::Variable(VariableStatement::Assign {
                     name: (Ident("x"), 0..1),
                     accesser: vec![],
@@ -73,13 +73,13 @@ fn define_function_without_args_and_body() {
         "func f() end",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Variable(VariableStatement::Func {
                     name: (Ident("f"), 5..6),
                     args: vec![],
                     body: Chunk {
                         captures: vec![],
-                        body: vec![],
+                        block: vec![],
                     },
                 }),
                 0..12,
@@ -94,13 +94,13 @@ fn define_function_with_args_and_body() {
         "func f(a, b) return 'a' end",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Variable(VariableStatement::Func {
                     name: (Ident("f"), 5..6),
                     args: vec![(Ident("a"), 7..8), (Ident("b"), 10..11)],
                     body: Chunk {
                         captures: vec![],
-                        body: vec![(
+                        block: vec![(
                             Statement::Control(ControlStatement::Return {
                                 value: Some((
                                     (Expression::Primitive(Primitive::String("a".to_string()))),
@@ -123,14 +123,14 @@ fn define_table_field_function() {
         "func t.a.b() end",
         Chunk {
             captures: vec!["t"],
-            body: vec![(
+            block: vec![(
                 Statement::Variable(VariableStatement::FieldFunc {
                     table: (Ident("t"), 5..6),
                     fields: vec![(Ident("a"), 7..8), (Ident("b"), 9..10)],
                     args: vec![],
                     body: Chunk {
                         captures: vec![],
-                        body: vec![],
+                        block: vec![],
                     },
                 }),
                 0..16,
@@ -147,7 +147,7 @@ fn call_function_without_args() {
         "f()",
         Chunk {
             captures: vec!["f"],
-            body: vec![(
+            block: vec![(
                 Statement::Call(CallStatement::Invoke {
                     expr: (Expression::Ident(Ident("f")), 0..1),
                     args: vec![],
@@ -164,7 +164,7 @@ fn call_function_with_args() {
         "f(1, 'a', true)",
         Chunk {
             captures: vec!["f"],
-            body: vec![(
+            block: vec![(
                 Statement::Call(CallStatement::Invoke {
                     expr: (Expression::Ident(Ident("f")), 0..1),
                     args: vec![
@@ -188,7 +188,7 @@ fn method_call() {
         "a->b('a')",
         Chunk {
             captures: vec!["a"],
-            body: vec![(
+            block: vec![(
                 Statement::Call(CallStatement::MethodCall {
                     expr: (Expression::Ident(Ident("a")), 0..1),
                     name: (Ident("b"), 3..4),
@@ -209,15 +209,13 @@ fn method_call_obj() {
         "[1, 2]->len()",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Call(CallStatement::MethodCall {
                     expr: (
-                        Expression::ArrayObject(ArrayObject {
-                            elements: vec![
-                                (Expression::Primitive(Primitive::Int(1)), 1..2),
-                                (Expression::Primitive(Primitive::Int(2)), 4..5),
-                            ],
-                        }),
+                        Expression::ArrayObject(ArrayObject(vec![
+                            (Expression::Primitive(Primitive::Int(1)), 1..2),
+                            (Expression::Primitive(Primitive::Int(2)), 4..5),
+                        ])),
                         0..6,
                     ),
                     name: (Ident("len"), 8..11),
@@ -238,10 +236,10 @@ fn if_empty() {
         "if true then end",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Control(ControlStatement::If {
                     cond: (Expression::Primitive(Primitive::Bool(true)), (3..7)),
-                    body: Block { body: vec![] },
+                    body: Block(vec![]),
                     elifs: vec![],
                     else_: None,
                 }),
@@ -257,36 +255,30 @@ fn if_elif_else() {
         "if true then return 1 elif false then return 2 else return 3 end",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Control(ControlStatement::If {
                     cond: (Expression::Primitive(Primitive::Bool(true)), (3..7)),
-                    body: Block {
-                        body: vec![(
-                            Statement::Control(ControlStatement::Return {
-                                value: Some((Expression::Primitive(Primitive::Int(1)), 20..21)),
-                            }),
-                            13..21,
-                        )],
-                    },
+                    body: Block(vec![(
+                        Statement::Control(ControlStatement::Return {
+                            value: Some((Expression::Primitive(Primitive::Int(1)), 20..21)),
+                        }),
+                        13..21,
+                    )]),
                     elifs: vec![(
                         (Expression::Primitive(Primitive::Bool(false)), (27..32)),
-                        Block {
-                            body: vec![(
-                                Statement::Control(ControlStatement::Return {
-                                    value: Some((Expression::Primitive(Primitive::Int(2)), 45..46)),
-                                }),
-                                38..46,
-                            )],
-                        },
-                    )],
-                    else_: Some(Block {
-                        body: vec![(
+                        Block(vec![(
                             Statement::Control(ControlStatement::Return {
-                                value: Some((Expression::Primitive(Primitive::Int(3)), 59..60)),
+                                value: Some((Expression::Primitive(Primitive::Int(2)), 45..46)),
                             }),
-                            52..60,
-                        )],
-                    }),
+                            38..46,
+                        )]),
+                    )],
+                    else_: Some(Block(vec![(
+                        Statement::Control(ControlStatement::Return {
+                            value: Some((Expression::Primitive(Primitive::Int(3)), 59..60)),
+                        }),
+                        52..60,
+                    )])),
                 }),
                 0..64,
             )],
@@ -301,20 +293,18 @@ fn for_in_array() {
         "for i in [1, 2, 3] do end",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Control(ControlStatement::For {
                     value: (Ident("i"), 4..5),
                     iter: (
-                        Expression::ArrayObject(ArrayObject {
-                            elements: vec![
-                                (Expression::Primitive(Primitive::Int(1)), (10..11)),
-                                (Expression::Primitive(Primitive::Int(2)), (13..14)),
-                                (Expression::Primitive(Primitive::Int(3)), (16..17)),
-                            ],
-                        }),
+                        Expression::ArrayObject(ArrayObject(vec![
+                            (Expression::Primitive(Primitive::Int(1)), (10..11)),
+                            (Expression::Primitive(Primitive::Int(2)), (13..14)),
+                            (Expression::Primitive(Primitive::Int(3)), (16..17)),
+                        ])),
                         9..18,
                     ),
-                    body: Block { body: vec![] },
+                    body: Block(vec![]),
                 }),
                 0..25,
             )],
@@ -328,7 +318,7 @@ fn for_with_body() {
         "for i in 1->upto(10) do a = a + i end",
         Chunk {
             captures: vec!["a"],
-            body: vec![(
+            block: vec![(
                 Statement::Control(ControlStatement::For {
                     value: (Ident("i"), 4..5),
                     iter: (
@@ -339,23 +329,21 @@ fn for_with_body() {
                         },
                         9..20,
                     ),
-                    body: Block {
-                        body: vec![(
-                            Statement::Variable(VariableStatement::Assign {
-                                name: (Ident("a"), 24..25),
-                                accesser: vec![],
-                                expr: (
-                                    Expression::Binary {
-                                        op: BinaryOp::Add,
-                                        lhs: (Box::new(Expression::Ident(Ident("a"))), 28..29),
-                                        rhs: (Box::new(Expression::Ident(Ident("i"))), 32..33),
-                                    },
-                                    28..33,
-                                ),
-                            }),
-                            24..33,
-                        )],
-                    },
+                    body: Block(vec![(
+                        Statement::Variable(VariableStatement::Assign {
+                            name: (Ident("a"), 24..25),
+                            accesser: vec![],
+                            expr: (
+                                Expression::Binary {
+                                    op: BinaryOp::Add,
+                                    lhs: (Box::new(Expression::Ident(Ident("a"))), 28..29),
+                                    rhs: (Box::new(Expression::Ident(Ident("i"))), 32..33),
+                                },
+                                28..33,
+                            ),
+                        }),
+                        24..33,
+                    )]),
                 }),
                 0..37,
             )],
@@ -369,7 +357,7 @@ fn while_() {
         "while ok() do break end",
         Chunk {
             captures: vec!["ok"],
-            body: vec![(
+            block: vec![(
                 Statement::Control(ControlStatement::While {
                     cond: (
                         Expression::Invoke {
@@ -378,9 +366,7 @@ fn while_() {
                         },
                         (6..10),
                     ),
-                    body: Block {
-                        body: vec![(Statement::Control(ControlStatement::Break), 14..19)],
-                    },
+                    body: Block(vec![(Statement::Control(ControlStatement::Break), 14..19)]),
                 }),
                 0..23,
             )],
@@ -394,9 +380,9 @@ fn do_with_no_body() {
         "do end",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Control(ControlStatement::Do {
-                    body: Block { body: vec![] },
+                    body: Block(vec![]),
                 }),
                 0..6,
             )],
@@ -410,7 +396,7 @@ fn return_none() {
         "return",
         Chunk {
             captures: vec![],
-            body: vec![(
+            block: vec![(
                 Statement::Control(ControlStatement::Return { value: None }),
                 0..6,
             )],
