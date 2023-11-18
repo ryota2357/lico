@@ -234,3 +234,54 @@ fn jump_if_false() {
     ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(4));
 }
+
+#[test]
+fn custom_method() {
+    use vm::runtime::{FunctionObject, TableObject};
+
+    let table_obj = {
+        let mut table = TableObject::new(
+            [("key".to_string(), Object::String("value".to_string()))]
+                .into_iter()
+                .collect(),
+        );
+        table.add_method(
+            "testMethod",
+            FunctionObject {
+                id: (0, 0),
+                env: vec![],
+                args: vec!["self", "new_value"],
+                code: vec![
+                    LoadLocal("new_value"),
+                    LoadLocal("self"),
+                    LoadStringAsRef("key"),
+                    SetItem,
+                    LoadNil,
+                    Return,
+                ],
+            },
+        );
+        table
+    };
+
+    let mut runtime = Runtime::new(vec![]);
+    runtime
+        .variable_table
+        .insert("table", Object::new_table(table_obj));
+    vm::execute(
+        &[
+            LoadLocal("table"),
+            LoadFloat(1.23),
+            CustomMethod("testMethod", 1),
+            Exit,
+        ],
+        &mut runtime,
+    )
+    .unwrap();
+
+    if let Object::Table(table) = runtime.variable_table.get("table").unwrap() {
+        assert_eq!(table.borrow().get("key"), Some(&Object::Float(1.23)));
+    } else {
+        unreachable!()
+    }
+}

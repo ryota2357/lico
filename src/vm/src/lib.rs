@@ -141,57 +141,55 @@ pub fn execute<'src, W: std::io::Write>(
                 }
             }
             CustomMethod(name, args_len) => {
-                let args = create_args_vec(*args_len, runtime);
-                match runtime.stack.pop() {
-                    StackValue::RawTable(table) => {
-                        if let Some(func) = table.get_method(name) {
-                            execute_func(func, args, runtime)?;
-                        } else {
-                            Err(format!("{} is not defined.", name))?;
-                        }
+                let args = {
+                    let mut args = Vec::with_capacity((args_len + 1) as usize);
+                    for _ in 0..*args_len {
+                        args.push(runtime.stack.pop().ensure_object());
                     }
-                    StackValue::Object(Object::Table(table)) => {
-                        let table = table.borrow();
-                        if let Some(func) = table.get_method(name) {
-                            execute_func(func, args, runtime)?;
-                        } else {
-                            Err(format!("{} is not defined.", name))?;
-                        }
+                    let self_obj = runtime.stack.pop().ensure_object();
+                    args.push(self_obj);
+                    args.reverse();
+                    args
+                };
+                let self_obj = args.first().unwrap().clone();
+                match self_obj {
+                    Object::Table(table) => {
+                        let method = table.borrow().get_method(name);
+                        let res = match method {
+                            Some(func) => execute_func(&func, args, runtime)?,
+                            None => runtime::run_table_default_method(name, &args)?,
+                        };
+                        runtime.stack.push(res.into());
                     }
-                    x => Err(format!("Expected Callable Object, but got {:?}", x))?,
+                    x => Err(format!("Expected Table Object, but got {:?}", x))?,
                 }
                 pc += 1;
             }
             Call(args_len) => {
                 let args = create_args_vec(*args_len, runtime);
-                match runtime.stack.pop() {
-                    StackValue::RawFunction(func) => {
-                        execute_func(&func, args, runtime)?;
-                    }
+                let ret = match runtime.stack.pop() {
+                    StackValue::RawFunction(func) => execute_func(&func, args, runtime)?,
                     StackValue::RawTable(table) => {
                         if let Some(func) = table.get_method("__call") {
-                            execute_func(func, args, runtime)?;
+                            execute_func(&func, args, runtime)?
                         } else {
-                            Err("__call is not defined.".to_string())?;
+                            Err("__call is not defined.".to_string())?
                         }
                     }
                     StackValue::Object(Object::Function(func)) => {
-                        execute_func(&func, args, runtime)?;
+                        execute_func(&func, args, runtime)?
                     }
                     StackValue::Object(Object::Table(table)) => {
-                        let table = table.borrow();
-                        if let Some(func) = table.get_method("__call") {
-                            execute_func(func, args, runtime)?;
+                        if let Some(func) = table.borrow().get_method("__call") {
+                            execute_func(&func, args, runtime)?
                         } else {
-                            Err("__call is not defined.".to_string())?;
+                            Err("__call is not defined.".to_string())?
                         }
                     }
-                    StackValue::Object(Object::RustFunction(func)) => {
-                        let ret = func(&args)?;
-                        runtime.stack.push(ret.into());
-                    }
+                    StackValue::Object(Object::RustFunction(func)) => func(&args)?,
                     x => Err(format!("Expected Callable Object, but got {:?}", x))?,
-                }
+                };
+                runtime.stack.push(ret.into());
                 pc += 1;
             }
             SetItem => {
@@ -595,7 +593,7 @@ fn execute_func<'a, W: std::io::Write>(
     func: &runtime::FunctionObject<'a>,
     args: Vec<runtime::Object<'a>>,
     runtime: &mut Runtime<'a, W>,
-) -> Result<(), String> {
+) -> Result<Object<'a>, String> {
     if func.args.len() != args.len() {
         return Err(format!(
             "Expected {} arguments, but got {} arguments.",
@@ -614,9 +612,8 @@ fn execute_func<'a, W: std::io::Write>(
         runtime.variable_table.insert(name, value.clone());
     }
     let ret = execute(&func.code, runtime)?;
-    runtime.stack.push(ret.into());
     runtime.variable_table.pop_scope();
-    Ok(())
+    Ok(ret)
 }
 
 fn create_args_vec<'a, W: std::io::Write>(

@@ -42,6 +42,47 @@ fn case1() {
 fn case2() {
     let mut runtime = Runtime::new(vec![]);
 
+    // var table = { key = "value" }
+    runtime.variable_table.insert(
+        "table",
+        Object::new_table(vm::runtime::TableObject::new(
+            [("key".to_string(), Object::String("value".to_string()))]
+                .into_iter()
+                .collect(),
+        )),
+    );
+
+    #[rustfmt::skip]
+    vm::execute(&[
+        // func f(new_value)
+        //     table.key = new_value
+        // end
+        // f(1.23)
+        BeginFuncCreation,
+          AddArgument("new_value"),
+          AddCapture("table"),
+          LoadLocal("new_value"),
+          LoadLocal("table"), LoadStringAsRef("key"), SetItem,
+          LoadNil, Return,
+        EndFuncCreation,
+        MakeLocal("f"),
+        LoadLocal("f"), LoadFloat(1.23), Call(1),
+        Exit,
+    ], &mut runtime).unwrap();
+
+    // assert: table.key == 1.23
+    let table = if let Object::Table(table) = runtime.variable_table.get("table").unwrap() {
+        table
+    } else {
+        unreachable!()
+    };
+    assert_eq!(table.borrow().get("key"), Some(&Object::Float(1.23)));
+}
+
+#[test]
+fn case3() {
+    let mut runtime = Runtime::new(vec![]);
+
     // var f = func(x) return x end
     runtime.variable_table.insert(
         "f",
@@ -87,7 +128,7 @@ fn case2() {
 }
 
 #[test]
-fn case3() {
+fn case4() {
     let mut runtime = Runtime::new(vec![]);
 
     // var a = 7
