@@ -7,6 +7,15 @@ use std::{
     rc::Rc,
 };
 
+mod array;
+pub use array::*;
+
+mod function;
+pub use function::*;
+
+mod table;
+pub use table::*;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object<'a> {
     Int(i64),
@@ -15,9 +24,21 @@ pub enum Object<'a> {
     Bool(bool),
     Nil,
     Function(Rc<FunctionObject<'a>>),
-    Array(Rc<RefCell<Vec<Object<'a>>>>),
+    Array(Rc<RefCell<ArrayObject<'a>>>),
     Table(Rc<RefCell<TableObject<'a>>>),
     RustFunction(fn(&[Object<'a>]) -> Result<Object<'a>, String>),
+}
+
+impl<'a> Object<'a> {
+    pub fn new_function(func: FunctionObject<'a>) -> Self {
+        Self::Function(Rc::new(func))
+    }
+    pub fn new_array(array: Vec<Object<'a>>) -> Self {
+        Self::Array(Rc::new(RefCell::new(ArrayObject::new(array))))
+    }
+    pub fn new_table(table: TableObject<'a>) -> Self {
+        Self::Table(Rc::new(RefCell::new(table)))
+    }
 }
 
 impl Display for Object<'_> {
@@ -54,76 +75,5 @@ impl Display for Object<'_> {
             Object::Table(x) => write!(f, "<Table ({} fields)>", x.borrow().len(),),
             Object::RustFunction(x) => write!(f, "<RustFunction:{:?}>", x),
         }
-    }
-}
-
-impl<'a> Object<'a> {
-    pub fn new_function(func: FunctionObject<'a>) -> Self {
-        Self::Function(Rc::new(func))
-    }
-    pub fn new_array(array: Vec<Object<'a>>) -> Self {
-        Self::Array(Rc::new(RefCell::new(array)))
-    }
-    pub fn new_table(table: TableObject<'a>) -> Self {
-        Self::Table(Rc::new(RefCell::new(table)))
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct FunctionObject<'a> {
-    pub id: (usize, u8),
-    pub env: Vec<(&'a str, Option<Rc<RefCell<Object<'a>>>>)>,
-    pub args: Vec<&'a str>,
-    pub code: Vec<Code<'a>>,
-}
-
-impl PartialEq for FunctionObject<'_> {
-    fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct TableObject<'a> {
-    value: HashMap<String, Object<'a>>,
-    methods: Option<HashMap<&'a str, FunctionObject<'a>>>,
-}
-
-impl<'a> TableObject<'a> {
-    pub fn new(value: HashMap<String, Object<'a>>) -> Self {
-        Self {
-            value,
-            methods: None,
-        }
-    }
-
-    pub fn add_method(&mut self, name: &'a str, func: FunctionObject<'a>) {
-        if let Some(methods) = &mut self.methods {
-            methods.insert(name, func);
-        } else {
-            let mut methods = HashMap::new();
-            methods.insert(name, func);
-            self.methods = Some(methods);
-        }
-    }
-    pub fn get_method(&self, name: &str) -> Option<&FunctionObject<'a>> {
-        if let Some(methods) = &self.methods {
-            methods.get(name)
-        } else {
-            None
-        }
-    }
-}
-
-impl<'a> Deref for TableObject<'a> {
-    type Target = HashMap<String, Object<'a>>;
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl<'a> DerefMut for TableObject<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.value
     }
 }
