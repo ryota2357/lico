@@ -18,6 +18,33 @@ fn load() {
 }
 
 #[test]
+fn load_local() {
+    let mut runtime = Runtime::new(vec![]);
+    runtime.variable_table.insert("a", Object::Int(1));
+    vm::execute(&[LoadLocal("a"), Exit], &mut runtime).unwrap();
+    assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(1));
+}
+
+#[test]
+fn load_rust_function() {
+    let mut runtime = Runtime::new(vec![]);
+    let res = vm::execute(
+        &[
+            LoadRustFunction(|obj| {
+                assert_eq!(obj.len(), 1);
+                assert_eq!(obj[0], Object::Int(1));
+                Ok(Object::Int(2))
+            }),
+            LoadInt(1),
+            Call(1),
+            Return,
+        ],
+        &mut runtime,
+    );
+    assert_eq!(res.unwrap(), Object::Int(2));
+}
+
+#[test]
 #[should_panic(expected = "[INTERNAL] Stack is empty.")]
 fn unload() {
     let mut runtime = Runtime::new(vec![]);

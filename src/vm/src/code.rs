@@ -7,6 +7,7 @@ pub enum Code<'src> {
     LoadStringAsRef(&'src str),
     LoadNil,
     LoadLocal(&'src str),
+    LoadRustFunction(fn(&[crate::Object<'src>]) -> Result<crate::Object<'src>, String>),
     UnloadTop,
 
     SetLocal(&'src str),

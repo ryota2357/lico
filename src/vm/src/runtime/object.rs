@@ -17,6 +17,7 @@ pub enum Object<'a> {
     Function(Rc<FunctionObject<'a>>),
     Array(Rc<RefCell<Vec<Object<'a>>>>),
     Table(Rc<RefCell<TableObject<'a>>>),
+    RustFunction(fn(&[Object<'a>]) -> Result<Object<'a>, String>),
 }
 
 impl Display for Object<'_> {
@@ -51,6 +52,7 @@ impl Display for Object<'_> {
                 }
             }),
             Object::Table(x) => write!(f, "<Table ({} fields)>", x.borrow().len(),),
+            Object::RustFunction(x) => write!(f, "<RustFunction:{:?}>", x),
         }
     }
 }
@@ -94,6 +96,7 @@ impl<'a> TableObject<'a> {
             methods: None,
         }
     }
+
     pub fn add_method(&mut self, name: &'a str, func: FunctionObject<'a>) {
         if let Some(methods) = &mut self.methods {
             methods.insert(name, func);

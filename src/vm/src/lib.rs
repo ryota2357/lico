@@ -49,6 +49,10 @@ pub fn execute<'src, W: std::io::Write>(
                 runtime.stack.push(object.into());
                 pc += 1;
             }
+            LoadRustFunction(x) => {
+                runtime.stack.push(Object::RustFunction(*x).into());
+                pc += 1;
+            }
             UnloadTop => {
                 runtime.stack.pop();
                 pc += 1;
@@ -181,6 +185,10 @@ pub fn execute<'src, W: std::io::Write>(
                         } else {
                             Err("__call is not defined.".to_string())?;
                         }
+                    }
+                    StackValue::Object(Object::RustFunction(func)) => {
+                        let ret = func(&args)?;
+                        runtime.stack.push(ret.into());
                     }
                     x => Err(format!("Expected Callable Object, but got {:?}", x))?,
                 }
