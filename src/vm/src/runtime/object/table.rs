@@ -86,19 +86,19 @@ pub fn run_table_default_method<'a>(
         }
         "contains" => {
             let (table, args) = split_arguments!(args, 1);
-            let key = if let Object::String(key) = &args[1] {
+            let key = if let Object::String(key) = &args[0] {
                 key
             } else {
-                return Err(format!("expected string, got {:?}", args[1]));
+                return Err(format!("expected string, got {:?}", args[0]));
             };
             Ok(Object::Bool(table.borrow().contains_key(key)))
         }
         "remove" => {
             let (table, args) = split_arguments!(args, 1);
-            let key = if let Object::String(key) = &args[1] {
+            let key = if let Object::String(key) = &args[0] {
                 key
             } else {
-                return Err(format!("expected string, got {:?}", args[1]));
+                return Err(format!("expected string, got {:?}", args[0]));
             };
             Ok(table.borrow_mut().remove(key).unwrap_or(Object::Nil))
         }
