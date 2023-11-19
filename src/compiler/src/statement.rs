@@ -268,6 +268,7 @@ fn variable_statement<'node, 'src: 'node>(
             if accesser.is_empty() {
                 fragment.append(Code::SetLocal(name));
             } else {
+                fragment.append(Code::LoadLocal(name));
                 for (acc, _) in accesser.iter().take(accesser.len() - 1) {
                     fragment.append_compile(acc).append(Code::GetItem);
                 }
