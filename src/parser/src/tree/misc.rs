@@ -16,6 +16,7 @@ pub enum Primitive {
     Bool(bool),
     Nil,
 }
+
 pub(super) fn primitive<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Primitive, ParserError<'tokens, 'src>> + Clone
 {
@@ -50,19 +51,18 @@ pub(super) fn ident<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Ident<'src>, ParserError<'tokens, 'src>> + Clone
 {
     select! {
-        Token::Ident(x) => x
+        Token::Ident(x) => Ident(x)
     }
-    .map(Ident)
 }
 
 pub(super) fn spanned_ident<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (Ident<'src>, Span), ParserError<'tokens, 'src>>
        + Clone {
     select! {
-        Token::Ident(x) => x
+        Token::Ident(x) => Ident(x)
     }
-    .map_with(|str, ext| {
+    .map_with(|ident, ext| {
         let span: SimpleSpan = ext.span();
-        (Ident(str), span.into())
+        (ident, span.into())
     })
 }

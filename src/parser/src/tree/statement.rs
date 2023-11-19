@@ -13,8 +13,12 @@ pub(super) fn statement<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
         + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Statement<'src>, ParserError<'tokens, 'src>> + Clone
-{
+) -> impl Parser<
+    'tokens,
+    ParserInput<'tokens, 'src>,
+    (Statement<'src>, Span),
+    ParserError<'tokens, 'src>,
+> + Clone {
     let expr = expression(block.clone());
 
     let control = control_statement(block.clone(), expr.clone()).map(Statement::Control);
@@ -23,6 +27,7 @@ pub(super) fn statement<'tokens, 'src: 'tokens>(
     let call = call_statement(expr).map(Statement::Call);
 
     choice((control, attribute, variable, call))
+        .map_with(|statement, extra| (statement, extra.span().into()))
 }
 
 impl<'a> TreeWalker<'a> for Statement<'a> {

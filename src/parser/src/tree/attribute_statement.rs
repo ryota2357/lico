@@ -32,13 +32,12 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
     let function = attr_name
         .then(
             choice((
-                ident().map_with(|ident, ext| (ident, ext.span().into())),
-                select! { Token::Bool(x) => if x { "true" } else { "false" } }.map_with(
-                    |str, ext| {
+                spanned_ident(),
+                select! { Token::Bool(x) => if x { Ident("true") } else { Ident("false") } }
+                    .map_with(|ident, ext| {
                         let span: SimpleSpan = ext.span();
-                        (Ident(str), span.into())
-                    },
-                ),
+                        (ident, span.into())
+                    }),
             ))
             .separated_by(just(Token::Comma))
             .allow_trailing()
