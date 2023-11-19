@@ -1,6 +1,5 @@
-use std::ops::{Deref, DerefMut};
-
 use super::*;
+use std::ops::{Deref, DerefMut};
 
 /// <Primitive> ::= <Int> | <Float> | <String> | <Bool> | <Nil>
 /// <Int>       ::= __int

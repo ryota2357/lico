@@ -1,8 +1,6 @@
 use super::*;
 use std::ops::Deref;
 
-type Span = std::ops::Range<usize>;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Block<'src>(pub Vec<(Statement<'src>, Span)>);
 
