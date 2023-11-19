@@ -153,6 +153,10 @@ pub fn execute<'src, W: std::io::Write>(
                 };
                 let self_obj = args.first().unwrap().clone();
                 match self_obj {
+                    Object::Array(_) => {
+                        let res = runtime::run_array_method(name, &args)?;
+                        runtime.stack.push(res.into());
+                    }
                     Object::Table(table) => {
                         let method = table.borrow().get_method(name);
                         let res = match method {
