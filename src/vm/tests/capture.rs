@@ -27,15 +27,16 @@ fn case1() {
     ).unwrap();
 
     assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(11)));
-    match runtime.variable_table.get("f").unwrap() {
-        Object::Function(func) => {
-            assert_eq!(func.id, (2, 0));
-        }
-        _ => panic!(
-            "Expected Function, but got {:?}",
-            runtime.variable_table.get("f")
-        ),
-    };
+    assert_eq!(
+        runtime
+            .variable_table
+            .get("f")
+            .unwrap()
+            .ensure_function()
+            .unwrap()
+            .id,
+        (2, 0)
+    )
 }
 
 #[test]

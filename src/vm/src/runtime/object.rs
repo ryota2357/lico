@@ -22,16 +22,76 @@ pub enum Object<'a> {
     RustFunction(fn(&[Object<'a>]) -> Result<Object<'a>, String>),
 }
 
+macro_rules! ensure_fn {
+    ($name:ident -> $inner_type:ty, $pattern:pat => $result:expr) => {
+        pub fn $name(self) -> Result<$inner_type, String> {
+            match self {
+                $pattern => $result,
+                _ => Err(format!(
+                    "Expected `{}`, got `{}`",
+                    stringify!($name)[7..].to_string(), // remove "ensure_"
+                    self.typename()
+                )),
+            }
+        }
+    };
+}
+
 impl<'a> Object<'a> {
     pub fn new_function(func: FunctionObject<'a>) -> Self {
         Self::Function(Rc::new(func))
     }
+
     pub fn new_array(array: ArrayObject<'a>) -> Self {
         Self::Array(Rc::new(RefCell::new(array)))
     }
+
     pub fn new_table(table: TableObject<'a>) -> Self {
         Self::Table(Rc::new(RefCell::new(table)))
     }
+
+    pub fn typename(&self) -> &'static str {
+        match self {
+            Object::Int(_) => "int",
+            Object::Float(_) => "float",
+            Object::String(_) => "string",
+            Object::Bool(_) => "bool",
+            Object::Nil => "nil",
+            Object::Function(_) => "function",
+            Object::Array(_) => "array",
+            Object::Table(_) => "table",
+            Object::RustFunction(_) => "rust_function",
+        }
+    }
+
+    ensure_fn!(
+        ensure_int -> i64,
+        Object::Int(x) => Ok(x)
+    );
+    ensure_fn!(
+        ensure_float -> f64,
+        Object::Float(x) => Ok(x)
+    );
+    ensure_fn!(
+        ensure_string -> String,
+        Object::String(x) => Ok(x)
+    );
+    ensure_fn!(
+        ensure_bool -> bool,
+        Object::Bool(x) => Ok(x)
+    );
+    ensure_fn!(
+        ensure_function -> Rc<FunctionObject<'a>>,
+        Object::Function(x) => Ok(x)
+    );
+    ensure_fn!(
+        ensure_array -> Rc<RefCell<ArrayObject<'a>>>,
+        Object::Array(x) => Ok(x)
+    );
+    ensure_fn!(
+        ensure_table -> Rc<RefCell<TableObject<'a>>>,
+        Object::Table(x) => Ok(x)
+    );
 }
 
 impl Display for Object<'_> {

@@ -82,10 +82,7 @@ pub fn execute<'src, W: std::io::Write>(
                 pc += 1;
             }
             MakeExprNamed => {
-                let name = match runtime.stack.pop().ensure_object() {
-                    Object::String(x) => x,
-                    x => Err(format!("Expected String, but got {:?}", x))?,
-                };
+                let name = runtime.stack.pop().ensure_object().ensure_string()?;
                 let object = runtime.stack.pop().ensure_object();
                 runtime.stack.push((name, object).into());
                 pc += 1;
@@ -111,10 +108,7 @@ pub fn execute<'src, W: std::io::Write>(
                 }
             }
             JumpIfTrue(offset) => {
-                let boolean = match runtime.stack.pop().ensure_object() {
-                    Object::Bool(x) => x,
-                    x => Err(format!("Expected Bool, but got {:?}", x))?,
-                };
+                let boolean = runtime.stack.pop().ensure_object().ensure_bool()?;
                 if boolean {
                     if *offset < 0 {
                         pc -= offset.unsigned_abs();
@@ -126,10 +120,7 @@ pub fn execute<'src, W: std::io::Write>(
                 }
             }
             JumpIfFalse(offset) => {
-                let boolean = match runtime.stack.pop().ensure_object() {
-                    Object::Bool(x) => x,
-                    x => Err(format!("Expected Bool, but got {:?}", x))?,
-                };
+                let boolean = runtime.stack.pop().ensure_object().ensure_bool()?;
                 if !boolean {
                     if *offset < 0 {
                         pc -= offset.unsigned_abs();
@@ -197,36 +188,27 @@ pub fn execute<'src, W: std::io::Write>(
                 pc += 1;
             }
             SetItem => {
-                let get_int_index = |accesser| match accesser {
-                    StackValue::Object(Object::Int(x)) => Ok(x as usize),
-                    x => Err(format!("Expected Int, but got {:?}", x)),
-                };
-                let get_string_index = |accesser| match accesser {
-                    StackValue::Object(Object::String(x)) => Ok(x),
-                    x => Err(format!("Expected String, but got {:?}", x)),
-                };
-
-                let accesser = runtime.stack.pop();
+                let accesser = runtime.stack.pop().ensure_object();
                 let target = runtime.stack.pop();
                 let value = runtime.stack.pop().ensure_object();
                 match target {
                     StackValue::RawArray(mut array) => {
-                        let index = get_int_index(accesser)?;
-                        array[index] = value;
+                        let index = accesser.ensure_int()?;
+                        array[index as usize] = value;
                         runtime.stack.push(array.into());
                     }
                     StackValue::RawTable(mut table) => {
-                        let index = get_string_index(accesser)?;
+                        let index = accesser.ensure_string()?;
                         table.insert(index, value);
                         runtime.stack.push(table.into());
                     }
                     StackValue::Object(Object::Array(array)) => {
-                        let index = get_int_index(accesser)?;
-                        array.borrow_mut()[index] = value;
+                        let index = accesser.ensure_int()?;
+                        array.borrow_mut()[index as usize] = value;
                         runtime.stack.push(Object::Array(array).into());
                     }
                     StackValue::Object(Object::Table(table)) => {
-                        let index = get_string_index(accesser)?;
+                        let index = accesser.ensure_string()?;
                         table.borrow_mut().insert(index, value);
                         runtime.stack.push(Object::Table(table).into());
                     }
@@ -235,28 +217,19 @@ pub fn execute<'src, W: std::io::Write>(
                 pc += 1;
             }
             GetItem => {
-                let get_int_index = |accesser| match accesser {
-                    StackValue::Object(Object::Int(x)) => Ok(x as usize),
-                    x => Err(format!("Expected Int, but got {:?}", x)),
-                };
-                let get_string_index = |accesser| match accesser {
-                    StackValue::Object(Object::String(x)) => Ok(x),
-                    x => Err(format!("Expected String, but got {:?}", x)),
-                };
-
-                let accesser = runtime.stack.pop();
+                let accesser = runtime.stack.pop().ensure_object();
                 let target = runtime.stack.pop();
                 match target {
                     StackValue::RawArray(array) => {
-                        let index = get_int_index(accesser)?;
-                        let item = match array.get(index) {
+                        let index = accesser.ensure_int()?;
+                        let item = match array.get(index as usize) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
                         };
                         runtime.stack.push(item.into());
                     }
                     StackValue::RawTable(table) => {
-                        let index = get_string_index(accesser)?;
+                        let index = accesser.ensure_string()?;
                         let item = match table.get(&index) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
@@ -264,15 +237,15 @@ pub fn execute<'src, W: std::io::Write>(
                         runtime.stack.push(item.into());
                     }
                     StackValue::Object(Object::Array(array)) => {
-                        let index = get_int_index(accesser)?;
-                        let item = match array.borrow().get(index) {
+                        let index = accesser.ensure_int()?;
+                        let item = match array.borrow().get(index as usize) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
                         };
                         runtime.stack.push(item.into());
                     }
                     StackValue::Object(Object::Table(table)) => {
-                        let index = get_string_index(accesser)?;
+                        let index = accesser.ensure_string()?;
                         let item = match table.borrow().get(&index) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
