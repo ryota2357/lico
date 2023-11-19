@@ -79,13 +79,13 @@ fn control_statement<'node, 'src: 'node>(
             iter: (iter, _),
             body,
         } => {
-            //            0: make_local    <>iter = [iter]->__getIterator()
-            //            1: eval          <>iter->__moveNext()
+            //            0: make_local    <>iter = [iter]->__get_iterator()
+            //            1: eval          <>iter->__move_next()
             //            2: jump_if_false 11
             //            3: jump          6
-            // (continue) 4: eval          <>iter->__moveNext()
+            // (continue) 4: eval          <>iter->__move_next()
             //            5: jump_if_false 9
-            //            6: make_local    [value] = <>iter->__getCurrent()
+            //            6: make_local    [value] = <>iter->__current()
             //            7: eval          [body]
             //            8: jump          4
             //    (break) 9: delete        [value], <>iter (== drop_local 2)
@@ -104,17 +104,17 @@ fn control_statement<'node, 'src: 'node>(
                 let mut fragment = Fragment::new();
                 fragment
                     .append_many([
-                        Code::CustomMethod("__getIterator", 0),       // 0
+                        Code::CustomMethod("__get_iterator", 0),      // 0
                         Code::MakeLocal("<>iter"),                    // |
                         Code::LoadLocal("<>iter"),                    // 1
-                        Code::CustomMethod("__moveNext", 0),          // |
+                        Code::CustomMethod("__move_next", 0),         // |
                         Code::JumpIfFalse(7 + body_fragment_len + 4), // 2
                         Code::Jump(4),                                // 3
                         Code::LoadLocal("<>iter"),                    // 4
-                        Code::CustomMethod("__moveNext", 0),          // |
+                        Code::CustomMethod("__move_next", 0),         // |
                         Code::JumpIfFalse(3 + body_fragment_len + 2), // 5
                         Code::LoadLocal("<>iter"),                    // 6
-                        Code::CustomMethod("__getCurrent", 0),        // |
+                        Code::CustomMethod("__current", 0),           // |
                         Code::MakeLocal(value),                       // |
                     ])
                     .append_fragment(body_fragment)

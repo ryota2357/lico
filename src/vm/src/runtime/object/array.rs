@@ -50,14 +50,14 @@ macro_rules! split_arguments {
 
 pub fn run_array_method<'a>(name: &'a str, args: &[Object<'a>]) -> Result<Object<'a>, String> {
     match name {
-        "__getIterator" => {
+        "__get_iterator" => {
             let (array, _) = split_arguments!(args, 0);
             // iter = {
             //     __array = array,
             //     __version = array.version,
             //     __index = -1,
             //     __current = Nil,
-            //     func __moveNext = func()
+            //     func __move_next = func()
             //        @rustFunction {
             //            if version != array.version { Err(..)}
             //            if index + 1 < array.len() {
@@ -70,7 +70,7 @@ pub fn run_array_method<'a>(name: &'a str, args: &[Object<'a>]) -> Result<Object
             //            }
             //        }
             //     end,
-            //     func __getCurrent = func()
+            //     func __current = func()
             //         self.__current
             //     end,
             // }
@@ -88,7 +88,7 @@ pub fn run_array_method<'a>(name: &'a str, args: &[Object<'a>]) -> Result<Object
                 .collect(),
             );
             iter.add_method(
-                "__moveNext",
+                "__move_next",
                 FunctionObject {
                     id: (0, 0),
                     env: vec![],
@@ -142,7 +142,7 @@ pub fn run_array_method<'a>(name: &'a str, args: &[Object<'a>]) -> Result<Object
                 },
             );
             iter.add_method(
-                "__getCurrent",
+                "__current",
                 FunctionObject {
                     id: (0, 0),
                     env: vec![],
