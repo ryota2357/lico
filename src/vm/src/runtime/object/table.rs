@@ -76,12 +76,13 @@ pub fn run_table_default_method<'a>(
     match name {
         "keys" => {
             let (table, _) = split_arguments!(args, 0);
-            let array = table.borrow().keys().cloned().map(Object::String).collect();
+            let array =
+                ArrayObject::new(table.borrow().keys().cloned().map(Object::String).collect());
             Ok(Object::new_array(array))
         }
         "values" => {
             let (table, _) = split_arguments!(args, 0);
-            let array = table.borrow().values().cloned().collect();
+            let array = ArrayObject::new(table.borrow().values().cloned().collect());
             Ok(Object::new_array(array))
         }
         "len" => {

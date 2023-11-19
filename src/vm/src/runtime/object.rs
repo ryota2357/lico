@@ -26,8 +26,8 @@ impl<'a> Object<'a> {
     pub fn new_function(func: FunctionObject<'a>) -> Self {
         Self::Function(Rc::new(func))
     }
-    pub fn new_array(array: Vec<Object<'a>>) -> Self {
-        Self::Array(Rc::new(RefCell::new(ArrayObject::new(array))))
+    pub fn new_array(array: ArrayObject<'a>) -> Self {
+        Self::Array(Rc::new(RefCell::new(array)))
     }
     pub fn new_table(table: TableObject<'a>) -> Self {
         Self::Table(Rc::new(RefCell::new(table)))

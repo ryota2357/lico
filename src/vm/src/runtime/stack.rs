@@ -41,7 +41,7 @@ impl<'a> StackValue<'a> {
     pub fn ensure_object(self) -> Object<'a> {
         match self {
             StackValue::RawFunction(func) => Object::new_function(func),
-            StackValue::RawArray(array) => Object::new_array(array),
+            StackValue::RawArray(array) => Object::new_array(ArrayObject::new(array)),
             StackValue::RawTable(table) => Object::new_table(table),
             StackValue::Object(obj) => obj,
             x => panic!("[INTERNAL] Expected Object, but got {:?}", x),
