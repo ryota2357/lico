@@ -23,7 +23,7 @@ fn define_variable_with_litera() {
                 0..10,
             )],
         },
-    )
+    );
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn define_variable_with_func_call() {
                 0..11,
             )],
         },
-    )
+    );
 }
 
 #[test]
@@ -64,7 +64,34 @@ fn assign_variable_with_literal() {
                 0..8,
             )],
         },
-    )
+    );
+}
+
+#[test]
+fn assign_table_field() {
+    do_chunk_test(
+        "x['y'].z = 10",
+        Chunk {
+            captures: vec!["x"],
+            block: vec![(
+                Statement::Variable(VariableStatement::Assign {
+                    name: (Ident("x"), 0..1),
+                    accesser: vec![
+                        (
+                            Expression::Primitive(Primitive::String("y".to_string())),
+                            2..5,
+                        ),
+                        (
+                            Expression::Primitive(Primitive::String("z".to_string())),
+                            7..8,
+                        ),
+                    ],
+                    expr: (Expression::Primitive(Primitive::Int(10)), 11..13),
+                }),
+                0..13,
+            )],
+        },
+    );
 }
 
 #[test]

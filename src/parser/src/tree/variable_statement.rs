@@ -82,9 +82,13 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
                 expression
                     .clone()
                     .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket)),
-                just(Token::Dot)
-                    .ignore_then(ident())
-                    .map_with(|ident, extra| (Expression::Ident(ident), extra.span().into())),
+                just(Token::Dot).ignore_then(select! { Token::Ident(x) => x }.map_with(
+                    |ident, extra| {
+                        let key = ident.to_string();
+                        let span: SimpleSpan = extra.span();
+                        (Expression::Primitive(Primitive::String(key)), span.into())
+                    },
+                )),
             ))
             .repeated()
             .collect(),
