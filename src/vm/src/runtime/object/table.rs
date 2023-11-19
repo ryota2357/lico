@@ -1,4 +1,8 @@
 use super::*;
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableObject<'a> {

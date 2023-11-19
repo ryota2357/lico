@@ -1,11 +1,4 @@
-use crate::code::Code;
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    fmt::Display,
-    ops::{Deref, DerefMut},
-    rc::Rc,
-};
+use std::{cell::RefCell, fmt::Display, rc::Rc};
 
 mod array;
 pub use array::*;

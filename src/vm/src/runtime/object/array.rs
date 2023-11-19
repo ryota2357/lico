@@ -1,4 +1,6 @@
 use super::*;
+use crate::code::Code;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ArrayObject<'a> {
