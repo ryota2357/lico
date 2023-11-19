@@ -63,7 +63,24 @@ impl Display for Object<'_> {
                 let content = array
                     .iter()
                     .take(10)
-                    .map(|x| format!("{}", x))
+                    .map(|x| match x {
+                        Object::String(x) => {
+                            let x = x
+                                .replace('\\', "\\\\")
+                                .replace('\n', "\\n")
+                                .replace('\r', "\\r")
+                                .replace('\t', "\\t")
+                                .replace('\0', "\\0");
+                            let has_single_quote = x.contains('\'');
+                            let has_double_quote = x.contains('"');
+                            match (has_single_quote, has_double_quote) {
+                                (true, true) => format!("\"{}\"", x.replace('\"', "\\\"")),
+                                (_, false) => format!("\"{}\"", x),
+                                (false, _) => format!("'{}'", x),
+                            }
+                        }
+                        _ => format!("{}", x),
+                    })
                     .collect::<Vec<_>>()
                     .join(", ");
                 if array.len() > 10 {
