@@ -140,7 +140,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
         let array_object = array_object(expr.clone())
             .map(Expression::ArrayObject)
             .map_with(|expr, ext| (expr, ext.span().into()));
-        let function_object = function_object(block.clone())
+        let function_object = function_object(block)
             .map(Expression::FunctionObject)
             .map_with(|expr, ext| (expr, ext.span().into()));
 

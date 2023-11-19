@@ -19,7 +19,7 @@ pub(super) fn statement<'tokens, 'src: 'tokens>(
 
     let control = control_statement(block.clone(), expr.clone()).map(Statement::Control);
     let attribute = attribute_statement().map(Statement::Attribute);
-    let variable = variable_statement(block.clone(), expr.clone()).map(Statement::Variable);
+    let variable = variable_statement(block, expr.clone()).map(Statement::Variable);
     let call = call_statement(expr).map(Statement::Call);
 
     choice((control, attribute, variable, call))
