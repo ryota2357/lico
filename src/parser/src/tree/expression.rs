@@ -229,10 +229,10 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     prefix_unary!(7, just(Token::Not) => Not),
 
                     // 6: Exponential (**)
-                    infix_binary!(right(6), just(Token::Pow) => Pow),
+                    infix_binary!(right(6), just(Token::Star2) => Pow),
 
                     // 5: Multiplicative (*, /, %)
-                    infix_binary!(left(5), just(Token::Mul) => Mul),
+                    infix_binary!(left(5), just(Token::Star) => Mul),
                     infix_binary!(left(5), just(Token::Div) => Div),
                     infix_binary!(left(5), just(Token::Mod) => Mod),
 

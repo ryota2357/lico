@@ -50,7 +50,7 @@ pub(super) fn ident<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Ident<'src>, ParserError<'tokens, 'src>> + Clone
 {
     select! {
-        Token::Identifier(x) => x
+        Token::Ident(x) => x
     }
     .map(Ident)
 }
@@ -59,7 +59,7 @@ pub(super) fn spanned_ident<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (Ident<'src>, Span), ParserError<'tokens, 'src>>
        + Clone {
     select! {
-        Token::Identifier(x) => x
+        Token::Ident(x) => x
     }
     .map_with(|str, ext| {
         let span: SimpleSpan = ext.span();

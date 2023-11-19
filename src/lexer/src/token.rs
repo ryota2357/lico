@@ -26,10 +26,10 @@ pub enum Token<'src> {
     // operators
     Pluss,     // +
     Minus,     // -
-    Mul,       // *
+    Star,      // *
     Div,       // /
     Mod,       // %
-    Pow,       // **
+    Star2,     // **
     Eq,        // ==
     NotEq,     // !=
     Less,      // <
@@ -38,7 +38,7 @@ pub enum Token<'src> {
     GreaterEq, // >=
     Dot,       // .
     Arrow,     // ->
-    StrJoin,   // ..
+    Dot2,      // ..
     Assign,    // =
 
     // keyword operators
@@ -57,7 +57,7 @@ pub enum Token<'src> {
     CloseBracket, // ]
 
     // other
-    Identifier(&'src str),
+    Ident(&'src str),
     Attribute(&'src str),
     Error(char),
 }
@@ -86,10 +86,10 @@ impl std::fmt::Display for Token<'_> {
             Token::Continue => write!(f, "continue"),
             Token::Pluss => write!(f, "+"),
             Token::Minus => write!(f, "-"),
-            Token::Mul => write!(f, "*"),
+            Token::Star => write!(f, "*"),
             Token::Div => write!(f, "/"),
             Token::Mod => write!(f, "%"),
-            Token::Pow => write!(f, "^"),
+            Token::Star2 => write!(f, "^"),
             Token::Eq => write!(f, "=="),
             Token::NotEq => write!(f, "!="),
             Token::Less => write!(f, "<"),
@@ -98,7 +98,7 @@ impl std::fmt::Display for Token<'_> {
             Token::GreaterEq => write!(f, ">="),
             Token::Dot => write!(f, "."),
             Token::Arrow => write!(f, "->"),
-            Token::StrJoin => write!(f, ".."),
+            Token::Dot2 => write!(f, ".."),
             Token::Assign => write!(f, "="),
             Token::And => write!(f, "and"),
             Token::Or => write!(f, "or"),
@@ -111,7 +111,7 @@ impl std::fmt::Display for Token<'_> {
             Token::CloseBrace => write!(f, "}}"),
             Token::OpenBracket => write!(f, "["),
             Token::CloseBracket => write!(f, "]"),
-            Token::Identifier(x) => write!(f, "{}", x),
+            Token::Ident(x) => write!(f, "{}", x),
             Token::Attribute(x) => write!(f, "@{}", x),
             Token::Error(c) => write!(f, "Error('{}')", c),
         }

@@ -95,10 +95,10 @@ fn keyword() {
 fn operator() {
     do_test("+", vec![Token::Pluss]);
     do_test("-", vec![Token::Minus]);
-    do_test("*", vec![Token::Mul]);
+    do_test("*", vec![Token::Star]);
     do_test("/", vec![Token::Div]);
     do_test("%", vec![Token::Mod]);
-    do_test("**", vec![Token::Pow]);
+    do_test("**", vec![Token::Star2]);
     do_test("==", vec![Token::Eq]);
     do_test("!=", vec![Token::NotEq]);
     do_test("<", vec![Token::Less]);
@@ -107,7 +107,7 @@ fn operator() {
     do_test(">=", vec![Token::GreaterEq]);
     do_test(".", vec![Token::Dot]);
     do_test("->", vec![Token::Arrow]);
-    do_test("..", vec![Token::StrJoin]);
+    do_test("..", vec![Token::Dot2]);
     do_test("=", vec![Token::Assign]);
 }
 
@@ -131,12 +131,12 @@ fn delimiter() {
 }
 
 #[test]
-fn identifier() {
-    do_test("abc", vec![Token::Identifier("abc")]);
-    do_test("a1", vec![Token::Identifier("a1")]);
-    do_test("a_1", vec![Token::Identifier("a_1")]);
-    do_test("_foo", vec![Token::Identifier("_foo")]);
-    do_test("bar_", vec![Token::Identifier("bar_")]);
+fn ident() {
+    do_test("abc", vec![Token::Ident("abc")]);
+    do_test("a1", vec![Token::Ident("a1")]);
+    do_test("a_1", vec![Token::Ident("a_1")]);
+    do_test("_foo", vec![Token::Ident("_foo")]);
+    do_test("bar_", vec![Token::Ident("bar_")]);
 }
 
 #[test]

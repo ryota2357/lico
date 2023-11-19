@@ -14,7 +14,7 @@ fn do_test(code: &str, tokens: Vec<Token>, errors: Vec<Error>) {
 fn invalid_attribute() {
     do_test(
         "@ attr",
-        vec![Token::Error('@'), Token::Identifier("attr")],
+        vec![Token::Error('@'), Token::Ident("attr")],
         vec![Error::invalid_character('@', (0..1).into())],
     );
 }

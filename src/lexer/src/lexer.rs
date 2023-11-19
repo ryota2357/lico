@@ -103,8 +103,8 @@ pub(super) fn lexer<'src>(
         just('+').to(Token::Pluss),
         just("->").to(Token::Arrow),
         just('-').to(Token::Minus),
-        just("**").to(Token::Pow),
-        just('*').to(Token::Mul),
+        just("**").to(Token::Star2),
+        just('*').to(Token::Star),
         just('/').to(Token::Div),
         just('%').to(Token::Mod),
         just("==").to(Token::Eq),
@@ -113,7 +113,7 @@ pub(super) fn lexer<'src>(
         just('<').to(Token::Less),
         just(">=").to(Token::GreaterEq),
         just('>').to(Token::Greater),
-        just("..").to(Token::StrJoin),
+        just("..").to(Token::Dot2),
         just('.').to(Token::Dot),
         just('=').to(Token::Assign),
         // delimiter
@@ -155,7 +155,7 @@ pub(super) fn lexer<'src>(
         "not" => Token::Not,
 
         // other
-        _ => Token::Identifier(ident),
+        _ => Token::Ident(ident),
     });
 
     let token = choice((float, int, string, symbol, attribute, word))
