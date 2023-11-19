@@ -35,12 +35,9 @@ pub enum ControlStatement<'src> {
 /// <Continue>         ::= 'continue'
 /// <Break>            ::= 'break'
 pub(super) fn control_statement<'tokens, 'src: 'tokens>(
-    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>>
-        + Clone
-        + 'tokens,
+    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>> + Clone,
     expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, (Expression<'src>, Span), ParserError<'src>>
-        + Clone
-        + 'tokens,
+        + Clone,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, ControlStatement<'src>, ParserError<'src>> + Clone
 {
     let r#if = just(Token::If)

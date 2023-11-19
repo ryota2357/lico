@@ -7,8 +7,7 @@ pub struct ArrayObject<'src>(pub Vec<(Expression<'src>, Span)>);
 /// <ArrayObject> ::= '[' [ <Expression> { ',' <Expression> } [ ',' ] ] ']'
 pub(super) fn array_object<'tokens, 'src: 'tokens>(
     expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, (Expression<'src>, Span), ParserError<'src>>
-        + Clone
-        + 'tokens,
+        + Clone,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, ArrayObject<'src>, ParserError<'src>> + Clone
 {
     let elements = expression

@@ -15,8 +15,7 @@ pub enum CallStatement<'src> {
 
 pub(super) fn call_statement<'tokens, 'src: 'tokens>(
     expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, (Expression<'src>, Span), ParserError<'src>>
-        + Clone
-        + 'tokens,
+        + Clone,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CallStatement<'src>, ParserError<'src>> + Clone
 {
     let ident_or_expr = {

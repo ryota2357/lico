@@ -8,9 +8,7 @@ pub struct FunctionObject<'src> {
 
 /// <FunctionObject> ::= 'func' '(' [ <Ident> { ',' <Ident> } [ ',' ] ] ')' <Chunk> 'end'
 pub(super) fn function_object<'tokens, 'src: 'tokens>(
-    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>>
-        + Clone
-        + 'tokens,
+    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>> + Clone,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, FunctionObject<'src>, ParserError<'src>> + Clone
 {
     let args = spanned_ident()
