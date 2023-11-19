@@ -220,7 +220,7 @@ fn variable_statement<'node, 'src: 'node>(
             args,
             body,
         } => {
-            let recusive = body.captures.contains(&name);
+            let recusive = body.captures.contains(name);
             if recusive {
                 fragment.append_many([Code::LoadNil, Code::MakeLocal(name)]);
             }
