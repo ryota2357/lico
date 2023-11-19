@@ -30,22 +30,14 @@ pub enum VariableStatement<'src> {
 /// <Func>              ::= 'func' <Local> '(' [ <Ident> { ',' <Ident> } [ ',' ] ] ')' <Block> 'end'
 /// <Assign>            ::= <Ident> { ( '[' <Expression> ']' ) | ( '.' <Ident> ) } '=' <Expression>
 pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
-    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
+    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>>
         + Clone
         + 'tokens,
-    expression: impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            (Expression<'src>, Span),
-            ParserError<'tokens, 'src>,
-        > + Clone
+    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, (Expression<'src>, Span), ParserError<'src>>
+        + Clone
         + 'tokens,
-) -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    VariableStatement<'src>,
-    ParserError<'tokens, 'src>,
-> + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, VariableStatement<'src>, ParserError<'src>> + Clone
+{
     let func_arguments = spanned_ident()
         .separated_by(just(Token::Comma))
         .allow_trailing()

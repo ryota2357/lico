@@ -14,15 +14,11 @@ pub enum CallStatement<'src> {
 }
 
 pub(super) fn call_statement<'tokens, 'src: 'tokens>(
-    expression: impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            (Expression<'src>, Span),
-            ParserError<'tokens, 'src>,
-        > + Clone
+    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, (Expression<'src>, Span), ParserError<'src>>
+        + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CallStatement<'src>, ParserError<'tokens, 'src>>
-       + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, CallStatement<'src>, ParserError<'src>> + Clone
+{
     let ident_or_expr = {
         let ident = ident().map(Expression::Ident);
         let primitive = primitive().map(Expression::Primitive);

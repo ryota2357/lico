@@ -15,12 +15,9 @@ pub enum AttributeStatement<'src> {
 /// <FunctionAttribute>  ::= __attribute '(' <attribute_fn_value> { ',' <attribute_fn_value> } ')'
 /// <VariableAttribute>  ::= __attribute
 /// <attribute_fn_value> ::= <Ident> | <Bool>
-pub(super) fn attribute_statement<'tokens, 'src: 'tokens>() -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    AttributeStatement<'src>,
-    ParserError<'tokens, 'src>,
-> + Clone {
+pub(super) fn attribute_statement<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, AttributeStatement<'src>, ParserError<'src>> + Clone
+{
     let attr_name = select! {
         Token::Attribute(x) => x
     }

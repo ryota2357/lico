@@ -15,8 +15,7 @@ pub struct Chunk<'src> {
 /// <Block> ::= { <Statement> }
 /// <Chunk> ::= <Block>
 pub(super) fn block<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>> + Clone
-{
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>> + Clone {
     recursive(|block| statement(block).repeated().collect().map(Block))
 }
 

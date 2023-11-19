@@ -1,9 +1,8 @@
-use chumsky::prelude::*;
+use super::*;
 use lexer::Token;
 use std::collections::{HashMap, HashSet};
 
-type Span = std::ops::Range<usize>;
-type ParserError<'tokens, 'src> = extra::Err<Rich<'tokens, Token<'src>, SimpleSpan>>;
+type ParserError<'src> = extra::Err<error::Error<'src>>;
 type ParserInput<'tokens, 'src> =
     chumsky::input::SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]>;
 

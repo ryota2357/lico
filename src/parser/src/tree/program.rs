@@ -8,8 +8,7 @@ pub struct Program<'src> {
 
 /// <Program> ::= <Chunk>
 pub(crate) fn program<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Program<'src>, ParserError<'tokens, 'src>> + Clone
-{
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Program<'src>, ParserError<'src>> + Clone {
     block().then_ignore(end()).map(|block| Program {
         attributes: vec![],
         body: block.into(),

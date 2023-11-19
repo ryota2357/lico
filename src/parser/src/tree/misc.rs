@@ -18,8 +18,7 @@ pub enum Primitive {
 }
 
 pub(super) fn primitive<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Primitive, ParserError<'tokens, 'src>> + Clone
-{
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Primitive, ParserError<'src>> + Clone {
     select! {
         Token::Int(x) => Primitive::Int(x),
         Token::Float(x) => Primitive::Float(x),
@@ -48,16 +47,15 @@ impl<'a> DerefMut for Ident<'a> {
 }
 
 pub(super) fn ident<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Ident<'src>, ParserError<'tokens, 'src>> + Clone
-{
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Ident<'src>, ParserError<'src>> + Clone {
     select! {
         Token::Ident(x) => Ident(x)
     }
 }
 
 pub(super) fn spanned_ident<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (Ident<'src>, Span), ParserError<'tokens, 'src>>
-       + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (Ident<'src>, Span), ParserError<'src>> + Clone
+{
     select! {
         Token::Ident(x) => Ident(x)
     }

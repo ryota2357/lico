@@ -6,15 +6,11 @@ pub struct ArrayObject<'src>(pub Vec<(Expression<'src>, Span)>);
 
 /// <ArrayObject> ::= '[' [ <Expression> { ',' <Expression> } [ ',' ] ] ']'
 pub(super) fn array_object<'tokens, 'src: 'tokens>(
-    expression: impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            (Expression<'src>, Span),
-            ParserError<'tokens, 'src>,
-        > + Clone
+    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, (Expression<'src>, Span), ParserError<'src>>
+        + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, ArrayObject<'src>, ParserError<'tokens, 'src>>
-       + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, ArrayObject<'src>, ParserError<'src>> + Clone
+{
     let elements = expression
         .separated_by(just(Token::Comma))
         .allow_trailing()

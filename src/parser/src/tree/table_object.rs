@@ -10,15 +10,10 @@ pub struct TableObject<'src>(pub Vec<((Expression<'src>, Span), (Expression<'src
 ///  TODO: 次に対応する
 ///  <table filed> ::= ( <Ident> | '[' <Expression> ']' ) '=' <Expression>
 pub(super) fn table_object<'tokens, 'src: 'tokens>(
-    expression: impl Parser<
-            'tokens,
-            ParserInput<'tokens, 'src>,
-            (Expression<'src>, Span),
-            ParserError<'tokens, 'src>,
-        > + Clone
-        + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, TableObject<'src>, ParserError<'tokens, 'src>>
-       + Clone {
+    expression: impl Parser<'tokens, ParserInput<'tokens, 'src>, (Expression<'src>, Span), ParserError<'src>>
+        + Clone,
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, TableObject<'src>, ParserError<'src>> + Clone
+{
     let key = ident()
         .map(Expression::Ident)
         .map_with(|expr, ext| (expr, ext.span().into()));

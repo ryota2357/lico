@@ -10,15 +10,11 @@ pub enum Statement<'src> {
 
 /// <Statement> ::= <ControlStatement> | <AttributeStatement> | <VariableStatement> | <CallStatement>
 pub(super) fn statement<'tokens, 'src: 'tokens>(
-    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
+    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>>
         + Clone
         + 'tokens,
-) -> impl Parser<
-    'tokens,
-    ParserInput<'tokens, 'src>,
-    (Statement<'src>, Span),
-    ParserError<'tokens, 'src>,
-> + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (Statement<'src>, Span), ParserError<'src>> + Clone
+{
     let expr = expression(block.clone());
 
     let control = control_statement(block.clone(), expr.clone()).map(Statement::Control);

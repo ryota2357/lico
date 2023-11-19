@@ -8,11 +8,11 @@ pub struct FunctionObject<'src> {
 
 /// <FunctionObject> ::= 'func' '(' [ <Ident> { ',' <Ident> } [ ',' ] ] ')' <Chunk> 'end'
 pub(super) fn function_object<'tokens, 'src: 'tokens>(
-    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'tokens, 'src>>
+    block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>>
         + Clone
         + 'tokens,
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, FunctionObject<'src>, ParserError<'tokens, 'src>>
-       + Clone {
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, FunctionObject<'src>, ParserError<'src>> + Clone
+{
     let args = spanned_ident()
         .separated_by(just(Token::Comma))
         .allow_trailing()
