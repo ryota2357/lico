@@ -29,13 +29,26 @@ pub fn compile<'a>(program: &'a Program<'a>) -> Vec<Code<'a>> {
                     Code::BeginFuncCreation,
                     Code::AddArgument("value"),
                     Code::LoadLocal("value"),
+                    Code::Builtin(BuiltinInstr::Write, 1),
+                    Code::Builtin(BuiltinInstr::Flush, 0),
+                    Code::LoadNil,
+                    Code::Return,
+                    Code::EndFuncCreation,
+                    Code::MakeLocal("print"),
+                ]);
+            }
+            "println" => {
+                fragment.append_many([
+                    Code::BeginFuncCreation,
+                    Code::AddArgument("value"),
+                    Code::LoadLocal("value"),
                     Code::LoadString("\n".to_string()),
                     Code::Builtin(BuiltinInstr::Write, 2),
                     Code::Builtin(BuiltinInstr::Flush, 0),
                     Code::LoadNil,
                     Code::Return,
                     Code::EndFuncCreation,
-                    Code::MakeLocal("print"),
+                    Code::MakeLocal("println"),
                 ]);
             }
             "require" => {
