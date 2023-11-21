@@ -7,19 +7,25 @@ use fragment::Fragment;
 mod context;
 use context::Context;
 
+pub mod error;
+use error::Error;
+
+type Span = std::ops::Range<usize>;
+type Result<T> = std::result::Result<T, Error>;
+
 trait Compilable<'node, 'src: 'node> {
-    fn compile(&'node self, fragment: &mut Fragment<'src>);
+    fn compile(&'node self, fragment: &mut Fragment<'src>) -> Result<()>;
 }
 
 trait ContextCompilable<'node, 'src: 'node> {
-    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context);
+    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context) -> Result<()>;
 }
 
 mod block;
 mod expression;
 mod statement;
 
-pub fn compile<'a>(program: &'a Program<'a>) -> Vec<Code<'a>> {
+pub fn compile<'a>(program: &'a Program<'a>) -> Result<Vec<Code<'a>>> {
     let mut fragment = Fragment::new();
 
     for capture in program.body.captures.iter() {
@@ -59,18 +65,19 @@ pub fn compile<'a>(program: &'a Program<'a>) -> Vec<Code<'a>> {
     }
 
     let eob = block::compile_statements(
-        program.body.block.iter().map(|s| &s.0),
+        program.body.block.iter(),
         &mut fragment,
         &mut Context::new(),
-    );
+    )?;
 
     match eob {
-        block::ExitControll::Return => {}
-        block::ExitControll::None => {
+        (block::ExitControll::Return, _) => {}
+        (block::ExitControll::None, _) => {
             fragment.append_many([Code::LoadNil, Code::Return]);
         }
-        block::ExitControll::Break | block::ExitControll::Continue => panic!(),
+        (block::ExitControll::Break, span) => return Err(Error::no_loop_to_break(span)),
+        (block::ExitControll::Continue, span) => return Err(Error::no_loop_to_continue(span)),
     }
 
-    fragment.into_code()
+    Ok(fragment.into_code())
 }

@@ -1,4 +1,4 @@
-use crate::{context::Context, Compilable, ContextCompilable};
+use crate::{context::Context, Compilable, ContextCompilable, Result};
 use vm::code::Code;
 
 #[derive(Default, Clone, Debug, PartialEq)]
@@ -17,13 +17,13 @@ impl<'src> Fragment<'src> {
         }
     }
 
-    pub fn with_compile<'node>(compilable: &'node impl Compilable<'node, 'src>) -> Self
+    pub fn with_compile<'node>(compilable: &'node impl Compilable<'node, 'src>) -> Result<Self>
     where
         'src: 'node,
     {
         let mut fragment = Self::new();
-        compilable.compile(&mut fragment);
-        fragment
+        compilable.compile(&mut fragment)?;
+        Ok(fragment)
     }
 
     pub fn with_code(code: Vec<Code<'src>>) -> Self {
@@ -37,13 +37,13 @@ impl<'src> Fragment<'src> {
     pub fn with_compile_with_context<'node>(
         compilable: &'node impl ContextCompilable<'node, 'src>,
         context: &mut Context,
-    ) -> Self
+    ) -> Result<Self>
     where
         'src: 'node,
     {
         let mut fragment = Self::new();
-        compilable.compile(&mut fragment, context);
-        fragment
+        compilable.compile(&mut fragment, context)?;
+        Ok(fragment)
     }
 
     /// Sets the jump offset for all forward jumps from the end of the fragment.
@@ -86,12 +86,12 @@ impl<'src> Fragment<'src> {
     pub fn append_compile<'node>(
         &mut self,
         compilable: &'node impl Compilable<'node, 'src>,
-    ) -> &mut Self
+    ) -> Result<&mut Self>
     where
         'src: 'node,
     {
-        compilable.compile(self);
-        self
+        compilable.compile(self)?;
+        Ok(self)
     }
 
     #[inline]
@@ -99,25 +99,25 @@ impl<'src> Fragment<'src> {
         &mut self,
         compilable: &'node impl ContextCompilable<'node, 'src>,
         context: &mut Context,
-    ) -> &mut Self
+    ) -> Result<&mut Self>
     where
         'src: 'node,
     {
-        compilable.compile(self, context);
-        self
+        compilable.compile(self, context)?;
+        Ok(self)
     }
 
     pub fn append_compile_many<'node>(
         &mut self,
         compilable: impl IntoIterator<Item = &'node (impl Compilable<'node, 'src> + 'node)>,
-    ) -> &mut Self
+    ) -> Result<&mut Self>
     where
         'src: 'node,
     {
         for c in compilable.into_iter() {
-            self.append_compile(c);
+            self.append_compile(c)?;
         }
-        self
+        Ok(self)
     }
 
     pub fn append_forward_jump(&mut self) {

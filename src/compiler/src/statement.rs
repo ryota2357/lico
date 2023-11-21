@@ -1,13 +1,14 @@
 use super::*;
 
 impl<'node, 'src: 'node> ContextCompilable<'node, 'src> for Statement<'src> {
-    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context) {
+    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context) -> Result<()> {
         match self {
-            Statement::Control(statement) => control_statement(statement, fragment, context),
-            Statement::Attribute(statement) => attribute_statement(statement, fragment, context),
-            Statement::Variable(statement) => variable_statement(statement, fragment, context),
-            Statement::Call(statement) => call_statement(statement, fragment),
-        };
+            Statement::Control(statement) => control_statement(statement, fragment, context)?,
+            Statement::Attribute(statement) => attribute_statement(statement, fragment, context)?,
+            Statement::Variable(statement) => variable_statement(statement, fragment, context)?,
+            Statement::Call(statement) => call_statement(statement, fragment)?,
+        }
+        Ok(())
     }
 }
 
@@ -15,7 +16,7 @@ fn control_statement<'node, 'src: 'node>(
     statement: &'node ControlStatement<'src>,
     fragment: &mut Fragment<'src>,
     context: &mut Context,
-) {
+) -> Result<()> {
     match statement {
         ControlStatement::If {
             cond: (cond, _),
@@ -39,25 +40,25 @@ fn control_statement<'node, 'src: 'node>(
             let mut new_fragments = {
                 // `make_snip` creates [cond] ~ [body]
                 let mut make_snip = |cond: &'node Expression<'src>, body: &'node Block<'src>| {
-                    let body_fragment = Fragment::with_compile_with_context(body, context);
+                    let body_fragment = Fragment::with_compile_with_context(body, context)?;
                     let mut fragment = Fragment::new();
                     fragment
-                        .append_compile(cond)
+                        .append_compile(cond)?
                         .append(Code::JumpIfFalse(body_fragment.len() as isize + 2))
                         .append_fragment(body_fragment);
-                    fragment
+                    Ok(fragment)
                 };
 
                 // Applay `make_snip` to (`cond`, `body`) pair, and `elifs`.`
                 let mut res = Vec::new();
-                res.push(make_snip(cond, body));
+                res.push(make_snip(cond, body)?);
                 for ((cond, _), body) in elifs.iter() {
-                    res.push(make_snip(cond, body));
+                    res.push(make_snip(cond, body)?);
                 }
 
                 // Append `else_` block
                 if let Some(body) = else_ {
-                    res.push(Fragment::with_compile_with_context(body, context));
+                    res.push(Fragment::with_compile_with_context(body, context)?);
                 } else {
                     res.push(Fragment::with_code(vec![Code::Nop]));
                 }
@@ -73,6 +74,7 @@ fn control_statement<'node, 'src: 'node>(
             }
 
             fragment.append_fragment_many(new_fragments);
+            Ok(())
         }
         ControlStatement::For {
             value: (value, _),
@@ -93,11 +95,11 @@ fn control_statement<'node, 'src: 'node>(
             //           11: delete        <>iter  (== drop_local 1)
             //           12: ...
 
-            let iter_fragment = Fragment::with_compile(iter);
+            let iter_fragment = Fragment::with_compile(iter)?;
 
             let loop_fragment = {
                 context.start_loop_section();
-                let body_fragment = Fragment::with_compile_with_context(body, context);
+                let body_fragment = Fragment::with_compile_with_context(body, context)?;
                 let body_fragment_len = body_fragment.len() as isize;
                 context.end_loop_section();
 
@@ -132,18 +134,19 @@ fn control_statement<'node, 'src: 'node>(
             fragment
                 .append_fragment(iter_fragment)
                 .append_fragment(loop_fragment);
+            Ok(())
         }
         ControlStatement::While {
             cond: (cond, _),
             body,
         } => {
             let while_fragment = {
-                let cond_fragment = Fragment::with_compile(cond);
+                let cond_fragment = Fragment::with_compile(cond)?;
                 let cond_fragment_len = cond_fragment.len() as isize;
 
                 let body_fragment = {
                     context.start_loop_section();
-                    let ret = Fragment::with_compile_with_context(body, context);
+                    let ret = Fragment::with_compile_with_context(body, context)?;
                     context.end_loop_section();
                     ret
                 };
@@ -161,17 +164,20 @@ fn control_statement<'node, 'src: 'node>(
                 fragment
             };
             fragment.append_fragment(while_fragment);
+            Ok(())
         }
         ControlStatement::Do { body } => {
-            fragment.append_compile_with_context(body, context);
+            fragment.append_compile_with_context(body, context)?;
+            Ok(())
         }
         ControlStatement::Return { value } => {
             if let Some((value, _)) = value {
-                fragment.append_compile(value);
+                fragment.append_compile(value)?;
             } else {
                 fragment.append(Code::LoadNil);
             }
             fragment.append(Code::Return);
+            Ok(())
         }
         ControlStatement::Continue => {
             let drop_count = context.get_loop_local_count();
@@ -179,8 +185,10 @@ fn control_statement<'node, 'src: 'node>(
                 fragment.append(Code::DropLocal(drop_count));
                 fragment.append_backward_jump();
             } else {
+                // Err(Error::no_loop_to_continue(...))?;
                 panic!("Cannot continue outside of loop");
             }
+            Ok(())
         }
         ControlStatement::Break => {
             let drop_count = context.get_loop_local_count();
@@ -188,8 +196,10 @@ fn control_statement<'node, 'src: 'node>(
                 fragment.append(Code::DropLocal(drop_count));
                 fragment.append_forward_jump();
             } else {
+                // Err(Error::no_loop_to_break(...))?;
                 panic!("Cannot break outside of loop");
             }
+            Ok(())
         }
     }
 }
@@ -198,7 +208,7 @@ fn attribute_statement<'node, 'src: 'node>(
     _statement: &'node AttributeStatement<'src>,
     _fragment: &mut Fragment<'src>,
     _context: &mut Context,
-) {
+) -> Result<()> {
     unimplemented!("attribute_statement")
 }
 
@@ -206,14 +216,15 @@ fn variable_statement<'node, 'src: 'node>(
     statement: &'node VariableStatement<'src>,
     fragment: &mut Fragment<'src>,
     context: &mut Context,
-) {
+) -> Result<()> {
     match statement {
         VariableStatement::Var {
             name: (name, _),
             expr: (expr, _),
         } => {
-            fragment.append_compile(expr).append(Code::MakeLocal(name));
+            fragment.append_compile(expr)?.append(Code::MakeLocal(name));
             context.inc_local_count();
+            Ok(())
         }
         VariableStatement::Func {
             name: (name, _),
@@ -227,7 +238,7 @@ fn variable_statement<'node, 'src: 'node>(
             fragment
                 .append(Code::BeginFuncCreation)
                 .append_many(args.iter().map(|(arg, _)| Code::AddArgument(arg)))
-                .append_compile(body)
+                .append_compile(body)?
                 .append(Code::EndFuncCreation)
                 .append(if recusive {
                     Code::SetLocal(name)
@@ -235,6 +246,7 @@ fn variable_statement<'node, 'src: 'node>(
                     Code::MakeLocal(name)
                 });
             context.inc_local_count();
+            Ok(())
         }
         VariableStatement::FieldFunc {
             table: (table, _),
@@ -245,7 +257,7 @@ fn variable_statement<'node, 'src: 'node>(
             fragment
                 .append(Code::BeginFuncCreation)
                 .append_many(args.iter().map(|(arg, _)| Code::AddArgument(arg)))
-                .append_compile(body)
+                .append_compile(body)?
                 .append(Code::EndFuncCreation)
                 .append(Code::LoadLocal(table))
                 .append_many(
@@ -258,24 +270,26 @@ fn variable_statement<'node, 'src: 'node>(
                     fields.last().map(|(field, _)| field).unwrap(),
                 ))
                 .append(Code::SetItem);
+            Ok(())
         }
         VariableStatement::Assign {
             name: (name, _),
             accesser,
             expr: (expr, _),
         } => {
-            fragment.append_compile(expr);
+            fragment.append_compile(expr)?;
             if accesser.is_empty() {
                 fragment.append(Code::SetLocal(name));
             } else {
                 fragment.append(Code::LoadLocal(name));
                 for (acc, _) in accesser.iter().take(accesser.len() - 1) {
-                    fragment.append_compile(acc).append(Code::GetItem);
+                    fragment.append_compile(acc)?.append(Code::GetItem);
                 }
                 fragment
-                    .append_compile(accesser.last().map(|(acc, _)| acc).unwrap())
+                    .append_compile(accesser.last().map(|(acc, _)| acc).unwrap())?
                     .append(Code::SetItem);
             }
+            Ok(())
         }
     }
 }
@@ -283,16 +297,17 @@ fn variable_statement<'node, 'src: 'node>(
 fn call_statement<'node, 'src: 'node>(
     statement: &'node CallStatement<'src>,
     fragment: &mut Fragment<'src>,
-) {
+) -> Result<()> {
     match statement {
         CallStatement::Invoke {
             expr: (expr, _),
             args,
         } => {
             fragment
-                .append_compile(expr)
-                .append_compile_many(args.iter().map(|(expr, _)| expr))
+                .append_compile(expr)?
+                .append_compile_many(args.iter().map(|(expr, _)| expr))?
                 .append_many([Code::Call(args.len() as u8), Code::UnloadTop]);
+            Ok(())
         }
         CallStatement::MethodCall {
             expr: (expr, _),
@@ -300,9 +315,10 @@ fn call_statement<'node, 'src: 'node>(
             args,
         } => {
             fragment
-                .append_compile(expr)
-                .append_compile_many(args.iter().map(|(expr, _)| expr))
+                .append_compile(expr)?
+                .append_compile_many(args.iter().map(|(expr, _)| expr))?
                 .append_many([Code::CustomMethod(name, args.len() as u8), Code::UnloadTop]);
+            Ok(())
         }
     }
 }
@@ -327,7 +343,7 @@ mod tests {
         });
         let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
         assert_eq!(
-            fragment.into_code(),
+            fragment.unwrap().into_code(),
             vec![
                 Code::LoadLocal("a"),
                 Code::JumpIfFalse(5),
@@ -359,7 +375,7 @@ mod tests {
         });
         let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
         assert_eq!(
-            fragment.into_code(),
+            fragment.unwrap().into_code(),
             vec![
                 Code::LoadLocal("a"),
                 Code::JumpIfFalse(4),
@@ -395,7 +411,7 @@ mod tests {
         });
         let fragment = Fragment::with_compile_with_context(&statement, &mut Context::new());
         assert_eq!(
-            fragment.into_code(),
+            fragment.unwrap().into_code(),
             vec![
                 Code::LoadLocal("a"),
                 Code::JumpIfFalse(4),
