@@ -1,0 +1,10 @@
+[package]
+name = "run"
+version = '0.0.0'
+edition = "2021"
+
+[dependencies]
+lexer = { path = "../../src/lexer" }
+parser = { path = "../../src/parser" }
+compiler = { path = "../../src/compiler" }
+vm = { path = "../../src/vm" }
