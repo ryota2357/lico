@@ -159,6 +159,13 @@ fn compile<'node, 'src: 'node>(
                     .append(Code::LoadBool(true));
                 Ok(())
             }
+            BinaryOp::Concat => {
+                fragment
+                    .append_compile(lhs)?
+                    .append_compile(rhs)?
+                    .append(Code::Concat);
+                Ok(())
+            }
         },
         Expression::Ident(ident) => {
             fragment.append(Code::LoadLocal(ident));
