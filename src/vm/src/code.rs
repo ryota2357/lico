@@ -22,7 +22,7 @@ pub enum Code<'src> {
     JumpIfTrue(isize),
     JumpIfFalse(isize),
 
-    CustomMethod(&'src str, u8),
+    CallMethod(&'src str, u8),
     Call(u8),
     SetItem,
     GetItem,

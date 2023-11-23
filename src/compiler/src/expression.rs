@@ -238,7 +238,7 @@ fn compile<'node, 'src: 'node>(
             fragment
                 .append_compile(expr)?
                 .append_compile_many(args.iter())?
-                .append(Code::CustomMethod(name, args.len() as u8));
+                .append(Code::CallMethod(name, args.len() as u8));
             Ok(())
         }
         Expression::IndexAccess { expr, accesser } => {

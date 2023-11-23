@@ -131,7 +131,7 @@ pub fn execute<'src, W: std::io::Write>(
                     pc += 1;
                 }
             }
-            CustomMethod(name, args_len) => {
+            CallMethod(name, args_len) => {
                 let args = {
                     let mut args = Vec::with_capacity((args_len + 1) as usize);
                     for _ in 0..*args_len {

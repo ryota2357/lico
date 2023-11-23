@@ -272,7 +272,7 @@ fn custom_method() {
         &[
             LoadLocal("table"),
             LoadFloat(1.23),
-            CustomMethod("testMethod", 1),
+            CallMethod("testMethod", 1),
             Exit,
         ],
         &mut runtime,

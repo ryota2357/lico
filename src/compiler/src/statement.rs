@@ -108,17 +108,17 @@ fn control_statement<'node, 'src: 'node>(
                 let mut fragment = Fragment::new();
                 fragment
                     .append_many([
-                        Code::CustomMethod("__get_iterator", 0),      // 0
+                        Code::CallMethod("__get_iterator", 0),        // 0
                         Code::MakeLocal("<>iter"),                    // |
                         Code::LoadLocal("<>iter"),                    // 1
-                        Code::CustomMethod("__move_next", 0),         // |
+                        Code::CallMethod("__move_next", 0),           // |
                         Code::JumpIfFalse(7 + body_fragment_len + 4), // 2
                         Code::Jump(4),                                // 3
                         Code::LoadLocal("<>iter"),                    // 4
-                        Code::CustomMethod("__move_next", 0),         // |
+                        Code::CallMethod("__move_next", 0),           // |
                         Code::JumpIfFalse(3 + body_fragment_len + 2), // 5
                         Code::LoadLocal("<>iter"),                    // 6
-                        Code::CustomMethod("__current", 0),           // |
+                        Code::CallMethod("__current", 0),             // |
                         Code::MakeLocal(value),                       // |
                     ])
                     .append_fragment(body_fragment)
@@ -311,7 +311,7 @@ fn call_statement<'node, 'src: 'node>(
             fragment
                 .append_compile(expr)?
                 .append_compile_many(args.iter())?
-                .append_many([Code::CustomMethod(name, args.len() as u8), Code::UnloadTop]);
+                .append_many([Code::CallMethod(name, args.len() as u8), Code::UnloadTop]);
             Ok(())
         }
     }
