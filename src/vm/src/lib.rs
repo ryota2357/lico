@@ -504,6 +504,7 @@ pub fn execute<'src, W: std::io::Write>(
                 let lhs = to_string(lhs)?;
                 let rhs = to_string(rhs)?;
                 runtime.stack.push(Object::String(lhs + &rhs).into());
+                pc += 1;
             }
             Builtin(instr, args_len) => {
                 let args = create_args_vec(*args_len, runtime);
