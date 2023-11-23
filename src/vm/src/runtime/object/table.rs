@@ -50,47 +50,37 @@ impl<'a> DerefMut for TableObject<'a> {
     }
 }
 
-macro_rules! split_arguments {
-    ($args:expr, $len:expr) => {{
-        if $args.len() != ($len + 1) {
-            return Err(format!(
-                "expected {} arguments, got {}",
-                $len,
-                $args.len() - 1
-            ));
-        }
-        let table = if let Object::Table(table) = &$args[0] {
-            table
-        } else {
-            unreachable!()
-        };
-        let rest = &$args[1..];
-        (table, rest)
-    }};
-}
-
 pub fn run_table_default_method<'a>(
+    table: Rc<RefCell<TableObject<'a>>>,
     name: &'a str,
-    args: &[Object<'a>],
+    args: Vec<Object<'a>>,
 ) -> Result<Object<'a>, String> {
     match name {
         "keys" => {
-            let (table, _) = split_arguments!(args, 0);
+            if args.is_empty() {
+                return Err(format!("expected 0 arguments, got {}", args.len()));
+            }
             let array =
                 ArrayObject::new(table.borrow().keys().cloned().map(Object::String).collect());
             Ok(Object::new_array(array))
         }
         "values" => {
-            let (table, _) = split_arguments!(args, 0);
+            if args.is_empty() {
+                return Err(format!("expected 0 arguments, got {}", args.len()));
+            }
             let array = ArrayObject::new(table.borrow().values().cloned().collect());
             Ok(Object::new_array(array))
         }
         "len" => {
-            let (table, _) = split_arguments!(args, 0);
+            if args.is_empty() {
+                return Err(format!("expected 0 arguments, got {}", args.len()));
+            }
             Ok(Object::Int(table.borrow().len() as i64))
         }
         "contains" => {
-            let (table, args) = split_arguments!(args, 1);
+            if args.len() != 1 {
+                return Err(format!("expected 1 argument, got {}", args.len()));
+            }
             let key = if let Object::String(key) = &args[0] {
                 key
             } else {
@@ -99,7 +89,9 @@ pub fn run_table_default_method<'a>(
             Ok(Object::Bool(table.borrow().contains_key(key)))
         }
         "remove" => {
-            let (table, args) = split_arguments!(args, 1);
+            if args.len() != 1 {
+                return Err(format!("expected 1 argument, got {}", args.len()));
+            }
             let key = if let Object::String(key) = &args[0] {
                 key
             } else {

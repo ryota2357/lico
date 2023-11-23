@@ -132,27 +132,33 @@ pub fn execute<'src, W: std::io::Write>(
                 }
             }
             CallMethod(name, args_len) => {
-                let args = {
-                    let mut args = Vec::with_capacity((args_len + 1) as usize);
+                let mut rev_args = {
+                    let mut args = Vec::with_capacity(*args_len as usize);
                     for _ in 0..*args_len {
                         args.push(runtime.stack.pop().ensure_object());
                     }
-                    let self_obj = runtime.stack.pop().ensure_object();
-                    args.push(self_obj);
-                    args.reverse();
                     args
                 };
-                let self_obj = args.first().unwrap().clone();
+                let self_obj = runtime.stack.pop().ensure_object();
+                fn reversed(mut vec: Vec<Object>) -> Vec<Object> {
+                    vec.reverse();
+                    vec
+                }
                 match self_obj {
-                    Object::Array(_) => {
-                        let res = runtime::run_array_method(name, &args)?;
+                    Object::Array(array) => {
+                        let res = runtime::run_array_method(array, name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
                     }
                     Object::Table(table) => {
                         let method = table.borrow().get_method(name);
                         let res = match method {
-                            Some(func) => execute_func(&func, args, runtime)?,
-                            None => runtime::run_table_default_method(name, &args)?,
+                            Some(func) => {
+                                rev_args.push(Object::Table(table));
+                                execute_func(&func, reversed(rev_args), runtime)?
+                            }
+                            None => {
+                                runtime::run_table_default_method(table, name, reversed(rev_args))?
+                            }
                         };
                         runtime.stack.push(res.into());
                     }

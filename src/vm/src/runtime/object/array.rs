@@ -31,29 +31,16 @@ impl<'a> DerefMut for ArrayObject<'a> {
     }
 }
 
-macro_rules! split_arguments {
-    ($args:expr, $len:expr) => {{
-        if $args.len() != ($len + 1) {
-            return Err(format!(
-                "expected {} arguments, got {}",
-                $len,
-                $args.len() - 1
-            ));
-        }
-        let array = if let Object::Array(array) = &$args[0] {
-            array
-        } else {
-            unreachable!()
-        };
-        let rest = &$args[1..];
-        (array, rest)
-    }};
-}
-
-pub fn run_array_method<'a>(name: &'a str, args: &[Object<'a>]) -> Result<Object<'a>, String> {
+pub fn run_array_method<'a>(
+    array: Rc<RefCell<ArrayObject<'a>>>,
+    name: &'a str,
+    args: Vec<Object<'a>>,
+) -> Result<Object<'a>, String> {
     match name {
         "__get_iterator" => {
-            let (array, _) = split_arguments!(args, 0);
+            if args.is_empty() {
+                return Err(format!("expected 0 arguments, got {}", args.len()));
+            }
             // iter = {
             //     __array = array,
             //     __version = array.version,
@@ -78,7 +65,7 @@ pub fn run_array_method<'a>(name: &'a str, args: &[Object<'a>]) -> Result<Object
             // }
             let mut iter = TableObject::new(
                 [
-                    ("__array".to_string(), Object::Array(Rc::clone(array))),
+                    ("__array".to_string(), Object::Array(Rc::clone(&array))),
                     (
                         "__version".to_string(),
                         Object::Int(array.borrow().version as i64),
@@ -161,16 +148,22 @@ pub fn run_array_method<'a>(name: &'a str, args: &[Object<'a>]) -> Result<Object
             Ok(Object::new_table(iter))
         }
         "len" => {
-            let (array, _) = split_arguments!(args, 0);
+            if args.is_empty() {
+                return Err(format!("expected 0 arguments, got {}", args.len()));
+            }
             Ok(Object::Int(array.borrow().len() as i64))
         }
         "push" => {
-            let (array, args) = split_arguments!(args, 1);
+            if args.len() != 1 {
+                return Err(format!("expected 1 argument, got {}", args.len()));
+            }
             array.borrow_mut().push(args[0].clone());
             Ok(Object::Nil)
         }
         "pop" => {
-            let (array, _) = split_arguments!(args, 0);
+            if args.is_empty() {
+                return Err(format!("expected 0 arguments, got {}", args.len()));
+            }
             Ok(array.borrow_mut().pop().unwrap_or(Object::Nil))
         }
         _ => Err(format!("array has no method {}", name)),
