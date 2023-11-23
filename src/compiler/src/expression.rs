@@ -1,14 +1,16 @@
 use super::*;
 
-impl<'node, 'src: 'node> Compilable<'node, 'src> for Expression<'src> {
+impl<'node, 'src: 'node> Compilable<'node, 'src> for (Expression<'src>, Span) {
     fn compile(&'node self, fragment: &mut Fragment<'src>) -> Result<()> {
-        compile(self, fragment)
+        let (expr, _) = self;
+        compile(expr, fragment)
     }
 }
 
-impl<'node, 'src: 'node> Compilable<'node, 'src> for Box<Expression<'src>> {
+impl<'node, 'src: 'node> Compilable<'node, 'src> for (Box<Expression<'src>>, Span) {
     fn compile(&'node self, fragment: &mut Fragment<'src>) -> Result<()> {
-        compile(self, fragment)
+        let (expr, _) = self;
+        compile(expr, fragment)
     }
 }
 
@@ -17,10 +19,7 @@ fn compile<'node, 'src: 'node>(
     fragment: &mut Fragment<'src>,
 ) -> Result<()> {
     match expr {
-        Expression::Unary {
-            op,
-            expr: (expr, _),
-        } => match op {
+        Expression::Unary { op, expr } => match op {
             UnaryOp::Neg => {
                 fragment.append_compile(expr)?.append(Code::Unm);
                 Ok(())
@@ -41,11 +40,7 @@ fn compile<'node, 'src: 'node>(
                 Ok(())
             }
         },
-        Expression::Binary {
-            op,
-            lhs: (lhs, _),
-            rhs: (rhs, _),
-        } => match op {
+        Expression::Binary { op, lhs, rhs } => match op {
             BinaryOp::Add => {
                 fragment
                     .append_compile(lhs)?
@@ -192,8 +187,8 @@ fn compile<'node, 'src: 'node>(
             }
         },
         Expression::TableObject(table) => {
-            for ((key, _), (value, _)) in table.iter() {
-                if let Expression::Ident(ident) = key {
+            for (key, value) in table.iter() {
+                if let (Expression::Ident(ident), _) = key {
                     fragment
                         .append_compile(value)?
                         .append(Code::MakeNamed(ident));
@@ -209,7 +204,7 @@ fn compile<'node, 'src: 'node>(
         }
         Expression::ArrayObject(array) => {
             fragment
-                .append_compile_many(array.iter().map(|(expr, _)| expr))?
+                .append_compile_many(array.iter())?
                 .append(Code::MakeArray(array.len() as u32));
             Ok(())
         }
@@ -221,31 +216,25 @@ fn compile<'node, 'src: 'node>(
                 .append(Code::EndFuncCreation);
             Ok(())
         }
-        Expression::Invoke {
-            expr: (expr, _),
-            args,
-        } => {
+        Expression::Invoke { expr, args } => {
             fragment
                 .append_compile(expr)?
-                .append_compile_many(args.iter().map(|(expr, _)| expr))?
+                .append_compile_many(args.iter())?
                 .append(Code::Call(args.len() as u8));
             Ok(())
         }
         Expression::MethodCall {
-            expr: (expr, _),
+            expr,
             name: (name, _),
             args,
         } => {
             fragment
                 .append_compile(expr)?
-                .append_compile_many(args.iter().map(|(expr, _)| expr))?
+                .append_compile_many(args.iter())?
                 .append(Code::CustomMethod(name, args.len() as u8));
             Ok(())
         }
-        Expression::IndexAccess {
-            expr: (expr, _),
-            accesser: (accesser, _),
-        } => {
+        Expression::IndexAccess { expr, accesser } => {
             fragment
                 .append_compile(expr)?
                 .append_compile(accesser)?
@@ -253,7 +242,7 @@ fn compile<'node, 'src: 'node>(
             Ok(())
         }
         Expression::DotAccess {
-            expr: (expr, _),
+            expr,
             accesser: (accesser, _),
         } => {
             fragment
@@ -271,11 +260,14 @@ mod tests {
 
     #[test]
     fn and() {
-        let fragment = Fragment::with_compile(&Expression::Binary {
-            op: BinaryOp::And,
-            lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
-            rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
-        });
+        let fragment = Fragment::with_compile(&(
+            Expression::Binary {
+                op: BinaryOp::And,
+                lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
+                rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
+            },
+            0..0,
+        ));
         assert_eq!(
             fragment.unwrap().into_code(),
             vec![
@@ -290,11 +282,14 @@ mod tests {
 
     #[test]
     fn or() {
-        let fragment = Fragment::with_compile(&Expression::Binary {
-            op: BinaryOp::Or,
-            lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
-            rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
-        });
+        let fragment = Fragment::with_compile(&(
+            Expression::Binary {
+                op: BinaryOp::Or,
+                lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
+                rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
+            },
+            0..0,
+        ));
         assert_eq!(
             fragment.unwrap().into_code(),
             vec![

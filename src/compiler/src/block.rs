@@ -13,19 +13,19 @@ pub(super) fn compile_statements<'node, 'src: 'node>(
     context: &mut Context,
 ) -> Result<(ExitControll, Span)> {
     let mut last_span = &(0..0);
-    for (statement, span) in statements {
+    for statement in statements {
         fragment.append_compile_with_context(statement, context)?;
         match statement {
-            Statement::Control(ControlStatement::Return { .. }) => {
+            (Statement::Control(ControlStatement::Return { .. }), span) => {
                 return Ok((ExitControll::Return, span.clone()));
             }
-            Statement::Control(ControlStatement::Continue) => {
+            (Statement::Control(ControlStatement::Continue), span) => {
                 return Ok((ExitControll::Continue, span.clone()));
             }
-            Statement::Control(ControlStatement::Break) => {
+            (Statement::Control(ControlStatement::Break), span) => {
                 return Ok((ExitControll::Break, span.clone()));
             }
-            _ => {
+            (_, span) => {
                 last_span = span;
             }
         }
