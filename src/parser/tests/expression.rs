@@ -547,6 +547,38 @@ fn logical_op_with_paren() {
 }
 
 #[test]
+fn str_concat() {
+    do_expr_test(
+        "'a' .. 4 + 1 == 'a5'",
+        Expression::Binary {
+            op: BinaryOp::Eq,
+            lhs: (
+                Box::new(Expression::Binary {
+                    op: BinaryOp::Concat,
+                    lhs: (
+                        Box::new(Expression::Primitive(Primitive::String("a".to_string()))),
+                        2..5,
+                    ),
+                    rhs: (
+                        Box::new(Expression::Binary {
+                            op: BinaryOp::Add,
+                            lhs: (Box::new(Expression::Primitive(Primitive::Int(4))), 9..10),
+                            rhs: (Box::new(Expression::Primitive(Primitive::Int(1))), 13..14),
+                        }),
+                        9..14,
+                    ),
+                }),
+                2..14,
+            ),
+            rhs: (
+                Box::new(Expression::Primitive(Primitive::String("a5".to_string()))),
+                18..22,
+            ),
+        },
+    );
+}
+
+#[test]
 fn complicated_pratt() {
     do_expr_test(
         "-(false or b).c[c.c() and -d()] ** 2",

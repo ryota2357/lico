@@ -63,6 +63,9 @@ pub enum BinaryOp {
     // logical
     And, // and
     Or,  // or
+
+    // other
+    Concat, // ..
 }
 
 macro_rules! infix_binary {
@@ -176,7 +179,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
 
                 term.pratt((
                     postfix_expr!(
-                        8,
+                        9,
                         invoke_post_op,
                         ((expr, expr_span), args) => {
                             Expression::Invoke {
@@ -186,7 +189,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                         }
                     ),
                     postfix_expr!(
-                        8,
+                        9,
                         method_call_post_op,
                         ((expr, expr_span), (name, args)) => {
                             Expression::MethodCall {
@@ -197,7 +200,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                         }
                     ),
                     postfix_expr!(
-                        8,
+                        9,
                         dot_access_post_op,
                         ((expr, expr_span), (accesser,accesser_span)) => {
                             Expression::DotAccess {
@@ -207,7 +210,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                         }
                     ),
                     postfix_expr!(
-                        8,
+                        9,
                         index_access_post_op,
                         ((expr, expr_span), (accesser,accesser_span)) => {
                             Expression::IndexAccess {
@@ -217,24 +220,27 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                         }
                     ),
 
-                    // 7: Unary (-, not)
-                    prefix_unary!(7, just(Token::Minus) => Neg, [
+                    // 8: Unary (-, not)
+                    prefix_unary!(8, just(Token::Minus) => Neg, [
                         Expression::Primitive(Primitive::Int(x)) => Expression::Primitive(Primitive::Int(-x)),
                         Expression::Primitive(Primitive::Float(x)) => Expression::Primitive(Primitive::Float(-x))
                     ]),
-                    prefix_unary!(7, just(Token::Not) => Not),
+                    prefix_unary!(8, just(Token::Not) => Not),
 
-                    // 6: Exponential (**)
-                    infix_binary!(right(6), just(Token::Star2) => Pow),
+                    // 7: Exponential (**)
+                    infix_binary!(right(7), just(Token::Star2) => Pow),
 
-                    // 5: Multiplicative (*, /, %)
-                    infix_binary!(left(5), just(Token::Star) => Mul),
-                    infix_binary!(left(5), just(Token::Div) => Div),
-                    infix_binary!(left(5), just(Token::Mod) => Mod),
+                    // 6: Multiplicative (*, /, %)
+                    infix_binary!(left(6), just(Token::Star) => Mul),
+                    infix_binary!(left(6), just(Token::Div) => Div),
+                    infix_binary!(left(6), just(Token::Mod) => Mod),
 
-                    // 4: Additive (+, -)
-                    infix_binary!(left(4), just(Token::Pluss) => Add),
-                    infix_binary!(left(4), just(Token::Minus) => Sub),
+                    // 5: Additive (+, -)
+                    infix_binary!(left(5), just(Token::Pluss) => Add),
+                    infix_binary!(left(5), just(Token::Minus) => Sub),
+
+                    // 4: String concatenation (..)
+                    infix_binary!(right(4), just(Token::Dot2) => Concat),
 
                     // 3: Relational (<, <=, >, >=)
                     infix_binary!(left(3), just(Token::Less)      => Less),
