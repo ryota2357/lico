@@ -145,3 +145,10 @@ fn attribute() {
     do_test("@_a", vec![Token::Attribute("_a")]);
     do_test("@hoge_", vec![Token::Attribute("hoge_")]);
 }
+
+#[test]
+fn comment() {
+    do_test("# hoge fuga", vec![]);
+    do_test("# hoge @# fuga", vec![]);
+    do_test("a #b\n c", vec![Token::Ident("a"), Token::Ident("c")]);
+}

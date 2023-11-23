@@ -158,13 +158,21 @@ pub(super) fn lexer<'src>(
         _ => Token::Ident(ident),
     });
 
-    let token = choice((float, int, string, symbol, attribute, word))
-        .or(any().validate(|c, extra, emitter| {
-            emitter.emit(Error::invalid_character(c, extra.span()));
-            Token::Error(c)
-        }))
-        .map_with(|token, ext| (token, ext.span()))
+    let comment = just("#")
+        .then(any().and_is(text::newline().not()).repeated())
         .padded();
 
-    token.repeated().collect()
+    let token = choice((float, int, string, symbol, attribute, word)).or(any().validate(
+        |c, extra, emitter| {
+            emitter.emit(Error::invalid_character(c, extra.span()));
+            Token::Error(c)
+        },
+    ));
+
+    token
+        .map_with(|token, ext| (token, ext.span()))
+        .padded()
+        .padded_by(comment.repeated())
+        .repeated()
+        .collect()
 }
