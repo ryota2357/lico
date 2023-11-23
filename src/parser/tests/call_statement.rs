@@ -194,3 +194,28 @@ fn multiple_call_with_method() {
         }),
     );
 }
+
+#[test]
+fn anonymous_func_call() {
+    do_statement_test(
+        "(func(x) return x end)(1)",
+        Statement::Call(CallStatement::Invoke {
+            expr: (
+                Expression::FunctionObject(FunctionObject {
+                    args: vec![(Ident("x"), 6..7)],
+                    body: Chunk {
+                        captures: vec![],
+                        block: vec![(
+                            Statement::Control(ControlStatement::Return {
+                                value: Some((Expression::Ident(Ident("x")), 16..17)),
+                            }),
+                            9..17,
+                        )],
+                    },
+                }),
+                1..21,
+            ),
+            args: vec![(Expression::Primitive(Primitive::Int(1)), 23..24)],
+        }),
+    );
+}
