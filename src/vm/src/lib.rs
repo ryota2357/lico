@@ -485,6 +485,26 @@ pub fn execute<'src, W: std::io::Write>(
                 }
                 pc += 1;
             }
+            Concat => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                fn to_string(obj: Object) -> Result<String, String> {
+                    match obj {
+                        Object::Int(x) => Ok(x.to_string()),
+                        Object::Float(x) => Ok(x.to_string()),
+                        Object::String(x) => Ok(x),
+                        Object::Bool(x) => Ok(if x { "true" } else { "false" }.to_string()),
+                        Object::Nil => Ok("nil".to_string()),
+                        x => Err(format!(
+                            "Expected String or Stringable Object, but got {:?}",
+                            x
+                        ))?,
+                    }
+                }
+                let lhs = to_string(lhs)?;
+                let rhs = to_string(rhs)?;
+                runtime.stack.push(Object::String(lhs + &rhs).into());
+            }
             Builtin(instr, args_len) => {
                 let args = create_args_vec(*args_len, runtime);
                 match instr {

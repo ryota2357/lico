@@ -39,6 +39,7 @@ pub enum Code<'src> {
     LessEq,    // <=
     Greater,   // >
     GreaterEq, // >=
+    Concat,    // ..
 
     Builtin(BuiltinInstr, u8),
 
