@@ -37,9 +37,7 @@ pub fn run_array_method<'a>(
 ) -> Result<Object<'a>, String> {
     match name {
         "__get_iterator" => {
-            if !args.is_empty() {
-                return Err(format!("expected 0 arguments, got {}", args.len()));
-            }
+            ensure_argument_length!(args, 0);
             // iter = {
             //     __array = array,
             //     __version = array.version,
@@ -78,23 +76,10 @@ pub fn run_array_method<'a>(
             iter_tbl.add_method(
                 "__move_next",
                 TableMethod::Builtin(|iter: Rc<RefCell<TableObject<'a>>>, args| {
-                    if !args.is_empty() {
-                        return Err(format!("expected 0 arguments, got {}", args.len()));
-                    }
-                    let (array, version, index) = if let (
-                        Some(Object::Array(array)),
-                        Some(Object::Int(version)),
-                        Some(Object::Int(index)),
-                    ) = (
-                        iter.borrow().get("__array"),
-                        iter.borrow().get("__version"),
-                        iter.borrow().get("__index"),
-                    ) {
-                        (Rc::clone(array), *version, *index)
-                    } else {
-                        unreachable!()
-                    };
-
+                    ensure_argument_length!(args, 0);
+                    let (array, version, index) = table_extract_values!(iter, {
+                        __array: Array, __version: Int, __index: Int,
+                    });
                     if version != array.borrow().version as i64 {
                         return Err("array modified during iteration".to_string());
                     }
@@ -116,9 +101,7 @@ pub fn run_array_method<'a>(
             iter_tbl.add_method(
                 "__current",
                 TableMethod::Builtin(|iter, args| {
-                    if !args.is_empty() {
-                        return Err(format!("expected 0 arguments, got {}", args.len()));
-                    }
+                    ensure_argument_length!(args, 0);
                     let current = iter.borrow().get("__current").cloned();
                     Ok(current.unwrap_or(Object::Nil))
                 }),
@@ -127,22 +110,16 @@ pub fn run_array_method<'a>(
             Ok(Object::new_table(iter_tbl))
         }
         "len" => {
-            if !args.is_empty() {
-                return Err(format!("expected 0 arguments, got {}", args.len()));
-            }
+            ensure_argument_length!(args, 0);
             Ok(Object::Int(array.borrow().len() as i64))
         }
         "push" => {
-            if args.len() != 1 {
-                return Err(format!("expected 1 argument, got {}", args.len()));
-            }
+            ensure_argument_length!(args, 1);
             array.borrow_mut().push(args[0].clone());
             Ok(Object::Nil)
         }
         "pop" => {
-            if !args.is_empty() {
-                return Err(format!("expected 0 arguments, got {}", args.len()));
-            }
+            ensure_argument_length!(args, 0);
             Ok(array.borrow_mut().pop().unwrap_or(Object::Nil))
         }
         _ => Err(format!("array has no method {}", name)),

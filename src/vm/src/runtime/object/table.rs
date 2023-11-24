@@ -83,30 +83,23 @@ pub fn run_table_default_method<'a>(
 ) -> Result<Object<'a>, String> {
     match name {
         "keys" => {
-            if !args.is_empty() {
-                return Err(format!("expected 0 arguments, got {}", args.len()));
-            }
-            let array =
-                ArrayObject::new(table.borrow().keys().cloned().map(Object::String).collect());
+            ensure_argument_length!(args, 0);
+            let keys = table.borrow().keys().cloned().map(Object::String).collect();
+            let array = ArrayObject::new(keys);
             Ok(Object::new_array(array))
         }
         "values" => {
-            if !args.is_empty() {
-                return Err(format!("expected 0 arguments, got {}", args.len()));
-            }
-            let array = ArrayObject::new(table.borrow().values().cloned().collect());
+            ensure_argument_length!(args, 0);
+            let values = table.borrow().values().cloned().collect();
+            let array = ArrayObject::new(values);
             Ok(Object::new_array(array))
         }
         "len" => {
-            if !args.is_empty() {
-                return Err(format!("expected 0 arguments, got {}", args.len()));
-            }
+            ensure_argument_length!(args, 0);
             Ok(Object::Int(table.borrow().len() as i64))
         }
         "contains" => {
-            if args.len() != 1 {
-                return Err(format!("expected 1 argument, got {}", args.len()));
-            }
+            ensure_argument_length!(args, 1);
             let key = if let Object::String(key) = &args[0] {
                 key
             } else {
@@ -115,9 +108,7 @@ pub fn run_table_default_method<'a>(
             Ok(Object::Bool(table.borrow().contains_key(key)))
         }
         "remove" => {
-            if args.len() != 1 {
-                return Err(format!("expected 1 argument, got {}", args.len()));
-            }
+            ensure_argument_length!(args, 1);
             let key = if let Object::String(key) = &args[0] {
                 key
             } else {

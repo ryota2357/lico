@@ -1,5 +1,8 @@
 use std::{cell::RefCell, fmt::Display, rc::Rc};
 
+#[macro_use]
+mod macros;
+
 mod array;
 pub use array::*;
 
