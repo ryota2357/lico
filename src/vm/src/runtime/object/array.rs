@@ -1,5 +1,4 @@
 use super::*;
-use crate::code::Code;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -63,7 +62,7 @@ pub fn run_array_method<'a>(
             //         self.__current
             //     end,
             // }
-            let mut iter = TableObject::new(
+            let mut iter_tbl = TableObject::new(
                 [
                     ("__array".to_string(), Object::Array(Rc::clone(&array))),
                     (
@@ -76,76 +75,56 @@ pub fn run_array_method<'a>(
                 .into_iter()
                 .collect(),
             );
-            iter.add_method(
+            iter_tbl.add_method(
                 "__move_next",
-                FunctionObject {
-                    id: (0, 0),
-                    env: vec![],
-                    args: vec!["self"],
-                    code: vec![
-                        Code::LoadRustFunction(|obj| {
-                            if obj.len() != 1 {
-                                return Err(format!("expected 0 argument, got {}", obj.len() - 1));
-                            }
+                TableMethod::Builtin(|iter: Rc<RefCell<TableObject<'a>>>, args| {
+                    if !args.is_empty() {
+                        return Err(format!("expected 0 arguments, got {}", args.len()));
+                    }
+                    let (array, version, index) = if let (
+                        Some(Object::Array(array)),
+                        Some(Object::Int(version)),
+                        Some(Object::Int(index)),
+                    ) = (
+                        iter.borrow().get("__array"),
+                        iter.borrow().get("__version"),
+                        iter.borrow().get("__index"),
+                    ) {
+                        (Rc::clone(array), *version, *index)
+                    } else {
+                        unreachable!()
+                    };
 
-                            let iter = if let Object::Table(iter) = &obj[0] {
-                                iter
-                            } else {
-                                unreachable!()
-                            };
-                            let (array, version, index) = if let (
-                                Some(Object::Array(array)),
-                                Some(Object::Int(version)),
-                                Some(Object::Int(index)),
-                            ) = (
-                                iter.borrow().get("__array"),
-                                iter.borrow().get("__version"),
-                                iter.borrow().get("__index"),
-                            ) {
-                                (Rc::clone(array), *version, *index)
-                            } else {
-                                unreachable!()
-                            };
-
-                            if version != array.borrow().version as i64 {
-                                return Err("array modified during iteration".to_string());
-                            }
-                            if index + 1 < array.borrow().len() as i64 {
-                                iter.borrow_mut()
-                                    .insert("__index".to_string(), Object::Int(index + 1));
-                                iter.borrow_mut().insert(
-                                    "__current".to_string(),
-                                    array.borrow()[(index + 1) as usize].clone(),
-                                );
-                                Ok(Object::Bool(true))
-                            } else {
-                                iter.borrow_mut()
-                                    .insert("__current".to_string(), Object::Nil);
-                                Ok(Object::Bool(false))
-                            }
-                        }),
-                        Code::LoadLocal("self"),
-                        Code::Call(1),
-                        Code::Return,
-                    ],
-                },
+                    if version != array.borrow().version as i64 {
+                        return Err("array modified during iteration".to_string());
+                    }
+                    if index + 1 < array.borrow().len() as i64 {
+                        iter.borrow_mut()
+                            .insert("__index".to_string(), Object::Int(index + 1));
+                        iter.borrow_mut().insert(
+                            "__current".to_string(),
+                            array.borrow()[(index + 1) as usize].clone(),
+                        );
+                        Ok(Object::Bool(true))
+                    } else {
+                        iter.borrow_mut()
+                            .insert("__current".to_string(), Object::Nil);
+                        Ok(Object::Bool(false))
+                    }
+                }),
             );
-            iter.add_method(
+            iter_tbl.add_method(
                 "__current",
-                FunctionObject {
-                    id: (0, 0),
-                    env: vec![],
-                    args: vec!["self"],
-                    code: vec![
-                        Code::LoadLocal("self"),
-                        Code::LoadStringAsRef("__current"),
-                        Code::GetItem,
-                        Code::Return,
-                    ],
-                },
+                TableMethod::Builtin(|iter, args| {
+                    if !args.is_empty() {
+                        return Err(format!("expected 0 arguments, got {}", args.len()));
+                    }
+                    let current = iter.borrow().get("__current").cloned();
+                    Ok(current.unwrap_or(Object::Nil))
+                }),
             );
 
-            Ok(Object::new_table(iter))
+            Ok(Object::new_table(iter_tbl))
         }
         "len" => {
             if !args.is_empty() {
