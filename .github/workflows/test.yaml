@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  test:
+  check:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,5 +23,48 @@ jobs:
       - name: Check
         run: make check
 
+  test-debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup component add clippy rustfmt
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Test (cargo)
+        run: |
+          cargo test --manifest-path ./src/Cargo.toml --workspace
+          cargo test --manifest-path ./cli/Cargo.toml --workspace
+
       - name: Test
-        run: make test
+        run: cd ./tests/ && deno task test debug
+
+  test-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup component add clippy rustfmt
+
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Test (cargo)
+        run: |
+          cargo test --manifest-path ./src/Cargo.toml --workspace --release
+          cargo test --manifest-path ./cli/Cargo.toml --workspace --release
+
+      - name: Test
+        run: cd ./tests/ && deno task test release
