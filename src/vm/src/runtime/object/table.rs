@@ -57,7 +57,7 @@ pub fn run_table_default_method<'a>(
 ) -> Result<Object<'a>, String> {
     match name {
         "keys" => {
-            if args.is_empty() {
+            if !args.is_empty() {
                 return Err(format!("expected 0 arguments, got {}", args.len()));
             }
             let array =
@@ -65,14 +65,14 @@ pub fn run_table_default_method<'a>(
             Ok(Object::new_array(array))
         }
         "values" => {
-            if args.is_empty() {
+            if !args.is_empty() {
                 return Err(format!("expected 0 arguments, got {}", args.len()));
             }
             let array = ArrayObject::new(table.borrow().values().cloned().collect());
             Ok(Object::new_array(array))
         }
         "len" => {
-            if args.is_empty() {
+            if !args.is_empty() {
                 return Err(format!("expected 0 arguments, got {}", args.len()));
             }
             Ok(Object::Int(table.borrow().len() as i64))

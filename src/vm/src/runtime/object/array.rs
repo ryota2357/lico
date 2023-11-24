@@ -38,7 +38,7 @@ pub fn run_array_method<'a>(
 ) -> Result<Object<'a>, String> {
     match name {
         "__get_iterator" => {
-            if args.is_empty() {
+            if !args.is_empty() {
                 return Err(format!("expected 0 arguments, got {}", args.len()));
             }
             // iter = {
@@ -148,7 +148,7 @@ pub fn run_array_method<'a>(
             Ok(Object::new_table(iter))
         }
         "len" => {
-            if args.is_empty() {
+            if !args.is_empty() {
                 return Err(format!("expected 0 arguments, got {}", args.len()));
             }
             Ok(Object::Int(array.borrow().len() as i64))
@@ -161,7 +161,7 @@ pub fn run_array_method<'a>(
             Ok(Object::Nil)
         }
         "pop" => {
-            if args.is_empty() {
+            if !args.is_empty() {
                 return Err(format!("expected 0 arguments, got {}", args.len()));
             }
             Ok(array.borrow_mut().pop().unwrap_or(Object::Nil))
