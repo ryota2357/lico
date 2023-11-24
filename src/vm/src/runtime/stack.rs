@@ -32,7 +32,6 @@ impl<'a> Stack<'a> {
 pub enum StackValue<'src> {
     RawFunction(FunctionObject<'src>),
     RawArray(Vec<Object<'src>>),
-    RawTable(TableObject<'src>),
     Object(Object<'src>),
     Named(String, Object<'src>),
 }
@@ -42,7 +41,6 @@ impl<'a> StackValue<'a> {
         match self {
             StackValue::RawFunction(func) => Object::new_function(func),
             StackValue::RawArray(array) => Object::new_array(ArrayObject::new(array)),
-            StackValue::RawTable(table) => Object::new_table(table),
             StackValue::Object(obj) => obj,
             x => panic!("[INTERNAL] Expected Object, but got {:?}", x),
         }
@@ -67,7 +65,6 @@ macro_rules! impl_from {
 }
 impl_from!(FunctionObject<'a> => RawFunction);
 impl_from!(Vec<Object<'a>> => RawArray);
-impl_from!(TableObject<'a> => RawTable);
 impl_from!(Object<'a> => Object);
 impl<'a> From<(String, Object<'a>)> for StackValue<'a> {
     fn from(value: (String, Object<'a>)) -> Self {

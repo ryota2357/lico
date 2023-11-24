@@ -88,12 +88,13 @@ pub fn execute<'src, W: std::io::Write>(
                 pc += 1;
             }
             MakeTable(count) => {
-                let mut table = HashMap::with_capacity(*count as usize);
+                let mut hash_map = HashMap::with_capacity(*count as usize);
                 for _ in 0..*count {
                     let (name, value) = runtime.stack.pop().ensure_named();
-                    table.insert(name, value);
+                    hash_map.insert(name, value);
                 }
-                runtime.stack.push(TableObject::new(table).into());
+                let table = TableObject::new(hash_map);
+                runtime.stack.push(Object::new_table(table).into());
                 pc += 1;
             }
             DropLocal(count) => {
@@ -170,13 +171,6 @@ pub fn execute<'src, W: std::io::Write>(
                 let args = create_args_vec(*args_len, runtime);
                 let ret = match runtime.stack.pop() {
                     StackValue::RawFunction(func) => execute_func(&func, args, runtime)?,
-                    StackValue::RawTable(table) => {
-                        if let Some(func) = table.get_method("__call") {
-                            execute_func(&func, args, runtime)?
-                        } else {
-                            Err("__call is not defined.".to_string())?
-                        }
-                    }
                     StackValue::Object(Object::Function(func)) => {
                         execute_func(&func, args, runtime)?
                     }
@@ -203,11 +197,6 @@ pub fn execute<'src, W: std::io::Write>(
                         array[index as usize] = value;
                         runtime.stack.push(array.into());
                     }
-                    StackValue::RawTable(mut table) => {
-                        let index = accesser.ensure_string()?;
-                        table.insert(index, value);
-                        runtime.stack.push(table.into());
-                    }
                     StackValue::Object(Object::Array(array)) => {
                         let index = accesser.ensure_int()?;
                         array.borrow_mut()[index as usize] = value;
@@ -229,14 +218,6 @@ pub fn execute<'src, W: std::io::Write>(
                     StackValue::RawArray(array) => {
                         let index = accesser.ensure_int()?;
                         let item = match array.get(index as usize) {
-                            Some(x) => x.clone(),
-                            None => Object::Nil,
-                        };
-                        runtime.stack.push(item.into());
-                    }
-                    StackValue::RawTable(table) => {
-                        let index = accesser.ensure_string()?;
-                        let item = match table.get(&index) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
                         };
