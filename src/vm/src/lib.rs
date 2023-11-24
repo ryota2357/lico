@@ -2,7 +2,7 @@ pub mod code;
 pub mod runtime;
 
 use code::{BuiltinInstr, Code, Code::*};
-use runtime::{Object, Runtime, StackValue, TableObject};
+use runtime::{Object, Runtime, StackValue, TableMethod, TableObject};
 use std::{collections::HashMap, rc::Rc};
 
 pub fn execute<'src, W: std::io::Write>(
@@ -153,7 +153,8 @@ pub fn execute<'src, W: std::io::Write>(
                     Object::Table(table) => {
                         let method = table.borrow().get_method(name);
                         let res = match method {
-                            Some(func) => {
+                            Some(TableMethod::Builtin(func)) => func(table, reversed(rev_args))?,
+                            Some(TableMethod::Custom(func)) => {
                                 rev_args.push(Object::Table(table));
                                 execute_func(&func, reversed(rev_args), runtime)?
                             }
@@ -175,10 +176,11 @@ pub fn execute<'src, W: std::io::Write>(
                         execute_func(&func, args, runtime)?
                     }
                     StackValue::Object(Object::Table(table)) => {
-                        if let Some(func) = table.borrow().get_method("__call") {
-                            execute_func(&func, args, runtime)?
-                        } else {
-                            Err("__call is not defined.".to_string())?
+                        let method = table.borrow().get_method("__call");
+                        match method {
+                            Some(TableMethod::Builtin(func)) => func(table, args)?,
+                            Some(TableMethod::Custom(func)) => execute_func(&func, args, runtime)?,
+                            None => Err("__call is not defined.".to_string())?,
                         }
                     }
                     StackValue::Object(Object::RustFunction(func)) => func(&args)?,

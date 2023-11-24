@@ -7,7 +7,14 @@ use std::{
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableObject<'a> {
     value: HashMap<String, Object<'a>>,
-    methods: Option<HashMap<&'a str, Rc<FunctionObject<'a>>>>,
+    methods: Option<HashMap<&'a str, TableMethod<'a>>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TableMethod<'a> {
+    #[allow(clippy::type_complexity)]
+    Builtin(fn(Rc<RefCell<TableObject<'a>>>, Vec<Object<'a>>) -> Result<Object<'a>, String>),
+    Custom(Rc<FunctionObject<'a>>),
 }
 
 impl<'a> TableObject<'a> {
@@ -18,22 +25,41 @@ impl<'a> TableObject<'a> {
         }
     }
 
-    pub fn add_method(&mut self, name: &'a str, func: FunctionObject<'a>) {
+    pub fn add_method(&mut self, name: &'a str, func: impl Into<TableMethod<'a>>) {
         if let Some(methods) = &mut self.methods {
-            methods.insert(name, Rc::new(func));
+            methods.insert(name, func.into());
         } else {
             let mut methods = HashMap::new();
-            methods.insert(name, Rc::new(func));
+            methods.insert(name, func.into());
             self.methods = Some(methods);
         }
     }
 
-    pub fn get_method(&self, name: &'a str) -> Option<Rc<FunctionObject<'a>>> {
+    pub fn get_method(&self, name: &'a str) -> Option<TableMethod<'a>> {
         if let Some(methods) = &self.methods {
-            methods.get(name).map(Rc::clone)
+            methods.get(name).map(|f| match f {
+                TableMethod::Builtin(f) => TableMethod::Builtin(*f),
+                TableMethod::Custom(f) => TableMethod::Custom(Rc::clone(f)),
+            })
         } else {
             None
         }
+    }
+}
+
+impl<'a> From<FunctionObject<'a>> for TableMethod<'a> {
+    fn from(func: FunctionObject<'a>) -> Self {
+        Self::Custom(Rc::new(func))
+    }
+}
+
+impl<'a> From<fn(Rc<RefCell<TableObject<'a>>>, Vec<Object<'a>>) -> Result<Object<'a>, String>>
+    for TableMethod<'a>
+{
+    fn from(
+        func: fn(Rc<RefCell<TableObject<'a>>>, Vec<Object<'a>>) -> Result<Object<'a>, String>,
+    ) -> Self {
+        Self::Builtin(func)
     }
 }
 
