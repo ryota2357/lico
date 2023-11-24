@@ -146,6 +146,26 @@ pub fn execute<'src, W: std::io::Write>(
                     vec
                 }
                 match self_obj {
+                    Object::Int(int) => {
+                        let res = runtime::run_int_method(int, name, reversed(rev_args))?;
+                        runtime.stack.push(res.into());
+                    }
+                    Object::Float(float) => {
+                        let res = runtime::run_float_method(float, name, reversed(rev_args))?;
+                        runtime.stack.push(res.into());
+                    }
+                    Object::String(string) => {
+                        let res = runtime::run_string_method(string, name, reversed(rev_args))?;
+                        runtime.stack.push(res.into());
+                    }
+                    Object::Bool(boolean) => {
+                        let res = runtime::run_bool_method(boolean, name, reversed(rev_args))?;
+                        runtime.stack.push(res.into());
+                    }
+                    Object::Nil => {
+                        let res = runtime::run_nil_method(name, reversed(rev_args))?;
+                        runtime.stack.push(res.into());
+                    }
                     Object::Array(array) => {
                         let res = runtime::run_array_method(array, name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
@@ -164,7 +184,9 @@ pub fn execute<'src, W: std::io::Write>(
                         };
                         runtime.stack.push(res.into());
                     }
-                    x => Err(format!("Expected Table Object, but got {:?}", x))?,
+                    Object::Function(_) | Object::RustFunction(_) => {
+                        Err("Function does not have methods.".to_string())?
+                    }
                 }
                 pc += 1;
             }

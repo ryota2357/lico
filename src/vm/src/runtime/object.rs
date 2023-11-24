@@ -12,6 +12,9 @@ pub use function::*;
 mod table;
 pub use table::*;
 
+mod primitive;
+pub use primitive::*;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object<'a> {
     Int(i64),
