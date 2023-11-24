@@ -1,0 +1,30 @@
+var Z = func(f)
+    return (func(x)
+        return func(y)
+            return f(x(x))(y)
+        end
+    end)(func(x)
+        return func(y)
+            return f(x(x))(y)
+        end
+    end)
+end
+
+var fib = Z(func(f)
+    return func(n)
+        if n < 2 then
+            return n
+        else
+            return f(n - 1) + f(n - 2)
+        end
+    end
+end)
+
+for n in 0->upto(10) do
+    print(n)
+    print(" = ")
+    println(fib(n))
+end
+
+print("25 = ")
+println(fib(25))

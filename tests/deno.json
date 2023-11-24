@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "test": "deno run --allow-run --allow-read main.ts",
+    "upgrade": "deno run --allow-read --allow-net --allow-write https://deno.land/x/udd/main.ts main.ts"
+  },
+  "lock": false
+}

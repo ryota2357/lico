@@ -1,0 +1,2 @@
+var name = "ryota2357"
+println("Hello, " .. name .. "!")

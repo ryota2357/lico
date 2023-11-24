@@ -1,0 +1,14 @@
+var limit = 100
+var i = 0
+while i < limit do
+    i = i + 1
+    if i % 3 == 0 and i % 5 == 0 then
+        println("FizzBuzz")
+    elif i % 3 == 0 then
+        println("Fizz")
+    elif i % 5 == 0 then
+        println("Buzz")
+    else
+        println(i)
+    end
+end

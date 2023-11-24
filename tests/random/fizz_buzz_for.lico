@@ -1,0 +1,25 @@
+func fizz_buzz(i)
+    var m3 = i % 3 == 0
+    var m5 = i % 5 == 0
+    if m3 and m5 then
+        return "FizzBuzz"
+    elif m3 then
+        return "Fizz"
+    elif m5 then
+        return "Buzz"
+    else
+        return i
+    end
+end
+
+println("[1 -> 100]")
+for i in 1->upto(100) do
+    println(fizz_buzz(i))
+end
+
+print("\n")
+
+println("[100 -> 1]")
+for i in 100->downto(1) do
+    println(fizz_buzz(i))
+end
