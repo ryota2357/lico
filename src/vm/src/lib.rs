@@ -382,7 +382,35 @@ pub fn execute<'src, W: std::io::Write>(
                 }
                 pc += 1;
             }
-            Pow => todo!("Pow"),
+            Pow => {
+                let rhs = runtime.stack.pop().ensure_object();
+                let lhs = runtime.stack.pop().ensure_object();
+                match (lhs, rhs) {
+                    (Object::Int(_lhs), Object::Int(_rhs)) => {
+                        unimplemented!("Int.pow(Int) is not implemented.");
+                    }
+                    (Object::Int(lhs), Object::Float(rhs)) => {
+                        let pow = (lhs as f64).powf(rhs);
+                        runtime.stack.push(Object::Float(pow).into());
+                    }
+                    (Object::Float(lhs), Object::Int(rhs)) => {
+                        let pow = if rhs > i32::MAX as i64 {
+                            lhs.powf(rhs as f64)
+                        } else {
+                            lhs.powi(rhs as i32)
+                        };
+                        runtime.stack.push(Object::Float(pow).into());
+                    }
+                    (Object::Float(lhs), Object::Float(rhs)) => {
+                        let pow = lhs.powf(rhs);
+                        runtime.stack.push(Object::Float(pow).into());
+                    }
+                    (lhs, rhs) => Err(format!(
+                        "Expected Int or Float, but got {:?} and {:?}",
+                        lhs, rhs
+                    ))?,
+                }
+            }
             Unm => {
                 let obj = runtime.stack.pop().ensure_object();
                 match obj {
