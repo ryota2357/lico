@@ -19,27 +19,21 @@ pub fn execute<'src, W: std::io::Write>(
         match &code[pc] {
             LoadInt(x) => {
                 runtime.stack.push(Object::Int(*x).into());
-                pc += 1;
             }
             LoadFloat(x) => {
                 runtime.stack.push(Object::Float(*x).into());
-                pc += 1;
             }
             LoadBool(x) => {
                 runtime.stack.push(Object::Bool(*x).into());
-                pc += 1;
             }
             LoadString(x) => {
                 runtime.stack.push(Object::String(x.clone()).into());
-                pc += 1;
             }
             LoadStringAsRef(x) => {
                 runtime.stack.push(Object::String(x.to_string()).into());
-                pc += 1;
             }
             LoadNil => {
                 runtime.stack.push(Object::Nil.into());
-                pc += 1;
             }
             LoadLocal(name) => {
                 let object = match runtime.variable_table.get(name) {
@@ -47,25 +41,20 @@ pub fn execute<'src, W: std::io::Write>(
                     None => Err(format!("{} is not defined.", name))?,
                 };
                 runtime.stack.push(object.into());
-                pc += 1;
             }
             LoadRustFunction(x) => {
                 runtime.stack.push(Object::RustFunction(*x).into());
-                pc += 1;
             }
             UnloadTop => {
                 runtime.stack.pop();
-                pc += 1;
             }
             SetLocal(name) => {
                 let object = runtime.stack.pop().ensure_object();
                 runtime.variable_table.edit(name, object)?;
-                pc += 1;
             }
             MakeLocal(name) => {
                 let object = runtime.stack.pop().ensure_object();
                 runtime.variable_table.insert(name, object);
-                pc += 1;
             }
             MakeArray(count) => {
                 let mut array = Vec::with_capacity(*count as usize);
@@ -74,18 +63,15 @@ pub fn execute<'src, W: std::io::Write>(
                 }
                 array.reverse();
                 runtime.stack.push(array.into());
-                pc += 1;
             }
             MakeNamed(name) => {
                 let value = runtime.stack.pop().ensure_object();
                 runtime.stack.push((name.to_string(), value).into());
-                pc += 1;
             }
             MakeExprNamed => {
                 let name = runtime.stack.pop().ensure_object().ensure_string()?;
                 let object = runtime.stack.pop().ensure_object();
                 runtime.stack.push((name, object).into());
-                pc += 1;
             }
             MakeTable(count) => {
                 let mut hash_map = HashMap::with_capacity(*count as usize);
@@ -95,11 +81,9 @@ pub fn execute<'src, W: std::io::Write>(
                 }
                 let table = TableObject::new(hash_map);
                 runtime.stack.push(Object::new_table(table).into());
-                pc += 1;
             }
             DropLocal(count) => {
                 runtime.variable_table.erase(*count);
-                pc += 1;
             }
             Jump(offset) => {
                 if *offset < 0 {
@@ -107,6 +91,7 @@ pub fn execute<'src, W: std::io::Write>(
                 } else {
                     pc += *offset as usize;
                 }
+                continue;
             }
             JumpIfTrue(offset) => {
                 let boolean = runtime.stack.pop().ensure_object().ensure_bool()?;
@@ -116,8 +101,7 @@ pub fn execute<'src, W: std::io::Write>(
                     } else {
                         pc += *offset as usize;
                     }
-                } else {
-                    pc += 1;
+                    continue;
                 }
             }
             JumpIfFalse(offset) => {
@@ -128,8 +112,7 @@ pub fn execute<'src, W: std::io::Write>(
                     } else {
                         pc += *offset as usize;
                     }
-                } else {
-                    pc += 1;
+                    continue;
                 }
             }
             CallMethod(name, args_len) => {
@@ -188,7 +171,6 @@ pub fn execute<'src, W: std::io::Write>(
                         Err("Function does not have methods.".to_string())?
                     }
                 }
-                pc += 1;
             }
             Call(args_len) => {
                 let args = create_args_vec(*args_len, runtime);
@@ -209,7 +191,6 @@ pub fn execute<'src, W: std::io::Write>(
                     x => Err(format!("Expected Callable Object, but got {:?}", x))?,
                 };
                 runtime.stack.push(ret.into());
-                pc += 1;
             }
             SetItem => {
                 let accesser = runtime.stack.pop().ensure_object();
@@ -233,7 +214,6 @@ pub fn execute<'src, W: std::io::Write>(
                     }
                     x => Err(format!("Expected Array or Table, but got {:?}", x))?,
                 }
-                pc += 1;
             }
             GetItem => {
                 let accesser = runtime.stack.pop().ensure_object();
@@ -265,7 +245,6 @@ pub fn execute<'src, W: std::io::Write>(
                     }
                     x => Err(format!("Expected Array or Table, but got {:?}", x))?,
                 }
-                pc += 1;
             }
             Add => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -288,7 +267,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             Sub => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -311,7 +289,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             Mul => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -334,7 +311,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             Div => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -357,7 +333,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             Mod => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -380,7 +355,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             Pow => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -418,19 +392,16 @@ pub fn execute<'src, W: std::io::Write>(
                     Object::Float(x) => runtime.stack.push(Object::Float(-x).into()),
                     x => Err(format!("Expected Int or Float, but got {:?}", x))?,
                 }
-                pc += 1;
             }
             Eq => {
                 let rhs = runtime.stack.pop().ensure_object();
                 let lhs = runtime.stack.pop().ensure_object();
                 runtime.stack.push(Object::Bool(lhs == rhs).into());
-                pc += 1;
             }
             NotEq => {
                 let rhs = runtime.stack.pop().ensure_object();
                 let lhs = runtime.stack.pop().ensure_object();
                 runtime.stack.push(Object::Bool(lhs != rhs).into());
-                pc += 1;
             }
             Less => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -453,7 +424,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             LessEq => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -476,7 +446,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             Greater => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -499,7 +468,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             GreaterEq => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -522,7 +490,6 @@ pub fn execute<'src, W: std::io::Write>(
                         lhs, rhs
                     ))?,
                 }
-                pc += 1;
             }
             Concat => {
                 let rhs = runtime.stack.pop().ensure_object();
@@ -543,7 +510,6 @@ pub fn execute<'src, W: std::io::Write>(
                 let lhs = to_string(lhs)?;
                 let rhs = to_string(rhs)?;
                 runtime.stack.push(Object::String(lhs + &rhs).into());
-                pc += 1;
             }
             Builtin(instr, args_len) => {
                 let args = create_args_vec(*args_len, runtime);
@@ -558,7 +524,6 @@ pub fn execute<'src, W: std::io::Write>(
                         runtime.writer.flush().unwrap();
                     }
                 }
-                pc += 1;
             }
             BeginFuncCreation => {
                 let id = (pc, 0u8);
@@ -608,14 +573,11 @@ pub fn execute<'src, W: std::io::Write>(
                     })
                     .into(),
                 );
-                pc += 1;
             }
             AddCapture(_) => panic!("[INTERNAL] AddCapture is not allowed here."),
             AddArgument(_) => panic!("[INTERNAL] AddArgument is not allowed here."),
             EndFuncCreation => panic!("[INTERNAL] EndFuncCreation is not allowed here."),
-            Nop => {
-                pc += 1;
-            }
+            Nop => {}
             Return => {
                 return Ok(runtime.stack.pop().ensure_object());
             }
@@ -623,6 +585,7 @@ pub fn execute<'src, W: std::io::Write>(
                 return Ok(Object::Nil);
             }
         }
+        pc += 1;
     }
 }
 
