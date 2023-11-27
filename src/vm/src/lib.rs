@@ -227,6 +227,23 @@ pub fn execute<'src, W: std::io::Write>(
                         };
                         runtime.stack.push(item.into());
                     }
+                    StackValue::Object(Object::String(string)) => {
+                        let index = accesser.ensure_int()?;
+                        let item = if index >= 0 {
+                            match string.chars().nth(index as usize) {
+                                Some(x) => Object::String(x.to_string()),
+                                None => Object::Nil,
+                            }
+                        } else {
+                            // NOTE: ・ -1 means the last character, ・nth_back(0) means the last character
+                            //       abs(index) - 1 = abs(index + 1)  (because index is negative)
+                            match string.chars().nth_back((index + 1).unsigned_abs() as usize) {
+                                Some(x) => Object::String(x.to_string()),
+                                None => Object::Nil,
+                            }
+                        };
+                        runtime.stack.push(item.into());
+                    }
                     StackValue::Object(Object::Array(array)) => {
                         let index = accesser.ensure_int()?;
                         let item = match array.borrow().get(index as usize) {
