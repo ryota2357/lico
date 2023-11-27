@@ -45,7 +45,7 @@ pub fn run_int_method<'a>(
                 "__get_iterator",
                 TableMethod::Builtin(|range, args| {
                     ensure_argument_length!(args, 0);
-                    Ok(Object::Table(Rc::clone(&range)))
+                    Ok(Object::Table(range))
                 }),
             );
             range_tbl.add_method(
