@@ -93,7 +93,7 @@ fn keyword() {
 
 #[test]
 fn operator() {
-    do_test("+", vec![Token::Pluss]);
+    do_test("+", vec![Token::Plus]);
     do_test("-", vec![Token::Minus]);
     do_test("*", vec![Token::Star]);
     do_test("/", vec![Token::Div]);

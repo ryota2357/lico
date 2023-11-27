@@ -237,7 +237,7 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     infix_binary!(left(6), just(Token::Mod) => Mod),
 
                     // 5: Additive (+, -)
-                    infix_binary!(left(5), just(Token::Pluss) => Add),
+                    infix_binary!(left(5), just(Token::Plus) => Add),
                     infix_binary!(left(5), just(Token::Minus) => Sub),
 
                     // 4: String concatenation (..)

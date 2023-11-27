@@ -100,7 +100,7 @@ pub(super) fn lexer<'src>(
 
     let symbol = choice((
         // operator
-        just('+').to(Token::Pluss),
+        just('+').to(Token::Plus),
         just("->").to(Token::Arrow),
         just('-').to(Token::Minus),
         just("**").to(Token::Star2),
