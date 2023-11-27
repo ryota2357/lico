@@ -258,6 +258,7 @@ fn compile<'node, 'src: 'node>(
                 .append(Code::GetItem);
             Ok(())
         }
+        Expression::Error => panic!("Found Error"),
     }
 }
 

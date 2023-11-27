@@ -34,6 +34,7 @@ pub enum Expression<'src> {
         expr: (Box<Expression<'src>>, Span),
         accesser: (Ident<'src>, Span),
     },
+    Error,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -324,6 +325,9 @@ impl<'a> TreeWalker<'a> for Expression<'a> {
                 expr: (expr, _), ..
             } => {
                 expr.analyze(tracker);
+            }
+            Expression::Error => {
+                panic!("Found error");
             }
         }
     }
