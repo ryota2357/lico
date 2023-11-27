@@ -47,7 +47,7 @@ async function main() {
     for (const test_case of await get_test_cases(group)) {
       printf("%s ...", test_case.name);
       const output = await run(test_case.path, test_case.input);
-      if (output != test_case.output ?? "") {
+      if (output !== (test_case.output ?? "")) {
         printf(colors.red(" ng\n"));
         ngs.push({
           name: test_case.name,
