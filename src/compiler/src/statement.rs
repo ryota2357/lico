@@ -83,19 +83,24 @@ fn control_statement<'node, 'src: 'node>(
             iter,
             body,
         } => {
+            // var <>iter = [iter]->__get_iterator()
+            // while <>iter->__move_next() do
+            //     var [value] = <>iter->__current()
+            // end
+            // delete <>iter
+            //
             //            0: make_local    <>iter = [iter]->__get_iterator()
-            //            1: eval          <>iter->__move_next()
-            //            2: jump_if_false 11
-            //            3: jump          6
-            // (continue) 4: eval          <>iter->__move_next()
-            //            5: jump_if_false 9
-            //            6: make_local    [value] = <>iter->__current()
-            //            7: eval          [body]
-            //            8: jump          4
-            //    (break) 9: delete        [value], <>iter (== drop_local 2)
-            //           10: jump          12
-            //           11: delete        <>iter  (== drop_local 1)
-            //           12: ...
+            //            1: jump          3
+            // (continue) 2: delete        [value] (= drop_local 1)
+            //            3: eval          <>iter->__move_next()
+            //            4: jump_if_false 10
+            //            5: make_local    [value] = <>iter->__current()
+            //            6: eval          [body]
+            //            7: jump          2
+            //   (break)  8: delete        [value], <>iter (= drop_local 2)
+            //        |   9: jump          11
+            //           10: delete        <>iter (= drop_local 1)
+            //           11: ...
 
             let iter_fragment = Fragment::with_compile(iter)?;
 
@@ -110,26 +115,24 @@ fn control_statement<'node, 'src: 'node>(
                     .append_many([
                         Code::CallMethod("__get_iterator", 0),        // 0
                         Code::MakeLocal("<>iter"),                    // |
-                        Code::LoadLocal("<>iter"),                    // 1
+                        Code::Jump(2),                                // 1
+                        Code::DropLocal(1),                           // 2
+                        Code::LoadLocal("<>iter"),                    // 3
                         Code::CallMethod("__move_next", 0),           // |
-                        Code::JumpIfFalse(7 + body_fragment_len + 4), // 2
-                        Code::Jump(4),                                // 3
-                        Code::LoadLocal("<>iter"),                    // 4
-                        Code::CallMethod("__move_next", 0),           // |
-                        Code::JumpIfFalse(3 + body_fragment_len + 2), // 5
-                        Code::LoadLocal("<>iter"),                    // 6
+                        Code::JumpIfFalse(3 + body_fragment_len + 4), // 4
+                        Code::LoadLocal("<>iter"),                    // 5
                         Code::CallMethod("__current", 0),             // |
                         Code::MakeLocal(value),                       // |
                     ])
-                    .append_fragment(body_fragment)
+                    .append_fragment(body_fragment) // 6
                     .append_many([
-                        Code::Jump(-(body_fragment_len + 6)), //  8
-                        Code::DropLocal(2),                   //  9
-                        Code::Jump(2),                        // 10
-                        Code::DropLocal(1),                   // 11
+                        Code::Jump(-(body_fragment_len + 7)), //  7
+                        Code::DropLocal(2),                   //  8
+                        Code::Jump(2),                        //  9
+                        Code::DropLocal(1),                   // 10
                     ]);
-                fragment.patch_backward_jump(6); // to 4
-                fragment.patch_forward_jump(-2); // to 9
+                fragment.patch_backward_jump(3); // to 2
+                fragment.patch_forward_jump(-2); // to 8
                 fragment
             };
 
