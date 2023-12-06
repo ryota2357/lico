@@ -2,7 +2,7 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionObject<'src> {
-    pub args: Vec<(Ident<'src>, Span)>,
+    pub args: Vec<Ident<'src>>,
     pub body: Chunk<'src>,
 }
 
@@ -11,7 +11,7 @@ pub(super) fn function_object<'tokens, 'src: 'tokens>(
     block: impl Parser<'tokens, ParserInput<'tokens, 'src>, Block<'src>, ParserError<'src>> + Clone,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, FunctionObject<'src>, ParserError<'src>> + Clone
 {
-    let args = spanned_ident()
+    let args = ident()
         .separated_by(just(Token::Comma))
         .allow_trailing()
         .collect();
@@ -23,15 +23,4 @@ pub(super) fn function_object<'tokens, 'src: 'tokens>(
             args,
             body: block.into(),
         })
-}
-
-impl<'a> TreeWalker<'a> for FunctionObject<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
-        tracker.push_new_definition_scope();
-        for (arg, _) in self.args.iter_mut() {
-            tracker.add_definition(arg);
-        }
-        self.body.analyze(tracker);
-        tracker.pop_current_definition_scope();
-    }
 }

@@ -9,7 +9,7 @@ pub enum ControlStatement<'src> {
         else_: Option<Block<'src>>,
     },
     For {
-        value: (Ident<'src>, Span),
+        value: Ident<'src>,
         iter: (Expression<'src>, Span),
         body: Block<'src>,
     },
@@ -61,7 +61,7 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
             else_,
         });
     let r#for = just(Token::For)
-        .ignore_then(spanned_ident())
+        .ignore_then(ident())
         .then_ignore(just(Token::In))
         .then(expression.clone())
         .then_ignore(just(Token::Do))
@@ -87,8 +87,8 @@ pub(super) fn control_statement<'tokens, 'src: 'tokens>(
     choice((r#if, r#for, r#while, r#do, r#return, r#continue, r#break))
 }
 
-impl<'a> TreeWalker<'a> for ControlStatement<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
+impl<'walker, 'src: 'walker> Walkable<'walker, 'src> for ControlStatement<'src> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>) {
         match self {
             ControlStatement::If {
                 cond: (cond, _),
@@ -96,54 +96,38 @@ impl<'a> TreeWalker<'a> for ControlStatement<'a> {
                 elifs,
                 else_,
             } => {
-                cond.analyze(tracker);
-
-                tracker.push_new_definition_scope();
-                body.analyze(tracker);
-                tracker.pop_current_definition_scope();
-
-                for ((cond, _), body) in elifs.iter_mut() {
-                    cond.analyze(tracker);
-                    tracker.push_new_definition_scope();
-                    body.analyze(tracker);
-                    tracker.pop_current_definition_scope();
+                walker.go(cond);
+                walker.fork().go(body);
+                for ((cond, _), body) in elifs {
+                    walker.go(cond);
+                    walker.fork().go(body);
                 }
-
-                if let Some(body) = else_ {
-                    tracker.push_new_definition_scope();
-                    body.analyze(tracker);
-                    tracker.pop_current_definition_scope();
+                if let Some(else_) = else_ {
+                    walker.fork().go(else_);
                 }
             }
             ControlStatement::For {
-                value: (value, _),
+                value: Ident(value, _),
                 iter: (iter, _),
                 body,
             } => {
-                iter.analyze(tracker);
-
-                tracker.push_new_definition_scope();
-                tracker.add_definition(value);
-                body.analyze(tracker);
-                tracker.pop_current_definition_scope();
+                walker.go(iter);
+                walker.record_variable_definition(value);
+                walker.fork().go(body);
             }
             ControlStatement::While {
                 cond: (cond, _),
                 body,
             } => {
-                cond.analyze(tracker);
-                tracker.push_new_definition_scope();
-                body.analyze(tracker);
-                tracker.pop_current_definition_scope();
+                walker.go(cond);
+                walker.fork().go(body);
             }
             ControlStatement::Do { body } => {
-                tracker.push_new_definition_scope();
-                body.analyze(tracker);
-                tracker.pop_current_definition_scope();
+                walker.fork().go(body);
             }
             ControlStatement::Return { value } => {
                 if let Some((value, _)) = value {
-                    value.analyze(tracker);
+                    walker.go(value);
                 }
             }
             ControlStatement::Continue => {}

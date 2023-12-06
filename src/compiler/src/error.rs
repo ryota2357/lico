@@ -6,10 +6,11 @@ pub struct Error {
     pub span: Span,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ErrorKind {
     NoLoopToBreak,
     NoLoopToContinue,
+    UndefinedVariable(String),
 }
 
 impl Error {
@@ -23,6 +24,13 @@ impl Error {
     pub fn no_loop_to_continue(span: Span) -> Self {
         Self {
             kind: ErrorKind::NoLoopToContinue,
+            span,
+        }
+    }
+
+    pub fn undefined_variable(name: String, span: Span) -> Self {
+        Self {
+            kind: ErrorKind::UndefinedVariable(name.into()),
             span,
         }
     }

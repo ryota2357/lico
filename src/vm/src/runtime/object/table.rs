@@ -1,41 +1,42 @@
 use super::*;
 use std::{
+    borrow::Cow,
     collections::HashMap,
     ops::{Deref, DerefMut},
 };
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct TableObject<'a> {
-    value: HashMap<String, Object<'a>>,
-    methods: Option<HashMap<&'a str, TableMethod<'a>>>,
+pub struct TableObject {
+    value: HashMap<String, Object>,
+    methods: Option<HashMap<Cow<'static, str>, TableMethod>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum TableMethod<'a> {
+pub enum TableMethod {
     #[allow(clippy::type_complexity)]
-    Builtin(fn(Rc<RefCell<TableObject<'a>>>, Vec<Object<'a>>) -> Result<Object<'a>, String>),
-    Custom(Rc<FunctionObject<'a>>),
+    Builtin(fn(Rc<RefCell<TableObject>>, Vec<Object>) -> Result<Object, String>),
+    Custom(Rc<FunctionObject>),
 }
 
-impl<'a> TableObject<'a> {
-    pub fn new(value: HashMap<String, Object<'a>>) -> Self {
+impl TableObject {
+    pub fn new(value: HashMap<String, Object>) -> Self {
         Self {
             value,
             methods: None,
         }
     }
 
-    pub fn add_method(&mut self, name: &'a str, func: impl Into<TableMethod<'a>>) {
+    pub fn add_method(&mut self, name: impl Into<Cow<'static, str>>, func: impl Into<TableMethod>) {
         if let Some(methods) = &mut self.methods {
-            methods.insert(name, func.into());
+            methods.insert(name.into(), func.into());
         } else {
             let mut methods = HashMap::new();
-            methods.insert(name, func.into());
+            methods.insert(name.into(), func.into());
             self.methods = Some(methods);
         }
     }
 
-    pub fn get_method(&self, name: &'a str) -> Option<TableMethod<'a>> {
+    pub fn get_method(&self, name: &str) -> Option<TableMethod> {
         if let Some(methods) = &self.methods {
             methods.get(name).map(|f| match f {
                 TableMethod::Builtin(f) => TableMethod::Builtin(*f),
@@ -47,40 +48,36 @@ impl<'a> TableObject<'a> {
     }
 }
 
-impl<'a> From<FunctionObject<'a>> for TableMethod<'a> {
-    fn from(func: FunctionObject<'a>) -> Self {
+impl From<FunctionObject> for TableMethod {
+    fn from(func: FunctionObject) -> Self {
         Self::Custom(Rc::new(func))
     }
 }
 
-impl<'a> From<fn(Rc<RefCell<TableObject<'a>>>, Vec<Object<'a>>) -> Result<Object<'a>, String>>
-    for TableMethod<'a>
-{
-    fn from(
-        func: fn(Rc<RefCell<TableObject<'a>>>, Vec<Object<'a>>) -> Result<Object<'a>, String>,
-    ) -> Self {
+impl From<fn(Rc<RefCell<TableObject>>, Vec<Object>) -> Result<Object, String>> for TableMethod {
+    fn from(func: fn(Rc<RefCell<TableObject>>, Vec<Object>) -> Result<Object, String>) -> Self {
         Self::Builtin(func)
     }
 }
 
-impl<'a> Deref for TableObject<'a> {
-    type Target = HashMap<String, Object<'a>>;
+impl Deref for TableObject {
+    type Target = HashMap<String, Object>;
     fn deref(&self) -> &Self::Target {
         &self.value
     }
 }
 
-impl<'a> DerefMut for TableObject<'a> {
+impl DerefMut for TableObject {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
 }
 
-pub fn run_table_default_method<'a>(
-    table: Rc<RefCell<TableObject<'a>>>,
-    name: &'a str,
-    args: Vec<Object<'a>>,
-) -> Result<Object<'a>, String> {
+pub fn run_table_default_method(
+    table: Rc<RefCell<TableObject>>,
+    name: &str,
+    args: Vec<Object>,
+) -> Result<Object, String> {
     match name {
         "keys" => {
             ensure_argument_length!(args, 0);

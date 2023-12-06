@@ -1,16 +1,17 @@
 pub mod code;
 pub mod runtime;
 
-use code::{BuiltinInstr, Code, Code::*};
-use runtime::{Object, Runtime, StackValue, TableMethod, TableObject};
+use code::*;
+use runtime::*;
 use std::{collections::HashMap, rc::Rc};
 
-pub fn execute<'src, W: std::io::Write>(
-    code: &[Code<'src>],
-    runtime: &mut Runtime<'src, W>,
-) -> Result<Object<'src>, String> {
-    let mut pc = 0;
+pub fn execute<W: std::io::Write>(
+    code: &[Code],
+    runtime: &mut Runtime<W>,
+) -> Result<Object, String> {
+    use code::Code::*;
 
+    let mut pc = 0;
     loop {
         // println!("code: {:?}", code[pc]);
         // runtime.dump();
@@ -29,17 +30,11 @@ pub fn execute<'src, W: std::io::Write>(
             LoadString(x) => {
                 runtime.stack.push(Object::String(x.clone()).into());
             }
-            LoadStringAsRef(x) => {
-                runtime.stack.push(Object::String(x.to_string()).into());
-            }
             LoadNil => {
                 runtime.stack.push(Object::Nil.into());
             }
-            LoadLocal(name) => {
-                let object = match runtime.variable_table.get(name) {
-                    Some(x) => x,
-                    None => Err(format!("{} is not defined.", name))?,
-                };
+            LoadLocal(id) => {
+                let object = runtime.variable_table.get(*id);
                 runtime.stack.push(object.into());
             }
             LoadRustFunction(x) => {
@@ -48,13 +43,13 @@ pub fn execute<'src, W: std::io::Write>(
             UnloadTop => {
                 runtime.stack.pop();
             }
-            SetLocal(name) => {
+            SetLocal(id) => {
                 let object = runtime.stack.pop().ensure_object();
-                runtime.variable_table.edit(name, object)?;
+                runtime.variable_table.edit(*id, object);
             }
-            MakeLocal(name) => {
+            MakeLocal => {
                 let object = runtime.stack.pop().ensure_object();
-                runtime.variable_table.insert(name, object);
+                runtime.variable_table.push(object);
             }
             MakeArray(count) => {
                 let mut array = Vec::with_capacity(*count as usize);
@@ -64,11 +59,7 @@ pub fn execute<'src, W: std::io::Write>(
                 array.reverse();
                 runtime.stack.push(array.into());
             }
-            MakeNamed(name) => {
-                let value = runtime.stack.pop().ensure_object();
-                runtime.stack.push((name.to_string(), value).into());
-            }
-            MakeExprNamed => {
+            MakeNamed => {
                 let name = runtime.stack.pop().ensure_object().ensure_string()?;
                 let object = runtime.stack.pop().ensure_object();
                 runtime.stack.push((name, object).into());
@@ -83,23 +74,23 @@ pub fn execute<'src, W: std::io::Write>(
                 runtime.stack.push(Object::new_table(table).into());
             }
             DropLocal(count) => {
-                runtime.variable_table.erase(*count);
+                runtime.variable_table.drop(*count);
             }
             Jump(offset) => {
-                if *offset < 0 {
-                    pc -= offset.unsigned_abs();
-                } else {
+                if offset.is_positive() {
                     pc += *offset as usize;
+                } else {
+                    pc -= offset.unsigned_abs();
                 }
                 continue;
             }
             JumpIfTrue(offset) => {
                 let boolean = runtime.stack.pop().ensure_object().ensure_bool()?;
                 if boolean {
-                    if *offset < 0 {
-                        pc -= offset.unsigned_abs();
-                    } else {
+                    if offset.is_positive() {
                         pc += *offset as usize;
+                    } else {
+                        pc -= offset.unsigned_abs();
                     }
                     continue;
                 }
@@ -107,10 +98,10 @@ pub fn execute<'src, W: std::io::Write>(
             JumpIfFalse(offset) => {
                 let boolean = runtime.stack.pop().ensure_object().ensure_bool()?;
                 if !boolean {
-                    if *offset < 0 {
-                        pc -= offset.unsigned_abs();
-                    } else {
+                    if offset.is_positive() {
                         pc += *offset as usize;
+                    } else {
+                        pc -= offset.unsigned_abs();
                     }
                     continue;
                 }
@@ -130,27 +121,27 @@ pub fn execute<'src, W: std::io::Write>(
                 }
                 match self_obj {
                     Object::Int(int) => {
-                        let res = runtime::run_int_method(int, name, reversed(rev_args))?;
+                        let res = run_int_method(int, name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
                     }
                     Object::Float(float) => {
-                        let res = runtime::run_float_method(float, name, reversed(rev_args))?;
+                        let res = run_float_method(float, name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
                     }
                     Object::String(string) => {
-                        let res = runtime::run_string_method(string, name, reversed(rev_args))?;
+                        let res = run_string_method(string, name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
                     }
                     Object::Bool(boolean) => {
-                        let res = runtime::run_bool_method(boolean, name, reversed(rev_args))?;
+                        let res = run_bool_method(boolean, name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
                     }
                     Object::Nil => {
-                        let res = runtime::run_nil_method(name, reversed(rev_args))?;
+                        let res = run_nil_method(name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
                     }
                     Object::Array(array) => {
-                        let res = runtime::run_array_method(array, name, reversed(rev_args))?;
+                        let res = run_array_method(array, name, reversed(rev_args))?;
                         runtime.stack.push(res.into());
                     }
                     Object::Table(table) => {
@@ -161,9 +152,7 @@ pub fn execute<'src, W: std::io::Write>(
                                 rev_args.push(Object::Table(table));
                                 execute_func(&func, reversed(rev_args), runtime)?
                             }
-                            None => {
-                                runtime::run_table_default_method(table, name, reversed(rev_args))?
-                            }
+                            None => run_table_default_method(table, name, reversed(rev_args))?,
                         };
                         runtime.stack.push(res.into());
                     }
@@ -545,6 +534,15 @@ pub fn execute<'src, W: std::io::Write>(
             BeginFuncCreation => {
                 let id = (pc, 0u8);
                 pc += 1;
+                let env = {
+                    let mut env = Vec::new();
+                    while let AddCapture(name) = code[pc] {
+                        let obj = runtime.variable_table.get_ref(name);
+                        env.push(obj);
+                        pc += 1;
+                    }
+                    env
+                };
                 let args = {
                     let mut args = Vec::new();
                     while let AddArgument(name) = code[pc] {
@@ -553,19 +551,8 @@ pub fn execute<'src, W: std::io::Write>(
                     }
                     args
                 };
-                let env = {
-                    let mut env = Vec::new();
-                    while let AddCapture(name) = code[pc] {
-                        match runtime.variable_table.get_ref(name) {
-                            Some(obj) => env.push((name, Some(obj))),
-                            None => env.push((name, None)),
-                        }
-                        pc += 1;
-                    }
-                    env
-                };
                 let code = {
-                    let mut func_code = Vec::<Code>::new();
+                    let mut func_code = Vec::new();
                     let mut inner_count = 0;
                     loop {
                         if let BeginFuncCreation = code[pc] {
@@ -582,7 +569,7 @@ pub fn execute<'src, W: std::io::Write>(
                     func_code
                 };
                 runtime.stack.push(
-                    Object::new_function(runtime::FunctionObject {
+                    Object::new_function(FunctionObject {
                         id,
                         env,
                         args,
@@ -591,9 +578,9 @@ pub fn execute<'src, W: std::io::Write>(
                     .into(),
                 );
             }
-            AddCapture(_) => panic!("[INTERNAL] AddCapture is not allowed here."),
-            AddArgument(_) => panic!("[INTERNAL] AddArgument is not allowed here."),
-            EndFuncCreation => panic!("[INTERNAL] EndFuncCreation is not allowed here."),
+            AddCapture(_) => panic!("[BUG] AddCapture is not allowed here."),
+            AddArgument(_) => panic!("[BUG] AddArgument is not allowed here."),
+            EndFuncCreation => panic!("[BUG] EndFuncCreation is not allowed here."),
             Nop => {}
             Return => {
                 return Ok(runtime.stack.pop().ensure_object());
@@ -606,11 +593,11 @@ pub fn execute<'src, W: std::io::Write>(
     }
 }
 
-fn execute_func<'a, W: std::io::Write>(
-    func: &runtime::FunctionObject<'a>,
-    args: Vec<runtime::Object<'a>>,
-    runtime: &mut Runtime<'a, W>,
-) -> Result<Object<'a>, String> {
+fn execute_func<W: std::io::Write>(
+    func: &FunctionObject,
+    args: Vec<Object>,
+    runtime: &mut Runtime<W>,
+) -> Result<Object, String> {
     if func.args.len() != args.len() {
         return Err(format!(
             "Expected {} arguments, but got {} arguments.",
@@ -619,24 +606,18 @@ fn execute_func<'a, W: std::io::Write>(
         ));
     }
     runtime.variable_table.push_scope();
-    for (name, value) in &func.env {
-        match value {
-            Some(value) => runtime.variable_table.insert_ref(name, Rc::clone(value)),
-            None => runtime.variable_table.insert(name, Object::Nil),
-        };
+    for value in func.env.iter() {
+        runtime.variable_table.push_ref(Rc::clone(value));
     }
-    for (name, value) in func.args.iter().zip(args.iter()) {
-        runtime.variable_table.insert(name, value.clone());
+    for (_attr, value) in func.args.iter().zip(args.iter()) {
+        runtime.variable_table.push(value.clone());
     }
     let ret = execute(&func.code, runtime)?;
     runtime.variable_table.pop_scope();
     Ok(ret)
 }
 
-fn create_args_vec<'a, W: std::io::Write>(
-    args_len: u8,
-    runtime: &mut Runtime<'a, W>,
-) -> Vec<runtime::Object<'a>> {
+fn create_args_vec<W: std::io::Write>(args_len: u8, runtime: &mut Runtime<W>) -> Vec<Object> {
     let mut args = Vec::with_capacity(args_len as usize);
     for _ in 0..args_len {
         args.push(runtime.stack.pop().ensure_object());

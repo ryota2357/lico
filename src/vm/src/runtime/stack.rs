@@ -1,23 +1,25 @@
 use super::*;
 
 #[derive(Default, Debug, PartialEq)]
-pub struct Stack<'a> {
-    vec: Vec<StackValue<'a>>,
+pub struct Stack {
+    vec: Vec<StackValue>,
 }
 
-impl<'a> Stack<'a> {
-    pub fn new() -> Self {
+impl Stack {
+    #[inline]
+    pub const fn new() -> Self {
         Self { vec: Vec::new() }
     }
 
     #[inline]
-    pub fn push(&mut self, value: StackValue<'a>) {
+    pub fn push(&mut self, value: StackValue) {
         self.vec.push(value);
     }
 
-    #[inline]
-    pub fn pop(&mut self) -> StackValue<'a> {
-        self.vec.pop().expect("[INTERNAL] Stack is empty.")
+    pub fn pop(&mut self) -> StackValue {
+        self.vec
+            .pop()
+            .expect("[BUG] Stack must have at least one value at pop.")
     }
 
     pub fn dump(&self, indent: usize) {
@@ -29,45 +31,45 @@ impl<'a> Stack<'a> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum StackValue<'src> {
-    RawFunction(FunctionObject<'src>),
-    RawArray(Vec<Object<'src>>),
-    Object(Object<'src>),
-    Named(String, Object<'src>),
+pub enum StackValue {
+    RawFunction(FunctionObject),
+    RawArray(Vec<Object>),
+    Object(Object),
+    Named(String, Object),
 }
 
-impl<'a> StackValue<'a> {
-    pub fn ensure_object(self) -> Object<'a> {
+impl StackValue {
+    pub fn ensure_object(self) -> Object {
         match self {
             StackValue::RawFunction(func) => Object::new_function(func),
             StackValue::RawArray(array) => Object::new_array(ArrayObject::new(array)),
             StackValue::Object(obj) => obj,
-            x => panic!("[INTERNAL] Expected Object, but got {:?}", x),
+            x => panic!("[BUG] Expected Object, but got {:?}", x),
         }
     }
 
-    pub fn ensure_named(self) -> (String, Object<'a>) {
+    pub fn ensure_named(self) -> (String, Object) {
         match self {
             StackValue::Named(name, obj) => (name, obj),
-            x => panic!("[INTERNAL] Expected Named, but got {:?}", x),
+            x => panic!("[BUG] Expected Named, but got {:?}", x),
         }
     }
 }
 
 macro_rules! impl_from {
     ($type:ty => $variant:ident) => {
-        impl<'a> From<$type> for StackValue<'a> {
+        impl From<$type> for StackValue {
             fn from(value: $type) -> Self {
                 Self::$variant(value)
             }
         }
     };
 }
-impl_from!(FunctionObject<'a> => RawFunction);
-impl_from!(Vec<Object<'a>> => RawArray);
-impl_from!(Object<'a> => Object);
-impl<'a> From<(String, Object<'a>)> for StackValue<'a> {
-    fn from(value: (String, Object<'a>)) -> Self {
+impl_from!(FunctionObject => RawFunction);
+impl_from!(Vec<Object> => RawArray);
+impl_from!(Object => Object);
+impl From<(String, Object)> for StackValue {
+    fn from(value: (String, Object)) -> Self {
         Self::Named(value.0, value.1)
     }
 }

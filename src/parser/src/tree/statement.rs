@@ -26,13 +26,13 @@ pub(super) fn statement<'tokens, 'src: 'tokens>(
         .map_with(|statement, extra| (statement, extra.span().into()))
 }
 
-impl<'a> TreeWalker<'a> for Statement<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
+impl<'walker, 'src: 'walker> Walkable<'walker, 'src> for Statement<'src> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>) {
         match self {
-            Statement::Control(stat) => stat.analyze(tracker),
-            Statement::Attribute(stat) => stat.analyze(tracker),
-            Statement::Variable(stat) => stat.analyze(tracker),
-            Statement::Call(stat) => stat.analyze(tracker),
+            Statement::Control(control) => walker.go(control),
+            Statement::Attribute(attribute) => walker.go(attribute),
+            Statement::Variable(variable) => walker.go(variable),
+            Statement::Call(call) => walker.go(call),
         }
     }
 }

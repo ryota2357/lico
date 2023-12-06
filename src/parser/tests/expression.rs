@@ -25,22 +25,22 @@ fn function_object() {
             args: vec![],
             body: Chunk {
                 captures: vec![],
-                block: vec![],
+                block: Block(vec![]),
             },
         }),
     );
     do_expr_test(
         "func(a, b) return c end",
         Expression::FunctionObject(FunctionObject {
-            args: vec![(Ident("a"), 7..8), (Ident("b"), 10..11)],
+            args: vec![Ident("a", 7..8), Ident("b", 10..11)],
             body: Chunk {
-                captures: vec!["c"],
-                block: vec![(
+                captures: vec![("c", 20..21)],
+                block: Block(vec![(
                     Statement::Control(ControlStatement::Return {
-                        value: Some((Expression::Ident(Ident("c")), 20..21)),
+                        value: Some((Expression::Ident(Ident("c", 20..21)), 20..21)),
                     }),
                     13..21,
-                )],
+                )]),
             },
         }),
     )
@@ -75,14 +75,14 @@ fn table_object() {
         "{ a = 1, b = {a=1}, }",
         Expression::TableObject(TableObject(vec![
             (
-                (Expression::Ident(Ident("a")), 4..5),
+                (Expression::Ident(Ident("a", 4..5)), 4..5),
                 (Expression::Primitive(Primitive::Int(1)), 8..9),
             ),
             (
-                (Expression::Ident(Ident("b")), 11..12),
+                (Expression::Ident(Ident("b", 11..12)), 11..12),
                 (
                     Expression::TableObject(TableObject(vec![(
-                        (Expression::Ident(Ident("a")), 16..17),
+                        (Expression::Ident(Ident("a", 16..17)), 16..17),
                         (Expression::Primitive(Primitive::Int(1)), 18..19),
                     )])),
                     15..20,
@@ -97,14 +97,14 @@ fn delimited_call() {
     do_expr_test(
         "(f())",
         Expression::Invoke {
-            expr: (Box::new(Expression::Ident(Ident("f"))), 3..4),
+            expr: (Box::new(Expression::Ident(Ident("f", 3..4))), 3..4),
             args: vec![],
         },
     );
     do_expr_test(
         "(((f(1))))",
         Expression::Invoke {
-            expr: (Box::new(Expression::Ident(Ident("f"))), 5..6),
+            expr: (Box::new(Expression::Ident(Ident("f", 5..6))), 5..6),
             args: vec![(Expression::Primitive(Primitive::Int(1)), 7..8)],
         },
     );
@@ -148,8 +148,8 @@ fn delimited_primitive() {
 
 #[test]
 fn delimited_local() {
-    do_expr_test("(a)", Expression::Ident(Ident("a")));
-    do_expr_test("(((a)))", Expression::Ident(Ident("a")));
+    do_expr_test("(a)", Expression::Ident(Ident("a", 3..4)));
+    do_expr_test("(((a)))", Expression::Ident(Ident("a", 5..6)));
 }
 #[test]
 fn delimited_local_access() {
@@ -158,18 +158,18 @@ fn delimited_local_access() {
         Expression::DotAccess {
             expr: (
                 Box::new(Expression::DotAccess {
-                    expr: (Box::new(Expression::Ident(Ident("a"))), 4..5),
-                    accesser: (Ident("b"), 6..7),
+                    expr: (Box::new(Expression::Ident(Ident("a", 4..5))), 4..5),
+                    accesser: Ident("b", 6..7),
                 }),
                 (4..7),
             ),
-            accesser: (Ident("c"), 9..10),
+            accesser: Ident("c", 9..10),
         },
     );
     do_expr_test(
         "(a['b'])",
         Expression::IndexAccess {
-            expr: (Box::new(Expression::Ident(Ident("a"))), 3..4),
+            expr: (Box::new(Expression::Ident(Ident("a", 3..4))), 3..4),
             accesser: (
                 Box::new(Expression::Primitive(Primitive::String("b".to_string()))),
                 5..8,
@@ -181,10 +181,10 @@ fn delimited_local_access() {
 #[test]
 fn composition_func() {
     let expr = Expression::Invoke {
-        expr: (Box::new(Expression::Ident(Ident("f"))), 2..3),
+        expr: (Box::new(Expression::Ident(Ident("f", 2..3))), 2..3),
         args: vec![(
             Expression::Invoke {
-                expr: (Box::new(Expression::Ident(Ident("g"))), 4..5),
+                expr: (Box::new(Expression::Ident(Ident("g", 4..5))), 4..5),
                 args: vec![],
             },
             4..7,
@@ -201,7 +201,7 @@ fn multiple_call() {
         Expression::Invoke {
             expr: (
                 Box::new(Expression::Invoke {
-                    expr: (Box::new(Expression::Ident(Ident("f"))), 2..3),
+                    expr: (Box::new(Expression::Ident(Ident("f", 2..3))), 2..3),
                     args: vec![],
                 }),
                 2..5,
@@ -218,7 +218,7 @@ fn multiple_call() {
                         Box::new(Expression::Invoke {
                             expr: (
                                 Box::new(Expression::Invoke {
-                                    expr: (Box::new(Expression::Ident(Ident("f"))), 3..4),
+                                    expr: (Box::new(Expression::Ident(Ident("f", 3..4))), 3..4),
                                     args: vec![(Expression::Primitive(Primitive::Int(1)), 5..6)],
                                 }),
                                 3..7,
@@ -243,13 +243,13 @@ fn method_chain() {
         Expression::MethodCall {
             expr: (
                 Box::new(Expression::MethodCall {
-                    expr: (Box::new(Expression::Ident(Ident("a"))), 2..3),
-                    name: (Ident("b"), (5..6)),
+                    expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
+                    name: Ident("b", 5..6),
                     args: vec![],
                 }),
                 2..8,
             ),
-            name: (Ident("c"), (10..11)),
+            name: Ident("c", 10..11),
             args: vec![],
         },
     );
@@ -258,13 +258,13 @@ fn method_chain() {
         Expression::MethodCall {
             expr: (
                 Box::new(Expression::MethodCall {
-                    expr: (Box::new(Expression::Ident(Ident("a"))), 4..5),
-                    name: (Ident("b"), (7..8)),
+                    expr: (Box::new(Expression::Ident(Ident("a", 4..5))), 4..5),
+                    name: Ident("b", 7..8),
                     args: vec![(Expression::Primitive(Primitive::Int(1)), 9..10)],
                 }),
                 4..11,
             ),
-            name: (Ident("c"), (14..15)),
+            name: Ident("c", 14..15),
             args: vec![
                 (Expression::Primitive(Primitive::Int(2)), 16..17),
                 (Expression::Primitive(Primitive::Int(3)), 19..20),
@@ -282,8 +282,8 @@ fn multiple_call_with_method() {
                 Box::new(Expression::Invoke {
                     expr: (
                         Box::new(Expression::MethodCall {
-                            expr: (Box::new(Expression::Ident(Ident("a"))), 2..3),
-                            name: (Ident("b"), (5..6)),
+                            expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
+                            name: Ident("b", 5..6),
                             args: vec![(Expression::Primitive(Primitive::Int(1)), 7..8)],
                         }),
                         2..9,
@@ -292,7 +292,7 @@ fn multiple_call_with_method() {
                 }),
                 2..12,
             ),
-            name: (Ident("c"), (14..15)),
+            name: Ident("c", 14..15),
             args: vec![(Expression::Primitive(Primitive::Int(3)), 16..17)],
         },
     );
@@ -304,7 +304,7 @@ fn error_func_call() {
     do_expr_test(
         "f(,)",
         Expression::Invoke {
-            expr: (Box::new(Expression::Ident(Ident("f"))), 2..3),
+            expr: (Box::new(Expression::Ident(Ident("f", 2..3))), 2..3),
             args: vec![],
         },
     );
@@ -317,12 +317,12 @@ fn multiple_dot_access() {
         Expression::DotAccess {
             expr: (
                 Box::new(Expression::DotAccess {
-                    expr: (Box::new(Expression::Ident(Ident("a"))), 2..3),
-                    accesser: (Ident("b"), 4..5),
+                    expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
+                    accesser: Ident("b", 4..5),
                 }),
                 2..5,
             ),
-            accesser: (Ident("c"), 6..7),
+            accesser: Ident("c", 6..7),
         },
     );
 }
@@ -334,7 +334,7 @@ fn multiple_index_access() {
         Expression::IndexAccess {
             expr: (
                 Box::new(Expression::IndexAccess {
-                    expr: (Box::new(Expression::Ident(Ident("a"))), 2..3),
+                    expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
                     accesser: (
                         Box::new(Expression::Primitive(Primitive::String("b".to_string()))),
                         4..7,
@@ -471,7 +471,7 @@ fn logical_op() {
                     lhs: (
                         Box::new(Expression::Unary {
                             op: UnaryOp::Not,
-                            expr: (Box::new(Expression::Ident(Ident("a"))), 6..7),
+                            expr: (Box::new(Expression::Ident(Ident("a", 6..7))), 6..7),
                         }),
                         2..7,
                     ),
@@ -486,7 +486,7 @@ fn logical_op() {
                         Box::new(Expression::Binary {
                             op: BinaryOp::GreaterEq,
                             lhs: (Box::new(Expression::Primitive(Primitive::Int(5))), 17..18),
-                            rhs: (Box::new(Expression::Ident(Ident("b"))), 22..23),
+                            rhs: (Box::new(Expression::Ident(Ident("b", 22..23))), 22..23),
                         }),
                         17..23,
                     ),
@@ -516,7 +516,7 @@ fn logical_op_with_paren() {
                             expr: (
                                 Box::new(Expression::Binary {
                                     op: BinaryOp::NotEq,
-                                    lhs: (Box::new(Expression::Ident(Ident("a"))), 8..9),
+                                    lhs: (Box::new(Expression::Ident(Ident("a", 8..9))), 8..9),
                                     rhs: (
                                         Box::new(Expression::Primitive(Primitive::Int(10))),
                                         13..15,
@@ -531,7 +531,7 @@ fn logical_op_with_paren() {
                         Box::new(Expression::Binary {
                             op: BinaryOp::Less,
                             lhs: (Box::new(Expression::Primitive(Primitive::Int(5))), 20..21),
-                            rhs: (Box::new(Expression::Ident(Ident("b"))), 24..25),
+                            rhs: (Box::new(Expression::Ident(Ident("b", 24..25))), 24..25),
                         }),
                         20..25,
                     ),
@@ -600,11 +600,14 @@ fn complicated_pratt() {
                                                 ))),
                                                 4..9,
                                             ),
-                                            rhs: (Box::new(Expression::Ident(Ident("b"))), 13..14),
+                                            rhs: (
+                                                Box::new(Expression::Ident(Ident("b", 13..14))),
+                                                13..14,
+                                            ),
                                         }),
                                         4..14,
                                     ),
-                                    accesser: (Ident("c"), 16..17),
+                                    accesser: Ident("c", 16..17),
                                 }),
                                 3..17,
                             ),
@@ -616,10 +619,13 @@ fn complicated_pratt() {
                                             expr: (
                                                 Box::new(Expression::DotAccess {
                                                     expr: (
-                                                        Box::new(Expression::Ident(Ident("c"))),
+                                                        Box::new(Expression::Ident(Ident(
+                                                            "c",
+                                                            18..19,
+                                                        ))),
                                                         18..19,
                                                     ),
-                                                    accesser: (Ident("c"), 20..21),
+                                                    accesser: Ident("c", 20..21),
                                                 }),
                                                 18..21,
                                             ),
@@ -633,7 +639,10 @@ fn complicated_pratt() {
                                             expr: (
                                                 Box::new(Expression::Invoke {
                                                     expr: (
-                                                        Box::new(Expression::Ident(Ident("d"))),
+                                                        Box::new(Expression::Ident(Ident(
+                                                            "d",
+                                                            29..30,
+                                                        ))),
                                                         29..30,
                                                     ),
                                                     args: vec![],

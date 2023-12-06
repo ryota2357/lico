@@ -1,18 +1,20 @@
 use super::*;
+use crate::code::LocalId;
 use std::{cell::RefCell, rc::Rc};
 
 #[derive(Default, Clone, Debug, PartialEq)]
-pub struct VariableTable<'a> {
-    scopes: Vec<internal::Scope<'a>>,
+pub struct VariableTable {
+    scopes: Vec<internal::Scope>,
 }
 
-impl<'a> VariableTable<'a> {
+impl VariableTable {
     pub fn new() -> Self {
         Self {
             scopes: vec![internal::Scope::new()],
         }
     }
 
+    #[inline]
     pub fn push_scope(&mut self) {
         self.scopes.push(internal::Scope::new());
     }
@@ -20,49 +22,49 @@ impl<'a> VariableTable<'a> {
     pub fn pop_scope(&mut self) {
         self.scopes
             .pop()
-            .expect("[INTERNAL] Cannot pop scope because there are no scopes.");
+            .expect("[BUG] This should be called in at least one scope.");
     }
 
-    pub fn insert(&mut self, name: &'a str, object: Object<'a>) {
+    pub fn push(&mut self, object: Object) {
         self.scopes
             .last_mut()
-            .expect("[INTERNAL] Cannot insert variable because there are no scopes.")
-            .push(name, internal::Entity::Value(object));
+            .expect("[BUG] This should be called in at least one scope.")
+            .push(internal::Entity::Value(object));
     }
 
-    pub fn insert_ref(&mut self, name: &'a str, ref_object: Rc<RefCell<Object<'a>>>) {
+    pub fn push_ref(&mut self, ref_object: Rc<RefCell<Object>>) {
         self.scopes
             .last_mut()
-            .expect("[INTERNAL] Cannot insert variable because there are no scopes.")
-            .push(name, internal::Entity::Shared(ref_object));
+            .expect("[BUG] This should be called in at least one scope.")
+            .push(internal::Entity::Shared(ref_object));
     }
 
-    pub fn erase(&mut self, count: usize) {
+    pub fn drop(&mut self, count: usize) {
         self.scopes
             .last_mut()
-            .expect("[INTERNAL] Cannot erase variables because there are no scopes.")
+            .expect("[BUG] This should be called in at least one scope.")
             .drop(count);
     }
 
-    pub fn edit(&mut self, name: &'a str, object: Object<'a>) -> Result<(), String> {
+    pub fn edit(&mut self, id: LocalId, object: Object) {
         self.scopes
             .last_mut()
-            .expect("[INTERNAL] Cannot edit variable because there are no scopes.")
-            .edit(name, object)
+            .expect("[BUG] This should be called in at least one scope.")
+            .edit(id, object)
     }
 
-    pub fn get(&self, name: &'a str) -> Option<Object<'a>> {
+    pub fn get(&self, id: LocalId) -> Object {
         self.scopes
             .last()
-            .expect("[INTERNAL] Cannot get variable because there are no scopes.")
-            .get(name)
+            .expect("[BUG] This should be called in at least one scope.")
+            .get(id)
     }
 
-    pub fn get_ref(&mut self, name: &'a str) -> Option<Rc<RefCell<Object<'a>>>> {
+    pub fn get_ref(&mut self, id: LocalId) -> Rc<RefCell<Object>> {
         self.scopes
             .last_mut()
-            .expect("[INTERNAL] Cannot get variable because there are no scopes.")
-            .get_ref(name)
+            .expect("[BUG] This should be called in at least one scope.")
+            .get_ref(id)
     }
 
     pub fn dump(&self, indent: usize) {
@@ -77,97 +79,97 @@ mod internal {
     use super::*;
 
     #[derive(Clone, Debug, PartialEq)]
-    pub enum Entity<'a> {
-        Value(Object<'a>),
-        Shared(Rc<RefCell<Object<'a>>>),
+    pub enum Entity {
+        Value(Object),
+        Shared(Rc<RefCell<Object>>),
     }
 
     #[derive(Default, Clone, Debug, PartialEq)]
-    pub struct Scope<'a> {
-        names: Vec<&'a str>,
-        entities: Vec<Entity<'a>>,
+    pub struct Scope {
+        entities: Vec<Entity>,
     }
 
-    impl<'a> Scope<'a> {
-        pub fn new() -> Self {
+    impl Scope {
+        #[inline]
+        pub const fn new() -> Self {
             Self {
-                names: vec![],
-                entities: vec![],
+                entities: Vec::new(),
             }
         }
 
-        pub fn push(&mut self, name: &'a str, entity: Entity<'a>) {
-            self.names.push(name);
+        #[inline]
+        pub fn push(&mut self, entity: Entity) {
             self.entities.push(entity);
         }
 
         pub fn drop(&mut self, count: usize) {
-            if count > self.names.len() {
+            if count > self.entities.len() {
                 panic!(
-                    "[INTERNAL] Cannot drop {} variables because there are only {} variables in scope.",
+                    "[BUG] Cannot drop {} variables because there are only {} variables in scope.",
                     count,
-                    self.names.len()
+                    self.entities.len()
                 );
             }
-            self.names.truncate(self.names.len() - count);
             self.entities.truncate(self.entities.len() - count);
         }
 
-        pub fn get(&self, name: &'a str) -> Option<Object<'a>> {
-            match self._search(name) {
-                Some(index) => match &self.entities[index] {
-                    Entity::Value(object) => Some(object.clone()),
-                    Entity::Shared(object) => Some(object.borrow().clone()),
-                },
-                None => None,
+        pub fn get(&self, id: LocalId) -> Object {
+            if let Some(entity) = self.entities.get(id.0) {
+                match entity {
+                    Entity::Value(object) => object.clone(),
+                    Entity::Shared(object) => object.borrow().clone(),
+                }
+            } else {
+                panic!(
+                    "[BUG] LocalId out of range. Expected 0..{}, but got {}.",
+                    self.entities.len(),
+                    id.0
+                );
             }
         }
 
-        pub fn get_ref(&mut self, name: &'a str) -> Option<Rc<RefCell<Object<'a>>>> {
-            match self._search(name) {
-                Some(index) => match &self.entities[index] {
+        pub fn get_ref(&mut self, id: LocalId) -> Rc<RefCell<Object>> {
+            if let Some(entity) = self.entities.get(id.0) {
+                match entity {
                     Entity::Value(object) => {
                         let res = Rc::new(RefCell::new(object.clone()));
-                        self.entities[index] = Entity::Shared(Rc::clone(&res));
-                        Some(res)
+                        self.entities[id.0] = Entity::Shared(Rc::clone(&res));
+                        res
                     }
-                    Entity::Shared(object) => Some(Rc::clone(object)),
-                },
-                None => None,
+                    Entity::Shared(object) => Rc::clone(object),
+                }
+            } else {
+                panic!(
+                    "[BUG] LocalId out of range. Expected 0..{}, but got {}.",
+                    self.entities.len(),
+                    id.0
+                );
             }
         }
 
-        pub fn edit(&mut self, name: &'a str, object: Object<'a>) -> Result<(), String> {
-            match self._search(name) {
-                Some(index) => match &self.entities[index] {
+        pub fn edit(&mut self, id: LocalId, object: Object) {
+            if let Some(entity) = self.entities.get(id.0) {
+                match entity {
                     Entity::Value(_) => {
-                        self.entities[index] = Entity::Value(object);
-                        Ok(())
+                        self.entities[id.0] = Entity::Value(object);
                     }
                     Entity::Shared(entity) => {
                         *(entity.borrow_mut()) = object;
-                        Ok(())
                     }
-                },
-                None => Err(format!(
-                    "Cannot edit variable '{}' because it does not exist.",
-                    name
-                )),
+                }
+            } else {
+                panic!(
+                    "[BUG] LocalId out of range. Expected 0..{}, but got {}.",
+                    self.entities.len(),
+                    id.0
+                );
             }
-        }
-
-        fn _search(&self, name: &'a str) -> Option<usize> {
-            self.names
-                .iter()
-                .rev()
-                .position(|n| *n == name)
-                .map(|index| self.names.len() - index - 1)
         }
 
         pub fn dump(&self, indent: usize) {
             println!("{}[Scope]", " ".repeat(indent));
-            for (name, entity) in self.names.iter().zip(self.entities.iter()) {
-                println!("{}{name}: {entity:?}", " ".repeat(indent + 2));
+            for (idx, entity) in self.entities.iter().enumerate() {
+                println!("{}{idx}: {entity:?}", " ".repeat(indent + 2));
             }
         }
     }

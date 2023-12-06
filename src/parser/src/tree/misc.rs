@@ -1,5 +1,4 @@
 use super::*;
-use std::ops::{Deref, DerefMut};
 
 /// <Primitive> ::= <Int> | <Float> | <String> | <Bool> | <Nil>
 /// <Int>       ::= __int
@@ -29,37 +28,14 @@ pub(super) fn primitive<'tokens, 'src: 'tokens>(
 
 /// <Ident> ::= __ident
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Ident<'src>(pub &'src str);
-
-impl<'a> Deref for Ident<'a> {
-    type Target = &'a str;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<'a> DerefMut for Ident<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
+pub struct Ident<'src>(pub &'src str, pub Span);
 
 pub(super) fn ident<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Ident<'src>, ParserError<'src>> + Clone {
     select! {
-        Token::Ident(x) => Ident(x)
+        Token::Ident(x) = extra => Ident(x, {
+            let span: SimpleSpan = extra.span();
+            span.into()
+        })
     }
-}
-
-pub(super) fn spanned_ident<'tokens, 'src: 'tokens>(
-) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, (Ident<'src>, Span), ParserError<'src>> + Clone
-{
-    select! {
-        Token::Ident(x) => Ident(x)
-    }
-    .map_with(|ident, ext| {
-        let span: SimpleSpan = ext.span();
-        (ident, span.into())
-    })
 }

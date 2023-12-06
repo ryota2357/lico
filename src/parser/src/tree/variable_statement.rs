@@ -3,22 +3,22 @@ use super::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum VariableStatement<'src> {
     Var {
-        name: (Ident<'src>, Span),
+        name: Ident<'src>,
         expr: (Expression<'src>, Span),
     },
     Func {
-        name: (Ident<'src>, Span),
-        args: Vec<(Ident<'src>, Span)>,
+        name: Ident<'src>,
+        args: Vec<Ident<'src>>,
         body: Chunk<'src>,
     },
     FieldFunc {
-        table: (Ident<'src>, Span),
-        fields: Vec<(Ident<'src>, Span)>,
-        args: Vec<(Ident<'src>, Span)>,
+        table: Ident<'src>,
+        fields: Vec<Ident<'src>>,
+        args: Vec<Ident<'src>>,
         body: Chunk<'src>,
     },
     Assign {
-        name: (Ident<'src>, Span),
+        name: Ident<'src>,
         accesser: Vec<(Expression<'src>, Span)>,
         expr: (Expression<'src>, Span),
     },
@@ -35,19 +35,19 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
         + Clone,
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, VariableStatement<'src>, ParserError<'src>> + Clone
 {
-    let func_arguments = spanned_ident()
+    let func_arguments = ident()
         .separated_by(just(Token::Comma))
         .allow_trailing()
         .collect()
         .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
 
     let var = just(Token::Var)
-        .ignore_then(spanned_ident())
+        .ignore_then(ident())
         .then_ignore(just(Token::Assign))
         .then(expression.clone())
         .map(|(name, expr)| VariableStatement::Var { name, expr });
     let func = just(Token::Func)
-        .ignore_then(spanned_ident())
+        .ignore_then(ident())
         .then(func_arguments.clone())
         .then(block.clone())
         .then_ignore(just(Token::End))
@@ -57,10 +57,10 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
             body: block.into(),
         });
     let field_func = just(Token::Func)
-        .ignore_then(spanned_ident())
+        .ignore_then(ident())
         .then(
             just(Token::Dot)
-                .ignore_then(spanned_ident())
+                .ignore_then(ident())
                 .repeated()
                 .at_least(1)
                 .collect(),
@@ -76,7 +76,7 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
                 body: block.into(),
             },
         );
-    let assign = spanned_ident()
+    let assign = ident()
         .then(
             choice((
                 expression
@@ -104,56 +104,63 @@ pub(super) fn variable_statement<'tokens, 'src: 'tokens>(
     choice((var, func, field_func, assign))
 }
 
-impl<'a> TreeWalker<'a> for VariableStatement<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
+impl<'walker, 'src: 'walker> Walkable<'walker, 'src> for VariableStatement<'src> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>) {
         match self {
             VariableStatement::Var {
-                name: (name, _),
+                name: Ident(name, _),
                 expr: (expr, _),
             } => {
-                tracker.add_definition(name);
-                expr.analyze(tracker);
+                walker.record_variable_definition(name);
+                walker.go(expr);
             }
             VariableStatement::Func {
-                name: (name, _),
+                name: Ident(name, _),
                 args,
                 body,
             } => {
-                tracker.add_definition(name);
-                tracker.push_new_definition_scope();
-                for (arg, _) in args.iter() {
-                    tracker.add_definition(arg);
-                }
-                body.analyze(tracker);
-                tracker.pop_current_definition_scope();
+                walker.record_variable_definition(name);
+                let result = {
+                    let mut walker = Walker::new();
+                    for Ident(arg, _) in args {
+                        walker.record_variable_definition(arg);
+                    }
+                    walker.go(&mut body.block);
+                    let result = walker.finish();
+                    body.captures = result.captures();
+                    result
+                };
+                walker.merge(result);
             }
             VariableStatement::FieldFunc {
-                table: (table, _),
-                fields,
+                table: Ident(table, table_span),
+                fields: _,
                 args,
                 body,
             } => {
-                tracker.add_capture(table);
-                for (field, _) in fields.iter() {
-                    tracker.add_definition(field);
-                }
-                tracker.push_new_definition_scope();
-                for (arg, _) in args.iter() {
-                    tracker.add_definition(arg);
-                }
-                body.analyze(tracker);
-                tracker.pop_current_definition_scope();
+                walker.record_variable_usage(table, table_span);
+                let result = {
+                    let mut walker = Walker::new();
+                    for Ident(arg, _) in args {
+                        walker.record_variable_definition(arg);
+                    }
+                    walker.go(&mut body.block);
+                    let result = walker.finish();
+                    body.captures = result.captures();
+                    result
+                };
+                walker.merge(result);
             }
             VariableStatement::Assign {
-                name: (name, _),
+                name: Ident(name, name_span),
                 accesser,
                 expr: (expr, _),
             } => {
-                tracker.add_capture(name);
-                for (access, _) in accesser.iter_mut() {
-                    access.analyze(tracker);
+                walker.go(expr);
+                walker.record_variable_usage(name, name_span);
+                for (expr, _) in accesser {
+                    walker.go(expr);
                 }
-                expr.analyze(tracker);
             }
         }
     }

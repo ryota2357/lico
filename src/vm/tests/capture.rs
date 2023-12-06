@@ -1,37 +1,39 @@
-use vm::code::Code::*;
+use vm::code::{Code::*, LocalId};
 use vm::runtime::{Object, Runtime};
 
 #[test]
 fn case1() {
+    // var a = 1
+    // vaf f = func() a = a + 10 end
+    // f()
+
     let mut runtime = Runtime::new(vec![]);
 
     #[rustfmt::skip]
     vm::execute(
-        // var a = 1
-        // vaf f = func() a = a + 10 end
-        // f()
         &[
-            LoadInt(1), MakeLocal("a"),
+            // a: 0
+            // f: 1
+            LoadInt(1), MakeLocal,
 
             BeginFuncCreation,
-              AddCapture("a"),
-              LoadLocal("a"), LoadInt(10), Add, SetLocal("a"),
+              AddCapture(LocalId(0)),
+              LoadLocal(LocalId(0)), LoadInt(10), Add, SetLocal(LocalId(0)),
               LoadNil, Return,
             EndFuncCreation,
-            MakeLocal("f"),
+            MakeLocal,
 
-            LoadLocal("f"), Call(0), UnloadTop,
+            LoadLocal(LocalId(1)), Call(0), UnloadTop,
             Exit,
         ],
         &mut runtime,
     ).unwrap();
 
-    assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(11)));
+    assert_eq!(runtime.variable_table.get(LocalId(0)), Object::Int(11));
     assert_eq!(
         runtime
             .variable_table
-            .get("f")
-            .unwrap()
+            .get(LocalId(1))
             .ensure_function()
             .unwrap()
             .id,
@@ -41,38 +43,40 @@ fn case1() {
 
 #[test]
 fn case2() {
+    // var table = { key = "value" }
+    // func f(new_value)
+    //     table.key = new_value
+    // end
+    // f(1.23)
+
     let mut runtime = Runtime::new(vec![]);
 
-    // var table = { key = "value" }
-    runtime.variable_table.insert(
-        "table",
-        Object::new_table(vm::runtime::TableObject::new(
+    // table: 0
+    // f: 1
+    //   table: 0
+    //   new_value: 1
+    runtime
+        .variable_table
+        .push(Object::new_table(vm::runtime::TableObject::new(
             [("key".to_string(), Object::String("value".to_string()))]
                 .into_iter()
                 .collect(),
-        )),
-    );
-
+        )));
     #[rustfmt::skip]
     vm::execute(&[
-        // func f(new_value)
-        //     table.key = new_value
-        // end
-        // f(1.23)
         BeginFuncCreation,
-          AddArgument("new_value"),
-          AddCapture("table"),
-          LoadLocal("new_value"),
-          LoadLocal("table"), LoadStringAsRef("key"), SetItem,
+          AddCapture(LocalId(0)),
+          AddArgument(()),
+          LoadLocal(LocalId(1)), LoadLocal(LocalId(0)), LoadString("key".to_string()), SetItem,
           LoadNil, Return,
         EndFuncCreation,
-        MakeLocal("f"),
-        LoadLocal("f"), LoadFloat(1.23), Call(1),
+        MakeLocal,
+        LoadLocal(LocalId(1)), LoadFloat(1.23), Call(1),
         Exit,
     ], &mut runtime).unwrap();
 
     // assert: table.key == 1.23
-    let table = if let Object::Table(table) = runtime.variable_table.get("table").unwrap() {
+    let table = if let Object::Table(table) = runtime.variable_table.get(LocalId(0)) {
         table
     } else {
         unreachable!()
@@ -82,43 +86,47 @@ fn case2() {
 
 #[test]
 fn case3() {
+    // var f = func(x) return x end
+    // var ch = func()
+    //    f = func(x) return x + 100 end
+    //    return 10
+    // end
+    // return f(ch()) + f(1)
+
     let mut runtime = Runtime::new(vec![]);
 
-    // var f = func(x) return x end
-    runtime.variable_table.insert(
-        "f",
-        Object::new_function(vm::runtime::FunctionObject {
+    // f: 0
+    //   x: 0
+    // ch: 1
+    //   f: 0
+    //     x: 0
+    runtime
+        .variable_table
+        .push(Object::new_function(vm::runtime::FunctionObject {
             id: (0, 0),
             env: vec![],
-            args: vec!["x"],
-            code: vec![LoadLocal("x"), Return],
-        }),
-    );
-
+            args: vec![()],
+            code: vec![LoadLocal(LocalId(0)), Return],
+        }));
     #[rustfmt::skip]
     let res = vm::execute(
-        // var ch = func()
-        //    f = func(x) return x + 100 end
-        //    return 10
-        // end
-        // return f(ch()) + f(1)
         &[
             BeginFuncCreation,
-              AddCapture("f"),
+              AddCapture(LocalId(0)),
               BeginFuncCreation,
-                AddArgument("x"),
-                LoadLocal("x"), LoadInt(100), Add,
+                AddArgument(()),
+                LoadLocal(LocalId(0)), LoadInt(100), Add,
                 Return,
               EndFuncCreation,
-              SetLocal("f"),
+              SetLocal(LocalId(0)),
               LoadInt(10), Return,
             EndFuncCreation,
-            MakeLocal("ch"),
+            MakeLocal,
 
-            LoadLocal("f"),
-              LoadLocal("ch"), Call(0),
+            LoadLocal(LocalId(0)),
+              LoadLocal(LocalId(1)), Call(0),
             Call(1),
-            LoadLocal("f"), LoadInt(1), Call(1),
+            LoadLocal(LocalId(0)), LoadInt(1), Call(1),
             Add,
             Return,
         ],
@@ -130,25 +138,29 @@ fn case3() {
 
 #[test]
 fn case4() {
+    // var a = 7
+    // var c = func(b)
+    //   return a + b
+    // end
+    // return c(13)
+
     let mut runtime = Runtime::new(vec![]);
 
-    // var a = 7
-    runtime.variable_table.insert("a", Object::Int(7));
-
+    // a: 0
+    // c: 1
+    //   a: 0
+    //   b: 1
+    runtime.variable_table.push(Object::Int(7));
     #[rustfmt::skip]
     let res = vm::execute(&[
-        // var c = func(b)
-        //   a + b
-        // end
-        // return c(13)
         BeginFuncCreation,
-          AddArgument("b"),
-          AddCapture("a"),
-          LoadLocal("a"), LoadLocal("b"), Add,
+          AddCapture(LocalId(0)),
+          AddArgument(()),
+          LoadLocal(LocalId(0)), LoadLocal(LocalId(1)), Add,
           Return,
         EndFuncCreation,
-        MakeLocal("c"),
-        LoadLocal("c"), LoadInt(13), Call(1),
+        MakeLocal,
+        LoadLocal(LocalId(1)), LoadInt(13), Call(1),
         Return,
     ], &mut runtime);
 

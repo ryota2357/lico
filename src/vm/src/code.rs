@@ -1,20 +1,23 @@
+use std::borrow::Cow;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+pub struct LocalId(pub usize);
+
 #[derive(Clone, Debug, PartialEq)]
-pub enum Code<'src> {
+pub enum Code {
     LoadInt(i64),
     LoadFloat(f64),
     LoadBool(bool),
     LoadString(String),
-    LoadStringAsRef(&'src str),
     LoadNil,
-    LoadLocal(&'src str),
-    LoadRustFunction(fn(&[crate::Object<'src>]) -> Result<crate::Object<'src>, String>),
+    LoadLocal(LocalId),
+    LoadRustFunction(fn(&[crate::Object]) -> Result<crate::Object, String>),
     UnloadTop,
 
-    SetLocal(&'src str),
-    MakeLocal(&'src str),
+    SetLocal(LocalId),
+    MakeLocal,
     MakeArray(u32),
-    MakeNamed(&'src str),
-    MakeExprNamed,
+    MakeNamed,
     MakeTable(u32),
     DropLocal(usize),
 
@@ -22,7 +25,7 @@ pub enum Code<'src> {
     JumpIfTrue(isize),
     JumpIfFalse(isize),
 
-    CallMethod(&'src str, u8),
+    CallMethod(Cow<'static, str>, u8),
     Call(u8),
     SetItem,
     GetItem,
@@ -44,8 +47,8 @@ pub enum Code<'src> {
     Builtin(BuiltinInstr, u8),
 
     BeginFuncCreation,
-    AddCapture(&'src str),
-    AddArgument(&'src str),
+    AddCapture(LocalId),
+    AddArgument(()),
     EndFuncCreation,
 
     Nop,

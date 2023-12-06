@@ -1,4 +1,4 @@
-use parser::tree::Program;
+use parser::Program;
 
 pub fn parse_program(src: &str) -> Program<'_> {
     let (tokens, _) = lexer::parse(src);

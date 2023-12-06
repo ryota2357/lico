@@ -1,27 +1,32 @@
 use super::*;
+use parser::tree::*;
 
 impl<'node, 'src: 'node> Compilable<'node, 'src> for (Expression<'src>, Span) {
-    fn compile(&'node self, fragment: &mut Fragment<'src>) -> Result<()> {
-        let (expr, _) = self;
-        compile(expr, fragment)
+    fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
+        let (expr, span) = self;
+        compile(expr, span.clone(), fragment, context)
     }
 }
 
 impl<'node, 'src: 'node> Compilable<'node, 'src> for (Box<Expression<'src>>, Span) {
-    fn compile(&'node self, fragment: &mut Fragment<'src>) -> Result<()> {
-        let (expr, _) = self;
-        compile(expr, fragment)
+    fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
+        let (expr, span) = self;
+        compile(expr, span.clone(), fragment, context)
     }
 }
 
 fn compile<'node, 'src: 'node>(
     expr: &'node Expression<'src>,
-    fragment: &mut Fragment<'src>,
+    span: Span,
+    fragment: &mut Fragment,
+    context: &mut Context<'src>,
 ) -> Result<()> {
     match expr {
         Expression::Unary { op, expr } => match op {
             UnaryOp::Neg => {
-                fragment.append_compile(expr)?.append(Code::Unm);
+                fragment
+                    .append_compile(expr, context)?
+                    .append(ICode::Unm(span));
                 Ok(())
             }
             UnaryOp::Not => {
@@ -31,11 +36,11 @@ fn compile<'node, 'src: 'node>(
                 // 3: jump 5
                 // 4: load true
                 // 5: ..
-                fragment.append_compile(expr)?.append_many([
-                    Code::JumpIfTrue(3),
-                    Code::LoadBool(false),
-                    Code::Jump(2),
-                    Code::LoadBool(true),
+                fragment.append_compile(expr, context)?.append_many([
+                    ICode::JumpIfTrue(3),
+                    ICode::LoadBool(false),
+                    ICode::Jump(2),
+                    ICode::LoadBool(true),
                 ]);
                 Ok(())
             }
@@ -43,86 +48,86 @@ fn compile<'node, 'src: 'node>(
         Expression::Binary { op, lhs, rhs } => match op {
             BinaryOp::Add => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Add);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Add(span));
                 Ok(())
             }
             BinaryOp::Sub => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Sub);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Sub(span));
                 Ok(())
             }
             BinaryOp::Mul => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Mul);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Mul(span));
                 Ok(())
             }
             BinaryOp::Div => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Div);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Div(span));
                 Ok(())
             }
             BinaryOp::Mod => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Mod);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Mod(span));
                 Ok(())
             }
             BinaryOp::Pow => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Pow);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Pow(span));
                 Ok(())
             }
             BinaryOp::Eq => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Eq);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Eq(span));
                 Ok(())
             }
             BinaryOp::NotEq => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::NotEq);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::NotEq(span));
                 Ok(())
             }
             BinaryOp::Less => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Less);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Less(span));
                 Ok(())
             }
             BinaryOp::LessEq => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::LessEq);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::LessEq(span));
                 Ok(())
             }
             BinaryOp::Greater => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Greater);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Greater(span));
                 Ok(())
             }
             BinaryOp::GreaterEq => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::GreaterEq);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::GreaterEq(span));
                 Ok(())
             }
             BinaryOp::And => {
@@ -133,13 +138,13 @@ fn compile<'node, 'src: 'node>(
                 //   3: jump 5
                 //   4: push false
                 //   5: ...
-                let rhs_fragment = Fragment::with_compile(rhs)?;
+                let lhs_fragment = Fragment::with_compile(lhs, context)?;
+                let rhs_fragment = Fragment::with_compile(rhs, context)?;
                 fragment
-                    .append_compile(lhs)?
-                    .append(Code::JumpIfFalse(rhs_fragment.len() as isize + 2))
+                    .append_fragment(lhs_fragment)
+                    .append(ICode::JumpIfFalse(rhs_fragment.len() as isize + 2))
                     .append_fragment(rhs_fragment)
-                    .append(Code::Jump(2))
-                    .append(Code::LoadBool(false));
+                    .append_many([ICode::Jump(2), ICode::LoadBool(false)]);
                 Ok(())
             }
             BinaryOp::Or => {
@@ -150,138 +155,143 @@ fn compile<'node, 'src: 'node>(
                 //   3: jump 5
                 //   4: push true
                 //   5: ...
-                let rhs_fragment = Fragment::with_compile(rhs)?;
+                let lhs_fragment = Fragment::with_compile(lhs, context)?;
+                let rhs_fragment = Fragment::with_compile(rhs, context)?;
                 fragment
-                    .append_compile(lhs)?
-                    .append(Code::JumpIfTrue(rhs_fragment.len() as isize + 2))
+                    .append_fragment(lhs_fragment)
+                    .append(ICode::JumpIfTrue(rhs_fragment.len() as isize + 2))
                     .append_fragment(rhs_fragment)
-                    .append(Code::Jump(2))
-                    .append(Code::LoadBool(true));
+                    .append_many([ICode::Jump(2), ICode::LoadBool(true)]);
                 Ok(())
             }
             BinaryOp::Concat => {
                 fragment
-                    .append_compile(lhs)?
-                    .append_compile(rhs)?
-                    .append(Code::Concat);
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::Concat(span));
                 Ok(())
             }
         },
-        Expression::Ident(ident) => {
-            fragment.append(Code::LoadLocal(ident));
+        Expression::Ident(Ident(name, _)) => {
+            let id = context
+                .resolve_variable(name)
+                .ok_or_else(|| Error::undefined_variable(name.to_string(), span.clone()))?;
+            fragment.append(ICode::LoadLocal(id));
             Ok(())
         }
         Expression::Primitive(primitive) => match primitive {
             Primitive::Int(x) => {
-                fragment.append(Code::LoadInt(*x));
+                fragment.append(ICode::LoadInt(*x));
                 Ok(())
             }
             Primitive::Float(x) => {
-                fragment.append(Code::LoadFloat(*x));
+                fragment.append(ICode::LoadFloat(*x));
                 Ok(())
             }
             Primitive::String(x) => {
-                fragment.append(Code::LoadString(x.clone()));
+                fragment.append(ICode::LoadString(x.clone()));
                 Ok(())
             }
             Primitive::Bool(x) => {
-                fragment.append(Code::LoadBool(*x));
+                fragment.append(ICode::LoadBool(*x));
                 Ok(())
             }
             Primitive::Nil => {
-                fragment.append(Code::LoadNil);
+                fragment.append(ICode::LoadNil);
                 Ok(())
             }
         },
         Expression::TableObject(table) => {
             for (key, value) in table.iter() {
-                if let (Expression::Ident(ident), _) = key {
-                    fragment
-                        .append_compile(value)?
-                        .append(Code::MakeNamed(ident));
-                } else {
-                    fragment
-                        .append_compile(value)?
-                        .append_compile(key)?
-                        .append(Code::MakeExprNamed);
-                }
+                fragment
+                    .append_compile(value, context)?
+                    .append_compile(key, context)?
+                    .append(ICode::MakeNamed);
             }
-            fragment.append(Code::MakeTable(table.len() as u32));
+            fragment.append(ICode::MakeTable(table.len() as u32));
             Ok(())
         }
         Expression::ArrayObject(array) => {
             fragment
-                .append_compile_many(array.iter())?
-                .append(Code::MakeArray(array.len() as u32));
+                .append_compile_many(array.iter(), context)?
+                .append(ICode::MakeArray(array.len() as u32));
             Ok(())
         }
         Expression::FunctionObject(function) => {
-            fragment
-                .append(Code::BeginFuncCreation)
-                .append_many(function.args.iter().map(|(arg, _)| Code::AddArgument(arg)))
-                .append_compile(&function.body)?
-                .append(Code::EndFuncCreation);
+            util::append_func_creation_fragment(fragment, &function.body, &function.args, context)?;
             Ok(())
         }
         Expression::Invoke { expr, args } => {
             fragment
-                .append_compile(expr)?
-                .append_compile_many(args.iter())?
-                .append(Code::Call(args.len() as u8));
+                .append_compile(expr, context)?
+                .append_compile_many(args.iter(), context)?
+                .append(ICode::Call(args.len() as u8, span));
             Ok(())
         }
         Expression::MethodCall {
             expr,
-            name: (name, _),
+            name: Ident(name, _),
             args,
         } => {
             fragment
-                .append_compile(expr)?
-                .append_compile_many(args.iter())?
-                .append(Code::CallMethod(name, args.len() as u8));
+                .append_compile(expr, context)?
+                .append_compile_many(args.iter(), context)?
+                .append(ICode::CallMethod(
+                    name.to_string().into(),
+                    args.len() as u8,
+                    span,
+                ));
             Ok(())
         }
         Expression::IndexAccess { expr, accesser } => {
             fragment
-                .append_compile(expr)?
-                .append_compile(accesser)?
-                .append(Code::GetItem);
+                .append_compile(expr, context)?
+                .append_compile(accesser, context)?
+                .append(ICode::GetItem(span));
             Ok(())
         }
         Expression::DotAccess {
             expr,
-            accesser: (accesser, _),
+            accesser: Ident(accesser, _),
         } => {
             fragment
-                .append_compile(expr)?
-                .append(Code::LoadStringAsRef(accesser))
-                .append(Code::GetItem);
+                .append_compile(expr, context)?
+                .append(ICode::LoadString(accesser.to_string()))
+                .append(ICode::GetItem(span));
             Ok(())
         }
-        Expression::Error => panic!("Found Error"),
+        Expression::Error => todo!(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use vm::code::{Code, LocalId};
 
     #[test]
     fn and() {
-        let fragment = Fragment::with_compile(&(
-            Expression::Binary {
-                op: BinaryOp::And,
-                lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
-                rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
-            },
-            0..0,
-        ));
+        let mut context = Context::new();
+        context.begin_block();
+        context.add_variable("a");
+        context.add_variable("b");
+        let fragment = Fragment::with_compile(
+            &(
+                Expression::Binary {
+                    op: BinaryOp::And,
+                    lhs: (Box::new(Expression::Ident(Ident("a", 0..0))), 0..0),
+                    rhs: (Box::new(Expression::Ident(Ident("b", 0..0))), 0..0),
+                },
+                0..0,
+            ),
+            &mut context,
+        );
         assert_eq!(
             fragment.unwrap().into_code(),
             vec![
-                Code::LoadLocal("a"),
+                Code::LoadLocal(LocalId(0)),
                 Code::JumpIfFalse(3),
-                Code::LoadLocal("b"),
+                Code::LoadLocal(LocalId(1)),
                 Code::Jump(2),
                 Code::LoadBool(false)
             ]
@@ -290,20 +300,27 @@ mod tests {
 
     #[test]
     fn or() {
-        let fragment = Fragment::with_compile(&(
-            Expression::Binary {
-                op: BinaryOp::Or,
-                lhs: (Box::new(Expression::Ident(Ident("a"))), 0..0),
-                rhs: (Box::new(Expression::Ident(Ident("b"))), 0..0),
-            },
-            0..0,
-        ));
+        let mut context = Context::new();
+        context.begin_block();
+        context.add_variable("a");
+        context.add_variable("b");
+        let fragment = Fragment::with_compile(
+            &(
+                Expression::Binary {
+                    op: BinaryOp::Or,
+                    lhs: (Box::new(Expression::Ident(Ident("a", 0..0))), 0..0),
+                    rhs: (Box::new(Expression::Ident(Ident("b", 0..0))), 0..0),
+                },
+                0..0,
+            ),
+            &mut context,
+        );
         assert_eq!(
             fragment.unwrap().into_code(),
             vec![
-                Code::LoadLocal("a"),
+                Code::LoadLocal(LocalId(0)),
                 Code::JumpIfTrue(3),
-                Code::LoadLocal("b"),
+                Code::LoadLocal(LocalId(1)),
                 Code::Jump(2),
                 Code::LoadBool(true)
             ]

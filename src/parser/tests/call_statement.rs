@@ -14,10 +14,10 @@ fn complicated_func_with_trailing_comma() {
     do_statement_test(
         "f(g(),)",
         Statement::Call(CallStatement::Invoke {
-            expr: (Expression::Ident(Ident("f")), 0..1),
+            expr: (Expression::Ident(Ident("f", 0..1)), 0..1),
             args: vec![(
                 Expression::Invoke {
-                    expr: (Box::new(Expression::Ident(Ident("g"))), 2..3),
+                    expr: (Box::new(Expression::Ident(Ident("g", 2..3))), 2..3),
                     args: vec![],
                 },
                 2..5,
@@ -32,7 +32,7 @@ fn call_with_only_comma() {
     do_statement_test(
         "f(,)",
         Statement::Call(CallStatement::Invoke {
-            expr: (Expression::Ident(Ident("f")), 0..1),
+            expr: (Expression::Ident(Ident("f", 0..1)), 0..1),
             args: vec![],
         }),
     );
@@ -45,7 +45,7 @@ fn multiple_call() {
         Statement::Call(CallStatement::Invoke {
             expr: (
                 Expression::Invoke {
-                    expr: (Box::new(Expression::Ident(Ident("f"))), 0..1),
+                    expr: (Box::new(Expression::Ident(Ident("f", 0..1))), 0..1),
                     args: vec![],
                 },
                 0..3,
@@ -64,7 +64,7 @@ fn multiple_call_more() {
                 Expression::Invoke {
                     expr: (
                         Box::new(Expression::Invoke {
-                            expr: (Box::new(Expression::Ident(Ident("f"))), 0..1),
+                            expr: (Box::new(Expression::Ident(Ident("f", 0..1))), 0..1),
                             args: vec![(Expression::Primitive(Primitive::Int(1)), 2..3)],
                         }),
                         0..4,
@@ -87,7 +87,7 @@ fn delimited_call() {
                 Expression::Invoke {
                     expr: (
                         Box::new(Expression::Invoke {
-                            expr: (Box::new(Expression::Ident(Ident("f"))), 2..3),
+                            expr: (Box::new(Expression::Ident(Ident("f", 2..3))), 2..3),
                             args: vec![(Expression::Primitive(Primitive::Int(1)), 4..5)],
                         }),
                         2..6,
@@ -112,7 +112,7 @@ fn multiple_call_with_delimited() {
                         Box::new(Expression::Invoke {
                             expr: (
                                 Box::new(Expression::Invoke {
-                                    expr: (Box::new(Expression::Ident(Ident("f"))), 1..2),
+                                    expr: (Box::new(Expression::Ident(Ident("f", 1..2))), 1..2),
                                     args: vec![(Expression::Primitive(Primitive::Int(1)), 3..4)],
                                 }),
                                 1..5,
@@ -137,13 +137,13 @@ fn method_chain() {
         Statement::Call(CallStatement::MethodCall {
             expr: (
                 Expression::MethodCall {
-                    expr: (Box::new(Expression::Ident(Ident("a"))), 0..1),
-                    name: (Ident("b"), (3..4)),
+                    expr: (Box::new(Expression::Ident(Ident("a", 0..1))), 0..1),
+                    name: Ident("b", 3..4),
                     args: vec![],
                 },
                 0..6,
             ),
-            name: (Ident("c"), (8..9)),
+            name: Ident("c", 8..9),
             args: vec![],
         }),
     );
@@ -152,13 +152,13 @@ fn method_chain() {
         Statement::Call(CallStatement::MethodCall {
             expr: (
                 Expression::MethodCall {
-                    expr: (Box::new(Expression::Ident(Ident("a"))), 1..2),
-                    name: (Ident("b"), (4..5)),
+                    expr: (Box::new(Expression::Ident(Ident("a", 1..2))), 1..2),
+                    name: Ident("b", 4..5),
                     args: vec![(Expression::Primitive(Primitive::Int(1)), 6..7)],
                 },
                 1..8,
             ),
-            name: (Ident("c"), (11..12)),
+            name: Ident("c", 11..12),
             args: vec![
                 (Expression::Primitive(Primitive::Int(2)), 13..14),
                 (Expression::Primitive(Primitive::Int(3)), 16..17),
@@ -176,8 +176,8 @@ fn multiple_call_with_method() {
                 Expression::Invoke {
                     expr: (
                         Box::new(Expression::MethodCall {
-                            expr: (Box::new(Expression::Ident(Ident("a"))), 0..1),
-                            name: (Ident("b"), (3..4)),
+                            expr: (Box::new(Expression::Ident(Ident("a", 0..1))), 0..1),
+                            name: Ident("b", 3..4),
                             args: vec![(Expression::Primitive(Primitive::Int(1)), 5..6)],
                         }),
                         0..7,
@@ -186,7 +186,7 @@ fn multiple_call_with_method() {
                 },
                 0..14,
             ),
-            name: (Ident("c"), (16..17)),
+            name: Ident("c", 16..17),
             args: vec![(
                 Expression::Primitive(Primitive::String("3".to_string())),
                 18..21,
@@ -202,15 +202,15 @@ fn anonymous_func_call() {
         Statement::Call(CallStatement::Invoke {
             expr: (
                 Expression::FunctionObject(FunctionObject {
-                    args: vec![(Ident("x"), 6..7)],
+                    args: vec![Ident("x", 6..7)],
                     body: Chunk {
                         captures: vec![],
-                        block: vec![(
+                        block: Block(vec![(
                             Statement::Control(ControlStatement::Return {
-                                value: Some((Expression::Ident(Ident("x")), 16..17)),
+                                value: Some((Expression::Ident(Ident("x", 16..17)), 16..17)),
                             }),
                             9..17,
-                        )],
+                        )]),
                     },
                 }),
                 1..21,

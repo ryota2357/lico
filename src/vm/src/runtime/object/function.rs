@@ -2,14 +2,14 @@ use super::*;
 use crate::code::Code;
 
 #[derive(Clone, Debug)]
-pub struct FunctionObject<'a> {
+pub struct FunctionObject {
     pub id: (usize, u8),
-    pub env: Vec<(&'a str, Option<Rc<RefCell<Object<'a>>>>)>,
-    pub args: Vec<&'a str>,
-    pub code: Vec<Code<'a>>,
+    pub env: Vec<Rc<RefCell<Object>>>,
+    pub args: Vec<()>,
+    pub code: Vec<Code>,
 }
 
-impl PartialEq for FunctionObject<'_> {
+impl PartialEq for FunctionObject {
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }

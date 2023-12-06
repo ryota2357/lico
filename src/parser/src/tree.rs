@@ -1,13 +1,19 @@
 use super::*;
 use lexer::Token;
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
+use std::{cell::RefCell, rc::Rc};
 
 type ParserError<'src> = extra::Err<error::Error<'src>>;
 type ParserInput<'tokens, 'src> =
     chumsky::input::SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]>;
 
-mod program;
-pub use program::*;
+pub(crate) fn program<'tokens, 'src: 'tokens>(
+) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, Program<'src>, ParserError<'src>> + Clone {
+    block().then_ignore(end()).map(|block| Program {
+        attributes: vec![],
+        body: block.into(),
+    })
+}
 
 mod block;
 pub use block::*;
@@ -42,81 +48,136 @@ pub use function_object::*;
 mod misc;
 pub use misc::*;
 
-trait TreeWalker<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>);
+pub trait Walkable<'walker, 'src: 'walker> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>);
 }
 
-pub(crate) fn analyze_tree(program: &mut Program<'_>) {
-    let mut tracker = Tracker::new();
-
-    tracker.push_new_definition_scope();
-    program.analyze(&mut tracker);
-    tracker.pop_current_definition_scope();
+#[derive(Debug, Default)]
+pub struct Walker<'walker, 'src: 'walker> {
+    master_defs: Vec<&'walker FxHashSet<&'src str>>,
+    defs: FxHashSet<&'src str>,
+    caps: Rc<RefCell<FxHashMap<&'src str, Span>>>,
+    attrs: Rc<RefCell<FxHashMap<&'src str, Vec<Span>>>>,
 }
 
-struct Tracker<'a> {
-    scoped_defs: Vec<HashSet<&'a str>>,
-    scoped_caps: Vec<HashSet<&'a str>>,
-    all_attr: HashMap<&'a str, Vec<Span>>,
+#[derive(Debug)]
+pub struct WalkerArtifact<'src> {
+    caps: Option<FxHashMap<&'src str, Span>>,
+    attrs: Option<FxHashMap<&'src str, Vec<Span>>>,
 }
 
-impl<'a> Tracker<'a> {
-    fn new() -> Self {
+impl<'walker, 'src: 'walker> Walker<'walker, 'src> {
+    pub fn new() -> Self {
         Self {
-            scoped_defs: vec![],
-            scoped_caps: vec![],
-            all_attr: HashMap::new(),
+            master_defs: Vec::new(),
+            defs: FxHashSet::default(),
+            caps: Rc::new(RefCell::new(FxHashMap::default())),
+            attrs: Rc::new(RefCell::new(FxHashMap::default())),
         }
     }
 
-    fn add_definition(&mut self, name: &'a str) {
-        if let Some(current_defs) = self.scoped_defs.last_mut() {
-            current_defs.insert(name);
-        } else {
-            unreachable!();
+    pub fn fork(&'walker self) -> Self {
+        let mut master_defs = self.master_defs.clone();
+        master_defs.push(&self.defs);
+        Self {
+            master_defs,
+            defs: FxHashSet::default(),
+            caps: Rc::clone(&self.caps),
+            attrs: Rc::clone(&self.attrs),
         }
     }
 
-    fn push_new_definition_scope(&mut self) {
-        self.scoped_defs.push(HashSet::new());
+    pub fn go(&mut self, walkable: &mut impl Walkable<'walker, 'src>) {
+        walkable.accept(self);
     }
 
-    fn pop_current_definition_scope(&mut self) -> HashSet<&'a str> {
-        match self.scoped_defs.pop() {
-            Some(x) => x,
-            None => unreachable!(),
+    pub fn record_variable_definition(&mut self, name: &'src str) {
+        self.defs.insert(name);
+    }
+
+    pub fn record_attribute(&mut self, name: &'src str, span: &Span) {
+        self.attrs
+            .borrow_mut()
+            .entry(name)
+            .or_default()
+            .push(span.clone());
+    }
+
+    pub fn record_variable_usage(&mut self, name: &'src str, span: &Span) {
+        if self.defs.contains(name) {
+            return;
         }
-    }
-
-    fn add_capture(&mut self, name: &'a str) {
-        if let Some(current_defs) = self.scoped_defs.last_mut() {
-            if current_defs.contains(name) {
+        for defs in self.master_defs.iter().rev() {
+            if defs.contains(name) {
                 return;
             }
-            for cap in self.scoped_caps.iter_mut() {
-                cap.insert(name);
+        }
+        self.caps
+            .borrow_mut()
+            .entry(name)
+            .or_insert_with(|| span.clone());
+    }
+
+    pub fn finish(self) -> WalkerArtifact<'src> {
+        // NOTE: if Rc::strong_count(&self.*) != 1 then None else Some.
+        let caps = Rc::into_inner(self.caps).map(|refcell| refcell.into_inner());
+        let attrs = Rc::into_inner(self.attrs).map(|refcell| refcell.into_inner());
+        WalkerArtifact { caps, attrs }
+    }
+
+    pub fn merge(&mut self, artifact: WalkerArtifact<'src>) {
+        let WalkerArtifact { caps, attrs } = artifact;
+        if let Some(caps) = caps {
+            for (name, span) in caps {
+                if self.defs.contains(name) {
+                    continue;
+                }
+                for defs in self.master_defs.iter().rev() {
+                    if defs.contains(name) {
+                        continue;
+                    }
+                }
+                self.caps
+                    .borrow_mut()
+                    .entry(name)
+                    .or_insert_with(|| span.clone());
             }
+        }
+        if let Some(attrs) = attrs {
+            self.attrs.borrow_mut().extend(attrs);
+        }
+    }
+}
+
+impl<'src> WalkerArtifact<'src> {
+    pub fn captures(&self) -> Vec<(&'src str, Span)> {
+        if let Some(caps) = &self.caps {
+            let mut res = caps
+                .iter()
+                .map(|(name, span)| (*name, span.clone()))
+                .collect::<Vec<_>>();
+            res.sort_unstable_by_key(|(name, _)| *name);
+            res
         } else {
-            unreachable!();
+            Vec::new()
         }
     }
 
-    fn begin_new_capture_section(&mut self) {
-        self.scoped_caps.push(HashSet::new());
-    }
-
-    fn end_current_capture_section(&mut self) -> Vec<&'a str> {
-        match self.scoped_caps.pop() {
-            Some(x) => x.into_iter().collect(),
-            None => unreachable!(),
-        }
-    }
-
-    fn add_attribute(&mut self, name: &'a str, pos: Span) {
-        self.all_attr.entry(name).or_default().push(pos);
-    }
-
-    fn get_all_attributes(&self) -> Vec<(&'a str, Vec<Span>)> {
-        self.all_attr.clone().into_iter().collect()
+    pub fn take_attributes(&mut self) -> Vec<(&'src str, Vec<Span>)> {
+        // TODO: expectのメッセージ変える
+        let attrs = self
+            .attrs
+            .take()
+            .expect("`attributes` should only be collected once.");
+        let mut res = attrs
+            .into_iter()
+            .map(|(name, spans)| {
+                let mut spans = spans;
+                spans.sort_unstable_by_key(|span| span.start);
+                (name, spans)
+            })
+            .collect::<Vec<_>>();
+        res.sort_unstable_by_key(|(_, spans)| spans[0].start);
+        res
     }
 }

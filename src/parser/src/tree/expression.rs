@@ -23,7 +23,7 @@ pub enum Expression<'src> {
     },
     MethodCall {
         expr: (Box<Expression<'src>>, Span),
-        name: (Ident<'src>, Span),
+        name: Ident<'src>,
         args: Vec<(Expression<'src>, Span)>,
     },
     IndexAccess {
@@ -32,7 +32,7 @@ pub enum Expression<'src> {
     },
     DotAccess {
         expr: (Box<Expression<'src>>, Span),
-        accesser: (Ident<'src>, Span),
+        accesser: Ident<'src>,
     },
     Error,
 }
@@ -171,9 +171,9 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     .collect()
                     .delimited_by(just(Token::OpenParen), just(Token::CloseParen));
                 let method_call_post_op = just(Token::Arrow)
-                    .ignore_then(spanned_ident())
+                    .ignore_then(ident())
                     .then(invoke_post_op.clone());
-                let dot_access_post_op = just(Token::Dot).ignore_then(spanned_ident());
+                let dot_access_post_op = just(Token::Dot).ignore_then(ident());
                 let index_access_post_op = expr
                     .clone()
                     .delimited_by(just(Token::OpenBracket), just(Token::CloseBracket));
@@ -203,17 +203,17 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
                     postfix_expr!(
                         9,
                         dot_access_post_op,
-                        ((expr, expr_span), (accesser,accesser_span)) => {
+                        ((expr, expr_span), accesser) => {
                             Expression::DotAccess {
                                 expr: (Box::new(expr), expr_span),
-                                accesser: (accesser, accesser_span),
+                                accesser,
                             }
                         }
                     ),
                     postfix_expr!(
                         9,
                         index_access_post_op,
-                        ((expr, expr_span), (accesser,accesser_span)) => {
+                        ((expr, expr_span), (accesser, accesser_span)) => {
                             Expression::IndexAccess {
                                 expr: (Box::new(expr), expr_span),
                                 accesser: (Box::new(accesser), accesser_span),
@@ -276,59 +276,98 @@ pub(super) fn expression<'tokens, 'src: 'tokens>(
     })
 }
 
-impl<'a> TreeWalker<'a> for Expression<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
-        match self {
-            Expression::Unary {
-                expr: (expr, _), ..
-            } => expr.analyze(tracker),
-            Expression::Binary {
-                rhs: (rhs, _),
-                lhs: (lhs, _),
-                ..
-            } => {
-                rhs.analyze(tracker);
-                lhs.analyze(tracker);
-            }
-            Expression::Primitive(_) => {}
-            Expression::TableObject(table_object) => table_object.analyze(tracker),
-            Expression::ArrayObject(array_object) => array_object.analyze(tracker),
-            Expression::FunctionObject(function_object) => function_object.analyze(tracker),
-            Expression::Invoke {
-                expr: (expr, _),
-                args,
-            } => {
-                expr.analyze(tracker);
-                for (arg, _) in args {
-                    arg.analyze(tracker);
-                }
-            }
-            Expression::MethodCall {
-                expr: (expr, _),
-                args,
-                ..
-            } => {
-                expr.analyze(tracker);
-                for (arg, _) in args {
-                    arg.analyze(tracker);
-                }
-            }
-            Expression::IndexAccess {
-                expr: (expr, _),
-                accesser: (index, _),
-            } => {
-                expr.analyze(tracker);
-                index.analyze(tracker);
-            }
-            Expression::Ident(ident) => tracker.add_capture(ident),
-            Expression::DotAccess {
-                expr: (expr, _), ..
-            } => {
-                expr.analyze(tracker);
-            }
-            Expression::Error => {
-                panic!("Found error");
+impl<'walker, 'src: 'walker> Walkable<'walker, 'src> for Expression<'src> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>) {
+        walker_accept(self, walker);
+    }
+}
+
+impl<'walker, 'src: 'walker> Walkable<'walker, 'src> for Box<Expression<'src>> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>) {
+        walker_accept(self, walker);
+    }
+}
+
+fn walker_accept<'walker, 'src: 'walker>(
+    expr: &mut Expression<'src>,
+    walker: &mut Walker<'walker, 'src>,
+) {
+    match expr {
+        Expression::Unary {
+            op: _,
+            expr: (expr, _),
+        } => {
+            walker.go(expr);
+        }
+        Expression::Binary {
+            op: _,
+            lhs: (lhs, _),
+            rhs: (rhs, _),
+        } => {
+            walker.go(lhs);
+            walker.go(rhs);
+        }
+        Expression::Ident(ident) => {
+            let Ident(name, span) = ident;
+            walker.record_variable_usage(name, span);
+        }
+        Expression::Primitive(_) => {}
+        Expression::TableObject(table) => {
+            for ((key, _), (value, _)) in table.iter_mut() {
+                walker.go(key);
+                walker.go(value);
             }
         }
+        Expression::ArrayObject(array) => {
+            for (expr, _) in array.iter_mut() {
+                walker.go(expr);
+            }
+        }
+        Expression::FunctionObject(func) => {
+            let result = {
+                let mut waker = Walker::new();
+                for Ident(arg, _) in func.args.iter() {
+                    waker.record_variable_definition(arg);
+                }
+                waker.go(&mut func.body.block);
+                let result = waker.finish();
+                func.body.captures = result.captures();
+                result
+            };
+            walker.merge(result);
+        }
+        Expression::Invoke {
+            expr: (expr, _),
+            args,
+        } => {
+            walker.go(expr);
+            for (arg, _) in args {
+                walker.go(arg);
+            }
+        }
+        Expression::MethodCall {
+            expr: (expr, _),
+            name: _,
+            args,
+        } => {
+            walker.go(expr);
+            for (arg, _) in args {
+                walker.go(arg);
+            }
+        }
+        Expression::IndexAccess {
+            expr: (expr, _),
+            accesser: (accesser, _),
+        } => {
+            walker.go(expr);
+            walker.go(accesser);
+        }
+        Expression::DotAccess {
+            expr: (expr, _),
+            accesser: _,
+        } => {
+            walker.go(expr);
+        }
+        Expression::Error => panic!("Error expression found."),
     }
 }

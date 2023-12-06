@@ -1,4 +1,4 @@
-use vm::code::Code::*;
+use vm::code::{Code::*, LocalId};
 use vm::runtime::{Object, Runtime};
 
 #[test]
@@ -6,7 +6,7 @@ use vm::runtime::{Object, Runtime};
 fn load() {
     let mut runtime = Runtime::new(vec![]);
     vm::execute(&[
-        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadStringAsRef("c"), LoadNil,
+        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadString("c".to_string()), LoadNil,
         Exit,
     ], &mut runtime).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Nil);
@@ -20,8 +20,8 @@ fn load() {
 #[test]
 fn load_local() {
     let mut runtime = Runtime::new(vec![]);
-    runtime.variable_table.insert("a", Object::Int(1));
-    vm::execute(&[LoadLocal("a"), Exit], &mut runtime).unwrap();
+    runtime.variable_table.push(Object::Int(1));
+    vm::execute(&[LoadLocal(LocalId(0)), Exit], &mut runtime).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(1));
 }
 
@@ -45,7 +45,7 @@ fn load_rust_function() {
 }
 
 #[test]
-#[should_panic(expected = "[INTERNAL] Stack is empty.")]
+#[should_panic(expected = "[BUG] Stack must have at least one value at pop.")]
 fn unload() {
     let mut runtime = Runtime::new(vec![]);
     runtime.stack.push(Object::Int(0).into());
@@ -55,19 +55,29 @@ fn unload() {
 
 #[test]
 fn set_local() {
-    // a = 10
     let mut runtime = Runtime::new(vec![]);
-    runtime.variable_table.insert("a", Object::Int(1));
-    vm::execute(&[LoadInt(10), SetLocal("a"), Exit], &mut runtime).unwrap();
-    assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(10)));
+    runtime.variable_table.push(Object::Int(1));
+    runtime.variable_table.push(Object::Bool(false));
+    #[rustfmt::skip]
+    vm::execute(
+        &[
+            LoadInt(10), SetLocal(LocalId(0)),
+            LoadBool(true), SetLocal(LocalId(1)),
+            Exit,
+        ],
+        &mut runtime,
+    )
+    .unwrap();
+    assert_eq!(runtime.variable_table.get(LocalId(0)), Object::Int(10));
 }
 
 #[test]
 fn make_local() {
-    // var a = 1
     let mut runtime = Runtime::new(vec![]);
-    vm::execute(&[LoadInt(1), MakeLocal("a"), Exit], &mut runtime).unwrap();
-    assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(1)));
+    vm::execute(&[LoadInt(1), MakeLocal, Exit], &mut runtime).unwrap();
+    vm::execute(&[LoadInt(2), MakeLocal, Exit], &mut runtime).unwrap();
+    assert_eq!(runtime.variable_table.get(LocalId(0)), Object::Int(1));
+    assert_eq!(runtime.variable_table.get(LocalId(1)), Object::Int(2));
 }
 
 #[test]
@@ -89,29 +99,14 @@ fn make_array() {
 #[test]
 fn make_named() {
     let mut runtime = Runtime::new(vec![]);
-    vm::execute(&[LoadNil, MakeNamed("NILL"), Exit], &mut runtime).unwrap();
-    assert_eq!(
-        runtime.stack.pop().ensure_named(),
-        ("NILL".to_string(), Object::Nil)
-    );
-}
-
-#[test]
-fn make_expr_named() {
-    let mut runtime = Runtime::new(vec![]);
     vm::execute(
-        &[
-            LoadInt(1),
-            LoadString("Key".to_string()),
-            MakeExprNamed,
-            Exit,
-        ],
+        &[LoadNil, LoadString("NILL".to_string()), MakeNamed, Exit],
         &mut runtime,
     )
     .unwrap();
     assert_eq!(
         runtime.stack.pop().ensure_named(),
-        ("Key".to_string(), Object::Int(1))
+        ("NILL".to_string(), Object::Nil)
     );
 }
 
@@ -148,27 +143,33 @@ fn make_table() {
 }
 
 #[test]
+#[should_panic(expected = "[BUG] LocalId out of range. Expected 0..1, but got 1.")]
 fn drop_local() {
     let mut runtime = Runtime::new(vec![]);
-    runtime.variable_table.insert("a", Object::Int(1));
-    runtime.variable_table.insert("a", Object::Int(2));
-    runtime.variable_table.insert("a", Object::Int(3));
-    assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(3)));
+    runtime.variable_table.push(Object::Int(1));
+    runtime.variable_table.push(Object::Int(2));
+    runtime.variable_table.push(Object::Int(3));
+    assert_eq!(runtime.variable_table.get(LocalId(2)), Object::Int(3));
     vm::execute(&[DropLocal(2), Exit], &mut runtime).unwrap();
-    assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(1)));
+    assert_eq!(runtime.variable_table.get(LocalId(0)), Object::Int(1));
+    runtime.variable_table.get(LocalId(1)); // panic
 }
 
 #[test]
-fn jump() {
+fn jump_forward() {
     let mut runtime = Runtime::new(vec![]);
-    runtime.variable_table.insert("a", Object::Int(1));
+    runtime.variable_table.push(Object::Int(1));
     vm::execute(&[Jump(2), DropLocal(1), Exit], &mut runtime).unwrap();
-    assert_eq!(runtime.variable_table.get("a"), Some(Object::Int(1)));
+    assert_eq!(runtime.variable_table.get(LocalId(0)), Object::Int(1));
+}
 
+#[test]
+#[should_panic(expected = "[BUG] LocalId out of range. Expected 0..0, but got 0.")]
+fn jump_backward() {
     let mut runtime = Runtime::new(vec![]);
-    runtime.variable_table.insert("a", Object::Int(1));
+    runtime.variable_table.push(Object::Int(1));
     vm::execute(&[Jump(3), DropLocal(1), Exit, Jump(-2)], &mut runtime).unwrap();
-    assert_eq!(runtime.variable_table.get("a"), None);
+    runtime.variable_table.get(LocalId(0)); // panic
 }
 
 #[test]
@@ -239,6 +240,12 @@ fn jump_if_false() {
 fn custom_method() {
     use vm::runtime::{FunctionObject, TableObject};
 
+    // var table = {
+    //     key = "value"
+    //     func testMethod = func(self, new_value)
+    //         self.key = new_value
+    //     end
+    // }
     let table_obj = {
         let mut table = TableObject::new(
             [("key".to_string(), Object::String("value".to_string()))]
@@ -250,11 +257,11 @@ fn custom_method() {
             FunctionObject {
                 id: (0, 0),
                 env: vec![],
-                args: vec!["self", "new_value"],
+                args: vec![(), ()], // self, new_value
                 code: vec![
-                    LoadLocal("new_value"),
-                    LoadLocal("self"),
-                    LoadStringAsRef("key"),
+                    LoadLocal(LocalId(1)),
+                    LoadLocal(LocalId(0)),
+                    LoadString("key".to_string()),
                     SetItem,
                     LoadNil,
                     Return,
@@ -265,21 +272,19 @@ fn custom_method() {
     };
 
     let mut runtime = Runtime::new(vec![]);
-    runtime
-        .variable_table
-        .insert("table", Object::new_table(table_obj));
+    runtime.variable_table.push(Object::new_table(table_obj));
     vm::execute(
         &[
-            LoadLocal("table"),
+            LoadLocal(LocalId(0)),
             LoadFloat(1.23),
-            CallMethod("testMethod", 1),
+            CallMethod("testMethod".into(), 1),
             Exit,
         ],
         &mut runtime,
     )
     .unwrap();
 
-    if let Object::Table(table) = runtime.variable_table.get("table").unwrap() {
+    if let Object::Table(table) = runtime.variable_table.get(LocalId(0)) {
         assert_eq!(table.borrow().get("key"), Some(&Object::Float(1.23)));
     } else {
         unreachable!()

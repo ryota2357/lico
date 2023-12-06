@@ -3,11 +3,11 @@ use super::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum AttributeStatement<'src> {
     Function {
-        name: (Ident<'src>, Span),
-        args: Vec<(Ident<'src>, Span)>,
+        name: Ident<'src>,
+        args: Vec<Ident<'src>>,
     },
     Variable {
-        name: (Ident<'src>, Span),
+        name: Ident<'src>,
     },
 }
 
@@ -23,18 +23,19 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>(
     }
     .map_with(|str, ext| {
         let span: SimpleSpan = ext.span();
-        (Ident(str), span.into())
+        Ident(str, span.into())
     });
 
     let function = attr_name
         .then(
             choice((
-                spanned_ident(),
-                select! { Token::Bool(x) => if x { Ident("true") } else { Ident("false") } }
-                    .map_with(|ident, ext| {
+                ident(),
+                select! { Token::Bool(x) => if x { "true" } else { "false" } }.map_with(
+                    |ident, ext| {
                         let span: SimpleSpan = ext.span();
-                        (ident, span.into())
-                    }),
+                        Ident(ident, span.into())
+                    },
+                ),
             ))
             .separated_by(just(Token::Comma))
             .allow_trailing()
@@ -47,14 +48,17 @@ pub(super) fn attribute_statement<'tokens, 'src: 'tokens>(
     function.or(variable)
 }
 
-impl<'a> TreeWalker<'a> for AttributeStatement<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
+impl<'walker, 'src: 'walker> Walkable<'walker, 'src> for AttributeStatement<'src> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>) {
         match self {
             AttributeStatement::Function {
-                name: (name, span), ..
-            } => tracker.add_attribute(name.0, span.clone()),
-            AttributeStatement::Variable { name: (name, span) } => {
-                tracker.add_attribute(name.0, span.clone())
+                name: Ident(name, span),
+                args: _,
+            } => walker.record_variable_usage(name, span),
+            AttributeStatement::Variable {
+                name: Ident(name, span),
+            } => {
+                walker.record_variable_usage(name, span);
             }
         }
     }

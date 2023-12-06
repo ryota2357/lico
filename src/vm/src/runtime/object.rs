@@ -16,16 +16,16 @@ mod primitive;
 pub use primitive::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Object<'a> {
+pub enum Object {
     Int(i64),
     Float(f64),
     String(String),
     Bool(bool),
     Nil,
-    Function(Rc<FunctionObject<'a>>),
-    Array(Rc<RefCell<ArrayObject<'a>>>),
-    Table(Rc<RefCell<TableObject<'a>>>),
-    RustFunction(fn(&[Object<'a>]) -> Result<Object<'a>, String>),
+    Function(Rc<FunctionObject>),
+    Array(Rc<RefCell<ArrayObject>>),
+    Table(Rc<RefCell<TableObject>>),
+    RustFunction(fn(&[Object]) -> Result<Object, String>),
 }
 
 macro_rules! ensure_fn {
@@ -43,16 +43,16 @@ macro_rules! ensure_fn {
     };
 }
 
-impl<'a> Object<'a> {
-    pub fn new_function(func: FunctionObject<'a>) -> Self {
+impl Object {
+    pub fn new_function(func: FunctionObject) -> Self {
         Self::Function(Rc::new(func))
     }
 
-    pub fn new_array(array: ArrayObject<'a>) -> Self {
+    pub fn new_array(array: ArrayObject) -> Self {
         Self::Array(Rc::new(RefCell::new(array)))
     }
 
-    pub fn new_table(table: TableObject<'a>) -> Self {
+    pub fn new_table(table: TableObject) -> Self {
         Self::Table(Rc::new(RefCell::new(table)))
     }
 
@@ -87,20 +87,20 @@ impl<'a> Object<'a> {
         Object::Bool(x) => Ok(x)
     );
     ensure_fn!(
-        ensure_function -> Rc<FunctionObject<'a>>,
+        ensure_function -> Rc<FunctionObject>,
         Object::Function(x) => Ok(x)
     );
     ensure_fn!(
-        ensure_array -> Rc<RefCell<ArrayObject<'a>>>,
+        ensure_array -> Rc<RefCell<ArrayObject>>,
         Object::Array(x) => Ok(x)
     );
     ensure_fn!(
-        ensure_table -> Rc<RefCell<TableObject<'a>>>,
+        ensure_table -> Rc<RefCell<TableObject>>,
         Object::Table(x) => Ok(x)
     );
 }
 
-impl Display for Object<'_> {
+impl Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Object::Int(x) => write!(f, "{}", x),
@@ -109,13 +109,7 @@ impl Display for Object<'_> {
             Object::Bool(x) => write!(f, "{}", if *x { "true" } else { "false" }),
             Object::Nil => write!(f, "nil"),
             Object::Function(x) => {
-                write!(
-                    f,
-                    "<Function:{}-{} ({})>",
-                    x.id.0,
-                    x.id.1,
-                    x.args.join(", ")
-                )
+                write!(f, "<Function:{}-{} ({})>", x.id.0, x.id.1, x.args.len())
             }
             Object::Array(x) => write!(f, "[{}]", {
                 let array = x.borrow();

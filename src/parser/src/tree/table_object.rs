@@ -1,5 +1,5 @@
 use super::*;
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableObject<'src>(pub Vec<((Expression<'src>, Span), (Expression<'src>, Span))>);
@@ -35,10 +35,8 @@ impl<'a> Deref for TableObject<'a> {
     }
 }
 
-impl<'a> TreeWalker<'a> for TableObject<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
-        for (_, (value, _)) in &mut self.0 {
-            value.analyze(tracker);
-        }
+impl DerefMut for TableObject<'_> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }

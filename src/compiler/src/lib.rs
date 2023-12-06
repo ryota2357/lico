@@ -1,11 +1,4 @@
-use parser::tree::*;
-use vm::code::{BuiltinInstr, Code};
-
-mod fragment;
-use fragment::Fragment;
-
-mod context;
-use context::Context;
+#![allow(dead_code)]
 
 pub mod error;
 use error::Error;
@@ -13,70 +6,61 @@ use error::Error;
 type Span = std::ops::Range<usize>;
 type Result<T> = std::result::Result<T, Error>;
 
-trait Compilable<'node, 'src: 'node> {
-    fn compile(&'node self, fragment: &mut Fragment<'src>) -> Result<()>;
-}
-
-trait ContextCompilable<'node, 'src: 'node> {
-    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context) -> Result<()>;
-}
+mod tools;
+use tools::*;
 
 mod block;
+use block::*;
 mod expression;
 mod statement;
 
-pub fn compile<'a>(program: &'a Program<'a>) -> Result<Vec<Code<'a>>> {
-    let mut fragment = Fragment::new();
+pub fn compile<'src>(program: &'src parser::Program<'src>) -> Result<Vec<vm::code::Code>> {
+    use vm::code::BuiltinInstr;
 
-    for capture in program.body.captures.iter() {
+    let mut fragment = Fragment::new();
+    let mut context = Context::new();
+    for (capture, span) in program.body.captures.iter() {
         match *capture {
             "print" => {
+                context.add_variable("print");
                 fragment.append_many([
-                    Code::BeginFuncCreation,
-                    Code::AddArgument("value"),
-                    Code::LoadLocal("value"),
-                    Code::Builtin(BuiltinInstr::Write, 1),
-                    Code::Builtin(BuiltinInstr::Flush, 0),
-                    Code::LoadNil,
-                    Code::Return,
-                    Code::EndFuncCreation,
-                    Code::MakeLocal("print"),
+                    ICode::BeginFuncCreation,
+                    ICode::AddArgument(()),
+                    ICode::LoadLocal(VariableId::new_manual(0)),
+                    ICode::Builtin(BuiltinInstr::Write, 1),
+                    ICode::Builtin(BuiltinInstr::Flush, 0),
+                    ICode::LoadNil,
+                    ICode::Return,
+                    ICode::EndFuncCreation,
+                    ICode::MakeLocal,
                 ]);
             }
             "println" => {
+                context.add_variable("println");
                 fragment.append_many([
-                    Code::BeginFuncCreation,
-                    Code::AddArgument("value"),
-                    Code::LoadLocal("value"),
-                    Code::LoadString("\n".to_string()),
-                    Code::Builtin(BuiltinInstr::Write, 2),
-                    Code::Builtin(BuiltinInstr::Flush, 0),
-                    Code::LoadNil,
-                    Code::Return,
-                    Code::EndFuncCreation,
-                    Code::MakeLocal("println"),
+                    ICode::BeginFuncCreation,
+                    ICode::AddArgument(()),
+                    ICode::LoadLocal(VariableId::new_manual(0)),
+                    ICode::LoadString("\n".to_string()),
+                    ICode::Builtin(BuiltinInstr::Write, 2),
+                    ICode::Builtin(BuiltinInstr::Flush, 0),
+                    ICode::LoadNil,
+                    ICode::Return,
+                    ICode::EndFuncCreation,
+                    ICode::MakeLocal,
                 ]);
             }
             "require" => {
                 unimplemented!("require")
             }
-            _ => { /* TODO: warning or ... */ }
+            name => {
+                return Err(Error::undefined_variable(name.to_string(), span.clone()));
+            }
         }
     }
-
-    let eob = block::compile_statements(
-        program.body.block.iter(),
-        &mut fragment,
-        &mut Context::new(),
-    )?;
-
-    match eob {
-        (block::ExitControll::Return, _) => {}
-        (block::ExitControll::None, _) => {
-            fragment.append_many([Code::LoadNil, Code::Return]);
-        }
-        (block::ExitControll::Break, span) => return Err(Error::no_loop_to_break(span)),
-        (block::ExitControll::Continue, span) => return Err(Error::no_loop_to_continue(span)),
+    fragment.append_compile(&program.body.block, &mut context)?;
+    if !matches!(fragment.last(), Some(ICode::Return)) {
+        fragment.append_many([ICode::LoadNil, ICode::Return]);
     }
 
     Ok(fragment.into_code())

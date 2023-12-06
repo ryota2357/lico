@@ -1,10 +1,6 @@
 use super::*;
 
-pub fn run_int_method<'a>(
-    int: i64,
-    name: &'a str,
-    args: Vec<Object<'a>>,
-) -> Result<Object<'a>, String> {
+pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object, String> {
     match name {
         "abs" => {
             ensure_argument_length!(args, 0);
@@ -191,11 +187,7 @@ pub fn run_int_method<'a>(
     }
 }
 
-pub fn run_float_method<'a>(
-    float: f64,
-    name: &'a str,
-    args: Vec<Object<'a>>,
-) -> Result<Object<'a>, String> {
+pub fn run_float_method(float: f64, name: &str, args: Vec<Object>) -> Result<Object, String> {
     match name {
         "abs" => {
             ensure_argument_length!(args, 0);
@@ -209,11 +201,7 @@ pub fn run_float_method<'a>(
     }
 }
 
-pub fn run_string_method<'a>(
-    string: String,
-    name: &'a str,
-    args: Vec<Object<'a>>,
-) -> Result<Object<'a>, String> {
+pub fn run_string_method(string: String, name: &str, args: Vec<Object>) -> Result<Object, String> {
     match name {
         "len" => {
             ensure_argument_length!(args, 0);
@@ -227,11 +215,7 @@ pub fn run_string_method<'a>(
     }
 }
 
-pub fn run_bool_method<'a>(
-    bool: bool,
-    name: &'a str,
-    args: Vec<Object<'a>>,
-) -> Result<Object<'a>, String> {
+pub fn run_bool_method(bool: bool, name: &str, args: Vec<Object>) -> Result<Object, String> {
     match name {
         "to_string" => {
             ensure_argument_length!(args, 0);
@@ -241,7 +225,7 @@ pub fn run_bool_method<'a>(
     }
 }
 
-pub fn run_nil_method<'a>(name: &'a str, args: Vec<Object<'a>>) -> Result<Object<'a>, String> {
+pub fn run_nil_method(name: &str, args: Vec<Object>) -> Result<Object, String> {
     match name {
         "to_string" => {
             ensure_argument_length!(args, 0);

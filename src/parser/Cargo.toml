@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 chumsky = { git = "https://github.com/zesterer/chumsky.git", features = ["pratt"] }
 lexer = { path = "../lexer/" }
+rustc-hash = "1.1.0"

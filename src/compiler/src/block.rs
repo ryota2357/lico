@@ -1,46 +1,16 @@
 use super::*;
+use parser::tree::*;
 
-pub(super) enum ExitControll {
-    Return,
-    Break,
-    Continue,
-    None,
-}
-
-pub(super) fn compile_statements<'node, 'src: 'node>(
-    statements: impl IntoIterator<Item = &'node (Statement<'src>, Span)>,
-    fragment: &mut Fragment<'src>,
-    context: &mut Context,
-) -> Result<(ExitControll, Span)> {
-    let mut last_span = &(0..0);
-    for statement in statements {
-        fragment.append_compile_with_context(statement, context)?;
-        match statement {
-            (Statement::Control(ControlStatement::Return { .. }), span) => {
-                return Ok((ExitControll::Return, span.clone()));
-            }
-            (Statement::Control(ControlStatement::Continue), span) => {
-                return Ok((ExitControll::Continue, span.clone()));
-            }
-            (Statement::Control(ControlStatement::Break), span) => {
-                return Ok((ExitControll::Break, span.clone()));
-            }
-            (_, span) => {
-                last_span = span;
-            }
+impl<'node, 'src: 'node> Compilable<'node, 'src> for Block<'src> {
+    fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
+        context.begin_block();
+        for statement in self.iter() {
+            statement.compile(fragment, context)?;
         }
-    }
-    Ok((ExitControll::None, last_span.clone()))
-}
-
-impl<'node, 'src: 'node> ContextCompilable<'node, 'src> for Block<'src> {
-    fn compile(&'node self, fragment: &mut Fragment<'src>, context: &mut Context) -> Result<()> {
-        context.start_block();
-        let end = compile_statements(self.iter(), fragment, context)?;
-        if let (ExitControll::None, _) = end {
-            let drop_count = context.get_block_local_count().unwrap();
+        if !matches!(fragment.last(), Some(ICode::Return)) {
+            let drop_count = context.get_block_local_count();
             if drop_count > 0 {
-                fragment.append(Code::DropLocal(drop_count));
+                fragment.append(ICode::DropLocal(drop_count));
             }
         }
         context.end_block();
@@ -48,23 +18,43 @@ impl<'node, 'src: 'node> ContextCompilable<'node, 'src> for Block<'src> {
     }
 }
 
-impl<'node, 'src: 'node> Compilable<'node, 'src> for Chunk<'src> {
-    fn compile(&'node self, fragment: &mut Fragment<'src>) -> Result<()> {
-        fragment.append_many(
-            self.captures
-                .iter()
-                .map(|capture| Code::AddCapture(capture)),
-        );
-        let end = compile_statements(self.block.iter(), fragment, &mut Context::new())?;
+pub mod util {
+    use super::*;
 
-        match end {
-            (ExitControll::Return, _) => Ok(()),
-            (ExitControll::None, _) => {
-                fragment.append_many([Code::LoadNil, Code::Return]);
-                Ok(())
+    pub fn append_func_creation_fragment<'node, 'src: 'node>(
+        fragment: &mut Fragment,
+        chunk: &'node Chunk<'src>,
+        args: &'node [Ident<'src>],
+        context: &mut Context<'src>,
+    ) -> Result<()> {
+        let add_capture = chunk
+            .captures
+            .iter()
+            .map(|(name, span)| {
+                let id = context
+                    .resolve_variable(name)
+                    .ok_or_else(|| Error::undefined_variable(name.to_string(), span.clone()))?;
+                Ok(ICode::AddCapture(id))
+            })
+            .collect::<Result<Vec<_>>>()?;
+        let add_argument = args.iter().map(|_| ICode::AddArgument(()));
+        let block_fragment = {
+            let mut context = Context::new();
+            context.begin_block();
+            context.add_variable_many(chunk.captures.iter().map(|(name, _)| *name));
+            context.add_variable_many(args.iter().map(|Ident(name, _)| *name));
+            let mut fragment = Fragment::with_compile(&chunk.block, &mut context)?;
+            if !matches!(fragment.last(), Some(ICode::Return)) {
+                fragment.append_many([ICode::LoadNil, ICode::Return]);
             }
-            (ExitControll::Break, span) => Err(Error::no_loop_to_break(span)),
-            (ExitControll::Continue, span) => Err(Error::no_loop_to_continue(span)),
-        }
+            fragment
+        };
+        fragment
+            .append(ICode::BeginFuncCreation)
+            .append_many(add_capture)
+            .append_many(add_argument)
+            .append_fragment(block_fragment)
+            .append(ICode::EndFuncCreation);
+        Ok(())
     }
 }

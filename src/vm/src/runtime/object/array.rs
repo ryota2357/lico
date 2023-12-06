@@ -2,13 +2,13 @@ use super::*;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ArrayObject<'a> {
-    value: Vec<Object<'a>>,
+pub struct ArrayObject {
+    value: Vec<Object>,
     version: u64,
 }
 
-impl<'a> ArrayObject<'a> {
-    pub fn new(array: Vec<Object<'a>>) -> Self {
+impl ArrayObject {
+    pub fn new(array: Vec<Object>) -> Self {
         Self {
             value: array,
             version: 0,
@@ -16,14 +16,14 @@ impl<'a> ArrayObject<'a> {
     }
 }
 
-impl<'a> Deref for ArrayObject<'a> {
-    type Target = Vec<Object<'a>>;
+impl Deref for ArrayObject {
+    type Target = Vec<Object>;
     fn deref(&self) -> &Self::Target {
         &self.value
     }
 }
 
-impl<'a> DerefMut for ArrayObject<'a> {
+impl DerefMut for ArrayObject {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.version += 1;
         &mut self.value
@@ -31,10 +31,10 @@ impl<'a> DerefMut for ArrayObject<'a> {
 }
 
 pub fn run_array_method<'a>(
-    array: Rc<RefCell<ArrayObject<'a>>>,
+    array: Rc<RefCell<ArrayObject>>,
     name: &'a str,
-    args: Vec<Object<'a>>,
-) -> Result<Object<'a>, String> {
+    args: Vec<Object>,
+) -> Result<Object, String> {
     match name {
         "__get_iterator" => {
             ensure_argument_length!(args, 0);
@@ -75,7 +75,7 @@ pub fn run_array_method<'a>(
             );
             iter_tbl.add_method(
                 "__move_next",
-                TableMethod::Builtin(|iter: Rc<RefCell<TableObject<'a>>>, args| {
+                TableMethod::Builtin(|iter: Rc<RefCell<TableObject>>, args| {
                     ensure_argument_length!(args, 0);
                     let (array, version, index) = table_extract_values!(iter, {
                         __array: Array, __version: Int, __index: Int,

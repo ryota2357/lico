@@ -8,7 +8,7 @@ pub enum CallStatement<'src> {
     },
     MethodCall {
         expr: (Expression<'src>, Span),
-        name: (Ident<'src>, Span),
+        name: Ident<'src>,
         args: Vec<(Expression<'src>, Span)>,
     },
 }
@@ -40,7 +40,7 @@ pub(super) fn call_statement<'tokens, 'src: 'tokens>(
             .clone()
             .map_with(|args, extra| (None, args, extra.span()));
         let method = just(Token::Arrow)
-            .ignore_then(spanned_ident())
+            .ignore_then(ident())
             .then(expr_args)
             .map_with(|(name, args), extra| (Some(name), args, extra.span()));
         invoke.or(method)
@@ -49,8 +49,8 @@ pub(super) fn call_statement<'tokens, 'src: 'tokens>(
     ident_or_expr
         .then(trigger.repeated().at_least(1).collect::<Vec<_>>())
         .map_with(|(expr, mut triggers), _extra| {
-            // let (name, args) = unsafe { triggers.pop().unwrap_unchecked() };
-            let (name, args, _) = triggers.pop().unwrap();
+            // SAFETY: `repeated().at_least(1)` ensures that `triggers` is not empty.
+            let (name, args, _) = unsafe { triggers.pop().unwrap_unchecked() };
             let expr = triggers
                 .into_iter()
                 .fold(expr, |(expr, expr_span), (name, args, span)| {
@@ -68,26 +68,26 @@ pub(super) fn call_statement<'tokens, 'src: 'tokens>(
         })
 }
 
-impl<'a> TreeWalker<'a> for CallStatement<'a> {
-    fn analyze(&mut self, tracker: &mut Tracker<'a>) {
+impl<'walker, 'src: 'walker> Walkable<'walker, 'src> for CallStatement<'src> {
+    fn accept(&mut self, walker: &mut Walker<'walker, 'src>) {
         match self {
             CallStatement::Invoke {
                 expr: (expr, _),
                 args,
             } => {
-                expr.analyze(tracker);
-                for (arg, _) in args {
-                    arg.analyze(tracker);
+                walker.go(expr);
+                for (expr, _) in args {
+                    walker.go(expr);
                 }
             }
             CallStatement::MethodCall {
                 expr: (expr, _),
+                name: _,
                 args,
-                ..
             } => {
-                expr.analyze(tracker);
-                for (arg, _) in args {
-                    arg.analyze(tracker);
+                walker.go(expr);
+                for (expr, _) in args {
+                    walker.go(expr);
                 }
             }
         }
