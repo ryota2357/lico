@@ -40,7 +40,7 @@ pub fn start(file: &PathBuf) {
         }
     };
 
-    let mut runtime = vm::runtime::Runtime::new(std::io::stdout());
+    let mut runtime = vm::runtime::Runtime::new();
     vm::execute(&code, &mut runtime).unwrap();
 }
 

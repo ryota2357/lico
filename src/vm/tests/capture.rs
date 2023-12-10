@@ -7,7 +7,7 @@ fn case1() {
     // vaf f = func() a = a + 10 end
     // f()
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
 
     #[rustfmt::skip]
     vm::execute(
@@ -49,7 +49,7 @@ fn case2() {
     // end
     // f(1.23)
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
 
     // table: 0
     // f: 1
@@ -93,7 +93,7 @@ fn case3() {
     // end
     // return f(ch()) + f(1)
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
 
     // f: 0
     //   x: 0
@@ -144,7 +144,7 @@ fn case4() {
     // end
     // return c(13)
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
 
     // a: 0
     // c: 1

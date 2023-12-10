@@ -4,7 +4,7 @@ use vm::runtime::{Object, Runtime};
 #[test]
 #[rustfmt::skip]
 fn load() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(&[
         LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadString("c".to_string()), LoadNil,
         Exit,
@@ -19,7 +19,7 @@ fn load() {
 
 #[test]
 fn load_local() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     runtime.variable_table.push(Object::Int(1));
     vm::execute(&[LoadLocal(LocalId(0)), Exit], &mut runtime).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(1));
@@ -27,7 +27,7 @@ fn load_local() {
 
 #[test]
 fn load_rust_function() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     let res = vm::execute(
         &[
             LoadRustFunction(|obj| {
@@ -47,7 +47,7 @@ fn load_rust_function() {
 #[test]
 #[should_panic(expected = "[BUG] Stack must have at least one value at pop.")]
 fn unload() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     runtime.stack.push(Object::Int(0).into());
     vm::execute(&[UnloadTop, Exit], &mut runtime).unwrap();
     runtime.stack.pop(); // panic
@@ -55,7 +55,7 @@ fn unload() {
 
 #[test]
 fn set_local() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     runtime.variable_table.push(Object::Int(1));
     runtime.variable_table.push(Object::Bool(false));
     #[rustfmt::skip]
@@ -73,7 +73,7 @@ fn set_local() {
 
 #[test]
 fn make_local() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(&[LoadInt(1), MakeLocal, Exit], &mut runtime).unwrap();
     vm::execute(&[LoadInt(2), MakeLocal, Exit], &mut runtime).unwrap();
     assert_eq!(runtime.variable_table.get(LocalId(0)), Object::Int(1));
@@ -84,7 +84,7 @@ fn make_local() {
 fn make_array() {
     use vm::runtime::StackValue;
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[LoadInt(1), LoadInt(2), LoadInt(3), MakeArray(3), Exit],
         &mut runtime,
@@ -98,7 +98,7 @@ fn make_array() {
 
 #[test]
 fn make_named() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[LoadNil, LoadString("NILL".to_string()), MakeNamed, Exit],
         &mut runtime,
@@ -115,7 +115,7 @@ fn make_table() {
     use std::{cell::RefCell, rc::Rc};
     use vm::runtime::TableObject;
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     for (key, value) in [
         ("Key1", Object::Int(1)),
         ("Key2", Object::Bool(true)),
@@ -145,7 +145,7 @@ fn make_table() {
 #[test]
 #[should_panic(expected = "[BUG] LocalId out of range. Expected 0..1, but got 1.")]
 fn drop_local() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     runtime.variable_table.push(Object::Int(1));
     runtime.variable_table.push(Object::Int(2));
     runtime.variable_table.push(Object::Int(3));
@@ -157,7 +157,7 @@ fn drop_local() {
 
 #[test]
 fn jump_forward() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     runtime.variable_table.push(Object::Int(1));
     vm::execute(&[Jump(2), DropLocal(1), Exit], &mut runtime).unwrap();
     assert_eq!(runtime.variable_table.get(LocalId(0)), Object::Int(1));
@@ -166,7 +166,7 @@ fn jump_forward() {
 #[test]
 #[should_panic(expected = "[BUG] LocalId out of range. Expected 0..0, but got 0.")]
 fn jump_backward() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     runtime.variable_table.push(Object::Int(1));
     vm::execute(&[Jump(3), DropLocal(1), Exit, Jump(-2)], &mut runtime).unwrap();
     runtime.variable_table.get(LocalId(0)); // panic
@@ -175,28 +175,28 @@ fn jump_backward() {
 #[test]
 #[rustfmt::skip]
 fn jump_if_true() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[LoadBool(true), JumpIfTrue(3), Nop, Exit, LoadInt(1), Exit],
         &mut runtime,
     ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(1));
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[LoadBool(false), JumpIfTrue(3), LoadInt(2), Exit, Nop, Exit],
         &mut runtime,
     ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(2));
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[Jump(3), LoadInt(3), Exit, LoadBool(true), JumpIfTrue(-3), Exit],
         &mut runtime,
     ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(3));
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[Jump(2), Exit, LoadBool(false), JumpIfTrue(-2), LoadInt(4), Exit],
         &mut runtime,
@@ -207,28 +207,28 @@ fn jump_if_true() {
 #[test]
 #[rustfmt::skip]
 fn jump_if_false() {
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[LoadBool(false), JumpIfFalse(3), Nop, Exit, LoadInt(1), Exit],
         &mut runtime,
     ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(1));
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[LoadBool(true), JumpIfFalse(3), LoadInt(2), Exit, Nop, Exit],
         &mut runtime,
     ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(2));
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[Jump(3), LoadInt(3), Exit, LoadBool(false), JumpIfFalse(-3), Exit],
         &mut runtime,
     ).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(3));
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     vm::execute(
         &[Jump(2), Exit, LoadBool(true), JumpIfFalse(-2), LoadInt(4), Exit],
         &mut runtime,
@@ -271,7 +271,7 @@ fn custom_method() {
         table
     };
 
-    let mut runtime = Runtime::new(vec![]);
+    let mut runtime = Runtime::new();
     runtime.variable_table.push(Object::new_table(table_obj));
     vm::execute(
         &[

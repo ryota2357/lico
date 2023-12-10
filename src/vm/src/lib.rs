@@ -5,10 +5,7 @@ use code::*;
 use runtime::*;
 use std::{collections::HashMap, rc::Rc};
 
-pub fn execute<W: std::io::Write>(
-    code: &[Code],
-    runtime: &mut Runtime<W>,
-) -> Result<Object, String> {
+pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
     use code::Code::*;
 
     let mut pc = 0;
@@ -522,12 +519,12 @@ pub fn execute<W: std::io::Write>(
                 match instr {
                     BuiltinInstr::Write => {
                         for arg in args {
-                            write!(runtime.writer, "{}", arg).unwrap();
+                            runtime.stdio.write(format!("{}", arg));
                         }
                     }
                     BuiltinInstr::Flush => {
                         assert!(*args_len == 0, "Builtin::Flush takes no arguments.");
-                        runtime.writer.flush().unwrap();
+                        runtime.stdio.flush();
                     }
                 }
             }
@@ -593,10 +590,10 @@ pub fn execute<W: std::io::Write>(
     }
 }
 
-fn execute_func<W: std::io::Write>(
+fn execute_func(
     func: &FunctionObject,
     args: Vec<Object>,
-    runtime: &mut Runtime<W>,
+    runtime: &mut Runtime,
 ) -> Result<Object, String> {
     if func.args.len() != args.len() {
         return Err(format!(
@@ -617,7 +614,7 @@ fn execute_func<W: std::io::Write>(
     Ok(ret)
 }
 
-fn create_args_vec<W: std::io::Write>(args_len: u8, runtime: &mut Runtime<W>) -> Vec<Object> {
+fn create_args_vec(args_len: u8, runtime: &mut Runtime) -> Vec<Object> {
     let mut args = Vec::with_capacity(args_len as usize);
     for _ in 0..args_len {
         args.push(runtime.stack.pop().ensure_object());
