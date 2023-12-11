@@ -526,6 +526,34 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                         assert!(*args_len == 0, "Builtin::Flush takes no arguments.");
                         runtime.stdio.flush();
                     }
+                    BuiltinInstr::WriteError => {
+                        for arg in args {
+                            runtime.stdio.write_err(format!("{}", arg));
+                        }
+                    }
+                    BuiltinInstr::FlushError => {
+                        assert!(*args_len == 0, "Builtin::FlushError takes no arguments.");
+                        runtime.stdio.flush_err();
+                    }
+                    BuiltinInstr::ReadLine => {
+                        assert!(*args_len == 0, "Builtin::ReadLine takes no arguments.");
+                        let line = runtime.stdio.read_line();
+                        runtime.stack.push(Object::String(line).into());
+                    }
+                    BuiltinInstr::ReadFile => {
+                        assert!(*args_len == 1, "Builtin::ReadFile takes 1 argument.");
+                        let path = args.into_iter().next().unwrap().ensure_string()?;
+                        let content = std::fs::read(path).map_err(|e| e.to_string())?;
+                        let string = String::from_utf8(content).map_err(|e| e.to_string())?;
+                        runtime.stack.push(Object::String(string).into());
+                    }
+                    BuiltinInstr::WriteFile => {
+                        assert!(*args_len == 2, "Builtin::WriteFile takes 2 arguments.");
+                        let mut args = args.into_iter();
+                        let path = args.next().unwrap().ensure_string()?;
+                        let content = args.next().unwrap().ensure_string()?;
+                        std::fs::write(path, content).map_err(|e| e.to_string())?;
+                    }
                 }
             }
             BeginFuncCreation => {

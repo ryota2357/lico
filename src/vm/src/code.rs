@@ -59,6 +59,46 @@ pub enum Code {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BuiltinInstr {
+    /// Write all arguments to stdout.
+    ///
+    /// args: >= 0
+    /// return: none
     Write,
+
+    /// Flush stdout.
+    ///
+    /// args: 0
+    /// return: none
     Flush,
+
+    /// Write all arguments to stderr.
+    ///
+    /// args: >= 0
+    /// return: none
+    WriteError,
+
+    /// Flush stderr.
+    ///
+    /// args: 0
+    /// return: none
+    FlushError,
+
+    /// Read a line from stdin.
+    ///
+    /// args: 0
+    /// return: 1 (String)
+    ReadLine,
+
+    /// Read the entire contents of a file.
+    ///
+    /// args: 1
+    /// return: 1 (String)
+    ReadFile,
+
+    /// Write a string to a file.
+    /// If the file does not exist, it will be created.
+    ///
+    /// args: 2 (filename: String, contents: String)
+    /// return: none
+    WriteFile,
 }
