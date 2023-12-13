@@ -1,4 +1,5 @@
 use super::*;
+use std::rc::Rc;
 
 #[derive(Default, Debug, PartialEq)]
 pub struct Stack {
@@ -35,7 +36,7 @@ pub enum StackValue {
     RawFunction(FunctionObject),
     RawArray(Vec<Object>),
     Object(Object),
-    Named(String, Object),
+    Named(Rc<String>, Object),
 }
 
 impl StackValue {
@@ -48,7 +49,7 @@ impl StackValue {
         }
     }
 
-    pub fn ensure_named(self) -> (String, Object) {
+    pub fn ensure_named(self) -> (Rc<String>, Object) {
         match self {
             StackValue::Named(name, obj) => (name, obj),
             x => panic!("[BUG] Expected Named, but got {:?}", x),
@@ -68,8 +69,8 @@ macro_rules! impl_from {
 impl_from!(FunctionObject => RawFunction);
 impl_from!(Vec<Object> => RawArray);
 impl_from!(Object => Object);
-impl From<(String, Object)> for StackValue {
-    fn from(value: (String, Object)) -> Self {
+impl From<(Rc<String>, Object)> for StackValue {
+    fn from(value: (Rc<String>, Object)) -> Self {
         Self::Named(value.0, value.1)
     }
 }

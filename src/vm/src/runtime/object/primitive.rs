@@ -13,10 +13,10 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
             };
             let mut range_tbl = TableObject::new(
                 [
-                    ("start".to_string(), Object::Int(int)),
-                    ("end".to_string(), Object::Int(to)),
-                    ("step".to_string(), Object::Int(-1)),
-                    ("__current".to_string(), Object::Nil),
+                    ("start".into(), Object::Int(int)),
+                    ("end".into(), Object::Int(to)),
+                    ("step".into(), Object::Int(-1)),
+                    ("__current".into(), Object::Nil),
                 ]
                 .into_iter()
                 .collect(),
@@ -31,9 +31,7 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
                     if step >= 0 {
                         return Err(format!("step should be negative, got {}", step));
                     }
-                    range
-                        .borrow_mut()
-                        .insert("step".to_string(), Object::Int(step));
+                    range.borrow_mut().insert("step".into(), Object::Int(step));
                     Ok(Object::Nil)
                 }),
             );
@@ -58,12 +56,10 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
                         if current + step >= end {
                             range
                                 .borrow_mut()
-                                .insert("__current".to_string(), Object::Int(current - 1));
+                                .insert("__current".into(), Object::Int(current - 1));
                             Ok(Object::Bool(true))
                         } else {
-                            range
-                                .borrow_mut()
-                                .insert("__current".to_string(), Object::Nil);
+                            range.borrow_mut().insert("__current".into(), Object::Nil);
                             Ok(Object::Bool(false))
                         }
                     } else {
@@ -72,7 +68,7 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
                         };
                         range
                             .borrow_mut()
-                            .insert("__current".to_string(), Object::Int(start));
+                            .insert("__current".into(), Object::Int(start));
                         Ok(Object::Bool(true))
                     }
                 }),
@@ -89,7 +85,8 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
         }
         "to_string" => {
             ensure_argument_length!(args, 0);
-            Ok(Object::String(int.to_string()))
+            let string = int.to_string();
+            Ok(Object::new_string(string))
         }
         "upto" => {
             ensure_argument_length!(args, 1);
@@ -98,10 +95,10 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
             };
             let mut range_tbl = TableObject::new(
                 [
-                    ("start".to_string(), Object::Int(int)),
-                    ("end".to_string(), Object::Int(to)),
-                    ("step".to_string(), Object::Int(1)),
-                    ("__current".to_string(), Object::Nil),
+                    ("start".into(), Object::Int(int)),
+                    ("end".into(), Object::Int(to)),
+                    ("step".into(), Object::Int(1)),
+                    ("__current".into(), Object::Nil),
                 ]
                 .into_iter()
                 .collect(),
@@ -116,9 +113,7 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
                     if step <= 0 {
                         return Err(format!("step should be positive, got {}", step));
                     }
-                    range
-                        .borrow_mut()
-                        .insert("step".to_string(), Object::Int(step));
+                    range.borrow_mut().insert("step".into(), Object::Int(step));
                     Ok(Object::Nil)
                 }),
             );
@@ -144,12 +139,10 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
                             if current + step <= end {
                                 range
                                     .borrow_mut()
-                                    .insert("__current".to_string(), Object::Int(current + 1));
+                                    .insert("__current".into(), Object::Int(current + 1));
                                 Ok(Object::Bool(true))
                             } else {
-                                range
-                                    .borrow_mut()
-                                    .insert("__current".to_string(), Object::Nil);
+                                range.borrow_mut().insert("__current".into(), Object::Nil);
                                 Ok(Object::Bool(false))
                             }
                         } else {
@@ -159,7 +152,7 @@ pub fn run_int_method(int: i64, name: &str, args: Vec<Object>) -> Result<Object,
                             };
                             range
                                 .borrow_mut()
-                                .insert("__current".to_string(), Object::Int(start));
+                                .insert("__current".into(), Object::Int(start));
                             Ok(Object::Bool(true))
                         }
                     }),
@@ -195,13 +188,18 @@ pub fn run_float_method(float: f64, name: &str, args: Vec<Object>) -> Result<Obj
         }
         "to_string" => {
             ensure_argument_length!(args, 0);
-            Ok(Object::String(float.to_string()))
+            let string = float.to_string();
+            Ok(Object::new_string(string))
         }
         _ => Err(format!("{} is not a method of float", name)),
     }
 }
 
-pub fn run_string_method(string: String, name: &str, args: Vec<Object>) -> Result<Object, String> {
+pub fn run_string_method(
+    string: Rc<String>,
+    name: &str,
+    args: Vec<Object>,
+) -> Result<Object, String> {
     match name {
         "len" => {
             ensure_argument_length!(args, 0);
@@ -209,7 +207,7 @@ pub fn run_string_method(string: String, name: &str, args: Vec<Object>) -> Resul
         }
         "to_string" => {
             ensure_argument_length!(args, 0);
-            Ok(Object::String(string.to_string()))
+            Ok(Object::String(string))
         }
         _ => Err(format!("{} is not a method of string", name)),
     }
@@ -219,7 +217,8 @@ pub fn run_bool_method(bool: bool, name: &str, args: Vec<Object>) -> Result<Obje
     match name {
         "to_string" => {
             ensure_argument_length!(args, 0);
-            Ok(Object::String(bool.to_string()))
+            let string = bool.to_string();
+            Ok(Object::new_string(string))
         }
         _ => Err(format!("{} is not a method of bool", name)),
     }
@@ -229,7 +228,8 @@ pub fn run_nil_method(name: &str, args: Vec<Object>) -> Result<Object, String> {
     match name {
         "to_string" => {
             ensure_argument_length!(args, 0);
-            Ok(Object::String("nil".to_string()))
+            let string = "nil".to_string();
+            Ok(Object::new_string(string))
         }
         _ => Err(format!("{} is not a method of nil", name)),
     }

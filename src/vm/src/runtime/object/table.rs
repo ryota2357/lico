@@ -7,7 +7,7 @@ use std::{
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TableObject {
-    value: HashMap<String, Object>,
+    value: HashMap<Cow<'static, str>, Object>,
     methods: Option<HashMap<Cow<'static, str>, TableMethod>>,
 }
 
@@ -19,7 +19,7 @@ pub enum TableMethod {
 }
 
 impl TableObject {
-    pub fn new(value: HashMap<String, Object>) -> Self {
+    pub fn new(value: HashMap<Cow<'static, str>, Object>) -> Self {
         Self {
             value,
             methods: None,
@@ -61,7 +61,7 @@ impl From<fn(Rc<RefCell<TableObject>>, Vec<Object>) -> Result<Object, String>> f
 }
 
 impl Deref for TableObject {
-    type Target = HashMap<String, Object>;
+    type Target = HashMap<Cow<'static, str>, Object>;
     fn deref(&self) -> &Self::Target {
         &self.value
     }
@@ -81,7 +81,12 @@ pub fn run_table_default_method(
     match name {
         "keys" => {
             ensure_argument_length!(args, 0);
-            let keys = table.borrow().keys().cloned().map(Object::String).collect();
+            let keys = table
+                .borrow()
+                .keys()
+                .cloned()
+                .map(|s| Object::new_string(s.to_string()))
+                .collect();
             let array = ArrayObject::new(keys);
             Ok(Object::new_array(array))
         }
@@ -102,7 +107,7 @@ pub fn run_table_default_method(
             } else {
                 return Err(format!("expected string, got {:?}", args[0]));
             };
-            Ok(Object::Bool(table.borrow().contains_key(key)))
+            Ok(Object::Bool(table.borrow().contains_key(key.as_str())))
         }
         "remove" => {
             ensure_argument_length!(args, 1);
@@ -111,7 +116,10 @@ pub fn run_table_default_method(
             } else {
                 return Err(format!("expected string, got {:?}", args[0]));
             };
-            Ok(table.borrow_mut().remove(key).unwrap_or(Object::Nil))
+            Ok(table
+                .borrow_mut()
+                .remove(key.as_str())
+                .unwrap_or(Object::Nil))
         }
         _ => Err(format!("table has no method {}", name)),
     }

@@ -25,7 +25,8 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 runtime.stack.push(Object::Bool(*x).into());
             }
             LoadString(x) => {
-                runtime.stack.push(Object::String(x.clone()).into());
+                let x = Rc::clone(x);
+                runtime.stack.push(Object::String(x).into());
             }
             LoadNil => {
                 runtime.stack.push(Object::Nil.into());
@@ -65,7 +66,8 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 let mut hash_map = HashMap::with_capacity(*count as usize);
                 for _ in 0..*count {
                     let (name, value) = runtime.stack.pop().ensure_named();
-                    hash_map.insert(name, value);
+                    let name = name.to_string();
+                    hash_map.insert(name.into(), value);
                 }
                 let table = TableObject::new(hash_map);
                 runtime.stack.push(Object::new_table(table).into());
@@ -195,7 +197,12 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                     }
                     StackValue::Object(Object::Table(table)) => {
                         let index = accesser.ensure_string()?;
-                        table.borrow_mut().insert(index, value);
+                        if let Some(t) = table.borrow_mut().get_mut(index.as_str()) {
+                            *t = value;
+                        } else {
+                            let index = index.to_string();
+                            table.borrow_mut().insert(index.into(), value);
+                        }
                         runtime.stack.push(Object::Table(table).into());
                     }
                     x => Err(format!("Expected Array or Table, but got {:?}", x))?,
@@ -217,14 +224,14 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                         let index = accesser.ensure_int()?;
                         let item = if index >= 0 {
                             match string.chars().nth(index as usize) {
-                                Some(x) => Object::String(x.to_string()),
+                                Some(x) => Object::new_string(x.to_string()),
                                 None => Object::Nil,
                             }
                         } else {
                             // NOTE: ・ -1 means the last character, ・nth_back(0) means the last character
                             //       abs(index) - 1 = abs(index + 1)  (because index is negative)
                             match string.chars().nth_back((index + 1).unsigned_abs() as usize) {
-                                Some(x) => Object::String(x.to_string()),
+                                Some(x) => Object::new_string(x.to_string()),
                                 None => Object::Nil,
                             }
                         };
@@ -240,7 +247,7 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                     }
                     StackValue::Object(Object::Table(table)) => {
                         let index = accesser.ensure_string()?;
-                        let item = match table.borrow().get(&index) {
+                        let item = match table.borrow().get(index.as_str()) {
                             Some(x) => x.clone(),
                             None => Object::Nil,
                         };
@@ -501,7 +508,7 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                     match obj {
                         Object::Int(x) => Ok(x.to_string()),
                         Object::Float(x) => Ok(x.to_string()),
-                        Object::String(x) => Ok(x),
+                        Object::String(x) => Ok(x.to_string()),
                         Object::Bool(x) => Ok(if x { "true" } else { "false" }.to_string()),
                         Object::Nil => Ok("nil".to_string()),
                         x => Err(format!(
@@ -512,7 +519,7 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 }
                 let lhs = to_string(lhs)?;
                 let rhs = to_string(rhs)?;
-                runtime.stack.push(Object::String(lhs + &rhs).into());
+                runtime.stack.push(Object::new_string(lhs + &rhs).into());
             }
             Builtin(instr, args_len) => {
                 let args = create_args_vec(*args_len, runtime);
@@ -538,21 +545,22 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                     BuiltinInstr::ReadLine => {
                         assert!(*args_len == 0, "Builtin::ReadLine takes no arguments.");
                         let line = runtime.stdio.read_line();
-                        runtime.stack.push(Object::String(line).into());
+                        runtime.stack.push(Object::new_string(line).into());
                     }
                     BuiltinInstr::ReadFile => {
                         assert!(*args_len == 1, "Builtin::ReadFile takes 1 argument.");
                         let path = args.into_iter().next().unwrap().ensure_string()?;
-                        let content = std::fs::read(path).map_err(|e| e.to_string())?;
+                        let content = std::fs::read(path.as_str()).map_err(|e| e.to_string())?;
                         let string = String::from_utf8(content).map_err(|e| e.to_string())?;
-                        runtime.stack.push(Object::String(string).into());
+                        runtime.stack.push(Object::new_string(string).into());
                     }
                     BuiltinInstr::WriteFile => {
                         assert!(*args_len == 2, "Builtin::WriteFile takes 2 arguments.");
                         let mut args = args.into_iter();
                         let path = args.next().unwrap().ensure_string()?;
                         let content = args.next().unwrap().ensure_string()?;
-                        std::fs::write(path, content).map_err(|e| e.to_string())?;
+                        std::fs::write(path.as_str(), content.as_str())
+                            .map_err(|e| e.to_string())?;
                     }
                 }
             }

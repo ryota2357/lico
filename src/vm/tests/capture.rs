@@ -1,5 +1,8 @@
-use vm::code::{Code::*, LocalId};
-use vm::runtime::{Object, Runtime};
+use std::rc::Rc;
+use vm::{
+    code::{Code::*, LocalId},
+    runtime::{Object, Runtime},
+};
 
 #[test]
 fn case1() {
@@ -58,7 +61,7 @@ fn case2() {
     runtime
         .variable_table
         .push(Object::new_table(vm::runtime::TableObject::new(
-            [("key".to_string(), Object::String("value".to_string()))]
+            [("key".into(), Object::new_string("value".to_string()))]
                 .into_iter()
                 .collect(),
         )));
@@ -67,7 +70,7 @@ fn case2() {
         BeginFuncCreation,
           AddCapture(LocalId(0)),
           AddArgument(()),
-          LoadLocal(LocalId(1)), LoadLocal(LocalId(0)), LoadString("key".to_string()), SetItem,
+          LoadLocal(LocalId(1)), LoadLocal(LocalId(0)), LoadString(Rc::new("key".to_string())), SetItem,
           LoadNil, Return,
         EndFuncCreation,
         MakeLocal,

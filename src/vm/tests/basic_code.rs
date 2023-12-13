@@ -1,17 +1,20 @@
-use vm::code::{Code::*, LocalId};
-use vm::runtime::{Object, Runtime};
+use std::rc::Rc;
+use vm::{
+    code::{Code::*, LocalId},
+    runtime::{Object, Runtime},
+};
 
 #[test]
 #[rustfmt::skip]
 fn load() {
     let mut runtime = Runtime::new();
     vm::execute(&[
-        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString("a b".to_string()), LoadString("c".to_string()), LoadNil,
+        LoadInt(37), LoadFloat(42.0), LoadBool(true), LoadString(Rc::new("a b".to_string())), LoadString(Rc::new("c".to_string())), LoadNil,
         Exit,
     ], &mut runtime).unwrap();
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Nil);
-    assert_eq!(runtime.stack.pop().ensure_object(), Object::String("c".to_string()));
-    assert_eq!(runtime.stack.pop().ensure_object(), Object::String("a b".to_string()));
+    assert_eq!(runtime.stack.pop().ensure_object(), Object::new_string("c".to_string()));
+    assert_eq!(runtime.stack.pop().ensure_object(), Object::new_string("a b".to_string()));
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Bool(true));
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Float(42.0));
     assert_eq!(runtime.stack.pop().ensure_object(), Object::Int(37));
@@ -100,13 +103,18 @@ fn make_array() {
 fn make_named() {
     let mut runtime = Runtime::new();
     vm::execute(
-        &[LoadNil, LoadString("NILL".to_string()), MakeNamed, Exit],
+        &[
+            LoadNil,
+            LoadString(Rc::new("NILL".to_string())),
+            MakeNamed,
+            Exit,
+        ],
         &mut runtime,
     )
     .unwrap();
     assert_eq!(
         runtime.stack.pop().ensure_named(),
-        ("NILL".to_string(), Object::Nil)
+        (Rc::new("NILL".to_string()), Object::Nil)
     );
 }
 
@@ -117,11 +125,11 @@ fn make_table() {
 
     let mut runtime = Runtime::new();
     for (key, value) in [
-        ("Key1", Object::Int(1)),
-        ("Key2", Object::Bool(true)),
-        ("Key3", Object::String("a".to_string())),
+        ("Key1".to_string(), Object::Int(1)),
+        ("Key2".to_string(), Object::Bool(true)),
+        ("Key3".to_string(), Object::new_string("a".to_string())),
     ] {
-        runtime.stack.push((key.to_string(), value).into());
+        runtime.stack.push((Rc::new(key), value).into());
     }
     vm::execute(&[MakeTable(2), Exit], &mut runtime).unwrap();
 
@@ -129,8 +137,8 @@ fn make_table() {
         runtime.stack.pop().ensure_object(),
         Object::Table(Rc::new(RefCell::new(TableObject::new(
             vec![
-                ("Key2".to_string(), Object::Bool(true)),
-                ("Key3".to_string(), Object::String("a".to_string())),
+                ("Key2".into(), Object::Bool(true)),
+                ("Key3".into(), Object::new_string("a".to_string())),
             ]
             .into_iter()
             .collect()
@@ -138,7 +146,7 @@ fn make_table() {
     );
     assert_eq!(
         runtime.stack.pop().ensure_named(),
-        ("Key1".to_string(), Object::Int(1))
+        (Rc::new("Key1".to_string()), Object::Int(1))
     );
 }
 
@@ -248,7 +256,7 @@ fn custom_method() {
     // }
     let table_obj = {
         let mut table = TableObject::new(
-            [("key".to_string(), Object::String("value".to_string()))]
+            [("key".into(), Object::new_string("value".to_string()))]
                 .into_iter()
                 .collect(),
         );
@@ -261,7 +269,7 @@ fn custom_method() {
                 code: vec![
                     LoadLocal(LocalId(1)),
                     LoadLocal(LocalId(0)),
-                    LoadString("key".to_string()),
+                    LoadString(Rc::new("key".to_string())),
                     SetItem,
                     LoadNil,
                     Return,

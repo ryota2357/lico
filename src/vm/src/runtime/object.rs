@@ -19,7 +19,7 @@ pub use primitive::*;
 pub enum Object {
     Int(i64),
     Float(f64),
-    String(String),
+    String(Rc<String>),
     Bool(bool),
     Nil,
     Function(Rc<FunctionObject>),
@@ -44,6 +44,10 @@ macro_rules! ensure_fn {
 }
 
 impl Object {
+    pub fn new_string(string: String) -> Self {
+        Self::String(Rc::new(string))
+    }
+
     pub fn new_function(func: FunctionObject) -> Self {
         Self::Function(Rc::new(func))
     }
@@ -79,7 +83,7 @@ impl Object {
         Object::Float(x) => Ok(x)
     );
     ensure_fn!(
-        ensure_string -> String,
+        ensure_string -> Rc<String>,
         Object::String(x) => Ok(x)
     );
     ensure_fn!(

@@ -139,7 +139,9 @@ impl<'node, 'src: 'node> Fragment {
 
     #[inline]
     pub fn into_code(self) -> Vec<vm::code::Code> {
+        use std::rc::Rc;
         use vm::code::{Code, LocalId};
+
         #[allow(unused_variables)]
         self.icode
             .into_iter()
@@ -147,7 +149,7 @@ impl<'node, 'src: 'node> Fragment {
                 ICode::LoadInt(x) => Code::LoadInt(x),
                 ICode::LoadFloat(x) => Code::LoadFloat(x),
                 ICode::LoadBool(x) => Code::LoadBool(x),
-                ICode::LoadString(x) => Code::LoadString(x),
+                ICode::LoadString(x) => Code::LoadString(Rc::new(x)),
                 ICode::LoadNil => Code::LoadNil,
                 ICode::LoadLocal(id) => Code::LoadLocal(LocalId(*id)),
                 ICode::UnloadTop => Code::UnloadTop,

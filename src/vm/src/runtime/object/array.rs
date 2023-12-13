@@ -62,13 +62,13 @@ pub fn run_array_method<'a>(
             // }
             let mut iter_tbl = TableObject::new(
                 [
-                    ("__array".to_string(), Object::Array(Rc::clone(&array))),
+                    ("__array".into(), Object::Array(Rc::clone(&array))),
                     (
-                        "__version".to_string(),
+                        "__version".into(),
                         Object::Int(array.borrow().version as i64),
                     ),
-                    ("__index".to_string(), Object::Int(-1)),
-                    ("__current".to_string(), Object::Nil),
+                    ("__index".into(), Object::Int(-1)),
+                    ("__current".into(), Object::Nil),
                 ]
                 .into_iter()
                 .collect(),
@@ -85,15 +85,14 @@ pub fn run_array_method<'a>(
                     }
                     if index + 1 < array.borrow().len() as i64 {
                         iter.borrow_mut()
-                            .insert("__index".to_string(), Object::Int(index + 1));
+                            .insert("__index".into(), Object::Int(index + 1));
                         iter.borrow_mut().insert(
-                            "__current".to_string(),
+                            "__current".into(),
                             array.borrow()[(index + 1) as usize].clone(),
                         );
                         Ok(Object::Bool(true))
                     } else {
-                        iter.borrow_mut()
-                            .insert("__current".to_string(), Object::Nil);
+                        iter.borrow_mut().insert("__current".into(), Object::Nil);
                         Ok(Object::Bool(false))
                     }
                 }),
