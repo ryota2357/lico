@@ -195,24 +195,6 @@ pub fn run_float_method(float: f64, name: &str, args: Vec<Object>) -> Result<Obj
     }
 }
 
-pub fn run_string_method(
-    string: Rc<String>,
-    name: &str,
-    args: Vec<Object>,
-) -> Result<Object, String> {
-    match name {
-        "len" => {
-            ensure_argument_length!(args, 0);
-            Ok(Object::Int(string.len() as i64))
-        }
-        "to_string" => {
-            ensure_argument_length!(args, 0);
-            Ok(Object::String(string))
-        }
-        _ => Err(format!("{} is not a method of string", name)),
-    }
-}
-
 pub fn run_bool_method(bool: bool, name: &str, args: Vec<Object>) -> Result<Object, String> {
     match name {
         "to_string" => {

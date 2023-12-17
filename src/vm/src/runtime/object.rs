@@ -12,6 +12,9 @@ pub use function::*;
 mod table;
 pub use table::*;
 
+mod string;
+pub use string::*;
+
 mod primitive;
 pub use primitive::*;
 
@@ -19,7 +22,7 @@ pub use primitive::*;
 pub enum Object {
     Int(i64),
     Float(f64),
-    String(Rc<String>),
+    String(StringObject),
     Bool(bool),
     Nil,
     Function(Rc<FunctionObject>),
@@ -45,7 +48,7 @@ macro_rules! ensure_fn {
 
 impl Object {
     pub fn new_string(string: String) -> Self {
-        Self::String(Rc::new(string))
+        Self::String(StringObject::new(Rc::new(string)))
     }
 
     pub fn new_function(func: FunctionObject) -> Self {
@@ -83,7 +86,7 @@ impl Object {
         Object::Float(x) => Ok(x)
     );
     ensure_fn!(
-        ensure_string -> Rc<String>,
+        ensure_string -> StringObject,
         Object::String(x) => Ok(x)
     );
     ensure_fn!(
@@ -123,6 +126,7 @@ impl Display for Object {
                     .map(|x| match x {
                         Object::String(x) => {
                             let x = x
+                                .to_string()
                                 .replace('\\', "\\\\")
                                 .replace('\n', "\\n")
                                 .replace('\r', "\\r")

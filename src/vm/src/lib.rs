@@ -25,7 +25,7 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 runtime.stack.push(Object::Bool(*x).into());
             }
             LoadString(x) => {
-                let x = Rc::clone(x);
+                let x = StringObject::new(Rc::clone(x));
                 runtime.stack.push(Object::String(x).into());
             }
             LoadNil => {
@@ -221,19 +221,18 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                         runtime.stack.push(item.into());
                     }
                     StackValue::Object(Object::String(string)) => {
-                        let index = accesser.ensure_int()?;
-                        let item = if index >= 0 {
-                            match string.chars().nth(index as usize) {
-                                Some(x) => Object::new_string(x.to_string()),
-                                None => Object::Nil,
+                        let string = string.get_chars();
+                        let index = {
+                            let i = accesser.ensure_int()?;
+                            if i >= 0 {
+                                string.len() as i64 + i
+                            } else {
+                                i
                             }
-                        } else {
-                            // NOTE: ・ -1 means the last character, ・nth_back(0) means the last character
-                            //       abs(index) - 1 = abs(index + 1)  (because index is negative)
-                            match string.chars().nth_back((index + 1).unsigned_abs() as usize) {
-                                Some(x) => Object::new_string(x.to_string()),
-                                None => Object::Nil,
-                            }
+                        };
+                        let item = match string.get(index as usize) {
+                            Some(x) => Object::new_string(x.to_string()),
+                            None => Object::Nil,
                         };
                         runtime.stack.push(item.into());
                     }
@@ -504,6 +503,7 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
             Concat => {
                 let rhs = runtime.stack.pop().ensure_object();
                 let lhs = runtime.stack.pop().ensure_object();
+                // TODO: Improve performance when lhs or rhs is Object::String.
                 fn to_string(obj: Object) -> Result<String, String> {
                     match obj {
                         Object::Int(x) => Ok(x.to_string()),

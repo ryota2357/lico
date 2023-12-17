@@ -74,3 +74,8 @@ impl From<(Rc<String>, Object)> for StackValue {
         Self::Named(value.0, value.1)
     }
 }
+impl From<(StringObject, Object)> for StackValue {
+    fn from(value: (StringObject, Object)) -> Self {
+        Self::Named(Rc::clone(value.0.inner()), value.1)
+    }
+}
