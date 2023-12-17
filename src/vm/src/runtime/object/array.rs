@@ -30,9 +30,9 @@ impl DerefMut for ArrayObject {
     }
 }
 
-pub fn run_array_method<'a>(
+pub fn run_array_method(
     array: Rc<RefCell<ArrayObject>>,
-    name: &'a str,
+    name: &str,
     args: Vec<Object>,
 ) -> Result<Object, String> {
     match name {
