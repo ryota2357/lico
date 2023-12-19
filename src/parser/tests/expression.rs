@@ -75,14 +75,23 @@ fn table_object() {
         "{ a = 1, b = {a=1}, }",
         Expression::TableObject(TableObject(vec![
             (
-                (Expression::Ident(Ident("a", 4..5)), 4..5),
+                (
+                    Expression::Primitive(Primitive::String("a".to_string())),
+                    4..5,
+                ),
                 (Expression::Primitive(Primitive::Int(1)), 8..9),
             ),
             (
-                (Expression::Ident(Ident("b", 11..12)), 11..12),
+                (
+                    Expression::Primitive(Primitive::String("b".to_string())),
+                    11..12,
+                ),
                 (
                     Expression::TableObject(TableObject(vec![(
-                        (Expression::Ident(Ident("a", 16..17)), 16..17),
+                        (
+                            Expression::Primitive(Primitive::String("a".to_string())),
+                            16..17,
+                        ),
                         (Expression::Primitive(Primitive::Int(1)), 18..19),
                     )])),
                     15..20,
