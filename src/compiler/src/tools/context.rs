@@ -40,6 +40,7 @@ impl<'src> Context<'src> {
 
     pub fn end_block(&mut self) {
         let block_cnt = self.block_vars_count.end_section();
+        self.id_generator.drop_variable(block_cnt);
         self.loop_vars_count.decrement(block_cnt);
     }
 
