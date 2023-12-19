@@ -15,7 +15,7 @@ pub(super) fn table_object<'tokens, 'src: 'tokens>(
 ) -> impl Parser<'tokens, ParserInput<'tokens, 'src>, TableObject<'src>, ParserError<'src>> + Clone
 {
     let key = ident()
-        .map(Expression::Ident)
+        .map(|ident| Expression::Primitive(Primitive::String(ident.0.to_string())))
         .map_with(|expr, ext| (expr, ext.span().into()));
     let table_field = key.then_ignore(just(Token::Assign)).then(expression);
     let elements = table_field
