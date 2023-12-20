@@ -1,6 +1,4 @@
 use super::*;
-use crate::code::LocalId;
-use std::{cell::RefCell, rc::Rc};
 
 #[derive(Default, Clone, Debug, PartialEq)]
 pub struct VariableTable {

@@ -1,5 +1,4 @@
 use super::*;
-use std::rc::Rc;
 
 #[derive(Default, Debug, PartialEq)]
 pub struct Stack {

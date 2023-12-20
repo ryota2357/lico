@@ -1,4 +1,5 @@
-use std::{borrow::Cow, rc::Rc};
+use super::*;
+use std::borrow::Cow;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub struct LocalId(pub usize);
@@ -11,7 +12,7 @@ pub enum Code {
     LoadString(Rc<String>),
     LoadNil,
     LoadLocal(LocalId),
-    LoadRustFunction(fn(&[crate::Object]) -> Result<crate::Object, String>),
+    LoadRustFunction(fn(&[Object]) -> Result<Object, String>),
     UnloadTop,
 
     SetLocal(LocalId),

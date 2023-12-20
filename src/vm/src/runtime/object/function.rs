@@ -1,5 +1,4 @@
 use super::*;
-use crate::code::Code;
 
 #[derive(Clone, Debug)]
 pub struct FunctionObject {
