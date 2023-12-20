@@ -1,8 +1,21 @@
 [workspace]
 resolver = "2"
 members = [
+    "compiler",
     "lexer",
     "parser",
     "vm",
-    "compiler",
 ]
+
+[workspace.package]
+version = "0.0.0"
+authors = ["ryota2357"]
+edition = "2021"
+
+[workspace.dependencies]
+compiler.path = "compiler"
+lexer.path = "lexer"
+parser.path = "parser"
+vm.path = "vm"
+rustc-hash = "1.1.0"
+chumsky = { git = "https://github.com/zesterer/chumsky.git" }

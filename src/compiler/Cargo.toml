@@ -1,9 +1,10 @@
 [package]
 name = "compiler"
-version = "0.0.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-rustc-hash = "1.1.0"
-parser = { path = "../parser" }
-vm = { path = "../vm" }
+parser.workspace = true
+vm.workspace = true
+rustc-hash = { workspace = true }

@@ -6,15 +6,26 @@ edition = "2021"
 description = "TODO"
 license = "MIT"
 
-[workspace]
-resolver = "2"
-members = ["run"]
-
 [[bin]]
 name = "lico"
 path = "main.rs"
 doc = false
 
 [dependencies]
-clap = { version = "4.4.8", features = ["derive"] }
-run = { path = "./run" }
+run.path = "run"
+clap = { version = "4.4.11", features = ["derive"] }
+
+[workspace]
+resolver = "2"
+members = ["run"]
+
+[workspace.package]
+version = "0.0.0"
+authors = ["ryota2357"]
+edition = "2021"
+
+[workspace.dependencies]
+compiler.path = "../src/compiler"
+lexer.path = "../src/lexer"
+parser.path = "../src/parser"
+vm.path = "../src/vm"

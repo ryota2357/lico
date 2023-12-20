@@ -1,7 +1,8 @@
 [package]
 name = "lexer"
-version = "0.0.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-chumsky = { git = "https://github.com/zesterer/chumsky.git" }
+chumsky = { workspace = true }

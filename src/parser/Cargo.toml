@@ -1,9 +1,10 @@
 [package]
 name = "parser"
-version = "0.0.0"
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-chumsky = { git = "https://github.com/zesterer/chumsky.git", features = ["pratt"] }
-lexer = { path = "../lexer/" }
-rustc-hash = "1.1.0"
+lexer.workspace = true
+chumsky = { workspace = true, features = ["pratt"] }
+rustc-hash = { workspace = true }

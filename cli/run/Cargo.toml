@@ -1,10 +1,11 @@
 [package]
 name = "run"
-version = '0.0.0'
-edition = "2021"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 
 [dependencies]
-lexer = { path = "../../src/lexer" }
-parser = { path = "../../src/parser" }
-compiler = { path = "../../src/compiler" }
-vm = { path = "../../src/vm" }
+lexer.workspace = true
+parser.workspace = true
+compiler.workspace = true
+vm.workspace = true
