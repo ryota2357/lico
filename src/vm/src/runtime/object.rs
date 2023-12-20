@@ -15,6 +15,12 @@ pub use table::*;
 mod string;
 pub use string::*;
 
+mod float;
+pub use float::*;
+
+mod int;
+pub use int::*;
+
 mod primitive;
 pub use primitive::*;
 
