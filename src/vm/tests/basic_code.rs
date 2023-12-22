@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use vm::{
-    code::{Code::*, LocalId},
+    code::{ArgumentKind, Code::*, LocalId},
     runtime::{Object, Runtime},
 };
 
@@ -265,7 +265,7 @@ fn custom_method() {
             FunctionObject {
                 id: (0, 0),
                 env: vec![],
-                args: vec![(), ()], // self, new_value
+                args: vec![ArgumentKind::Ref, ArgumentKind::Copy], // self, new_value
                 code: vec![
                     LoadLocal(LocalId(1)),
                     LoadLocal(LocalId(0)),

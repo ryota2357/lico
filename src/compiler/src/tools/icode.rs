@@ -1,4 +1,4 @@
-use vm::code::BuiltinInstr;
+use vm::code::{ArgumentKind, BuiltinInstr};
 
 use super::*;
 use std::borrow::Cow;
@@ -47,7 +47,7 @@ pub enum ICode {
 
     BeginFuncCreation,
     AddCapture(VariableId),
-    AddArgument(()),
+    AddArgument(ArgumentKind),
     EndFuncCreation,
 
     Placeholder,

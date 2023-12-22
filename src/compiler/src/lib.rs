@@ -15,7 +15,7 @@ mod expression;
 mod statement;
 
 pub fn compile<'src>(program: &'src parser::Program<'src>) -> Result<Vec<vm::code::Code>> {
-    use vm::code::BuiltinInstr;
+    use vm::code::{ArgumentKind, BuiltinInstr};
 
     let mut fragment = Fragment::new();
     let mut context = Context::new();
@@ -25,7 +25,7 @@ pub fn compile<'src>(program: &'src parser::Program<'src>) -> Result<Vec<vm::cod
                 context.add_variable("print");
                 fragment.append_many([
                     ICode::BeginFuncCreation,
-                    ICode::AddArgument(()),
+                    ICode::AddArgument(ArgumentKind::Auto),
                     ICode::LoadLocal(VariableId::new_manual(0)),
                     ICode::Builtin(BuiltinInstr::Write, 1),
                     ICode::Builtin(BuiltinInstr::Flush, 0),
@@ -39,7 +39,7 @@ pub fn compile<'src>(program: &'src parser::Program<'src>) -> Result<Vec<vm::cod
                 context.add_variable("println");
                 fragment.append_many([
                     ICode::BeginFuncCreation,
-                    ICode::AddArgument(()),
+                    ICode::AddArgument(ArgumentKind::Auto),
                     ICode::LoadLocal(VariableId::new_manual(0)),
                     ICode::LoadString("\n".to_string()),
                     ICode::Builtin(BuiltinInstr::Write, 2),

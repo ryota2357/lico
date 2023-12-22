@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use vm::{
-    code::{Code::*, LocalId},
+    code::{ArgumentKind, Code::*, LocalId},
     runtime::{Object, Runtime},
 };
 
@@ -69,7 +69,7 @@ fn case2() {
     vm::execute(&[
         BeginFuncCreation,
           AddCapture(LocalId(0)),
-          AddArgument(()),
+          AddArgument(ArgumentKind::Copy),
           LoadLocal(LocalId(1)), LoadLocal(LocalId(0)), LoadString(Rc::new("key".to_string())), SetItem,
           LoadNil, Return,
         EndFuncCreation,
@@ -108,7 +108,7 @@ fn case3() {
         .push(Object::new_function(vm::runtime::FunctionObject {
             id: (0, 0),
             env: vec![],
-            args: vec![()],
+            args: vec![ArgumentKind::Copy],
             code: vec![LoadLocal(LocalId(0)), Return],
         }));
     #[rustfmt::skip]
@@ -117,7 +117,7 @@ fn case3() {
             BeginFuncCreation,
               AddCapture(LocalId(0)),
               BeginFuncCreation,
-                AddArgument(()),
+                AddArgument(ArgumentKind::Copy),
                 LoadLocal(LocalId(0)), LoadInt(100), Add,
                 Return,
               EndFuncCreation,
@@ -158,7 +158,7 @@ fn case4() {
     let res = vm::execute(&[
         BeginFuncCreation,
           AddCapture(LocalId(0)),
-          AddArgument(()),
+          AddArgument(ArgumentKind::Copy),
           LoadLocal(LocalId(0)), LoadLocal(LocalId(1)), Add,
           Return,
         EndFuncCreation,

@@ -1,8 +1,15 @@
 use super::*;
 use std::borrow::Cow;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LocalId(pub usize);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ArgumentKind {
+    Copy,
+    Ref,
+    Auto,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Code {
@@ -49,7 +56,7 @@ pub enum Code {
 
     BeginFuncCreation,
     AddCapture(LocalId),
-    AddArgument(()),
+    AddArgument(ArgumentKind),
     EndFuncCreation,
 
     Nop,

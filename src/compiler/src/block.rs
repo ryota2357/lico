@@ -20,6 +20,7 @@ impl<'node, 'src: 'node> Compilable<'node, 'src> for Block<'src> {
 
 pub mod util {
     use super::*;
+    use vm::code::ArgumentKind;
 
     pub fn append_func_creation_fragment<'node, 'src: 'node>(
         fragment: &mut Fragment,
@@ -37,7 +38,7 @@ pub mod util {
                 Ok(ICode::AddCapture(id))
             })
             .collect::<Result<Vec<_>>>()?;
-        let add_argument = args.iter().map(|_| ICode::AddArgument(()));
+        let add_argument = args.iter().map(|_| ICode::AddArgument(ArgumentKind::Copy));
         let block_fragment = {
             let mut context = Context::new();
             context.begin_block();

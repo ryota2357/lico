@@ -4,7 +4,7 @@ use super::*;
 pub struct FunctionObject {
     pub id: (usize, u8),
     pub env: Vec<Rc<RefCell<Object>>>,
-    pub args: Vec<()>,
+    pub args: Vec<ArgumentKind>,
     pub code: Vec<Code>,
 }
 
