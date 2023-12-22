@@ -63,7 +63,7 @@ impl Display for StringObject {
 pub fn run_string_method(
     string: StringObject,
     name: &str,
-    args: Vec<Object>,
+    args: &[Object],
 ) -> Result<Object, String> {
     match name {
         "len" => {

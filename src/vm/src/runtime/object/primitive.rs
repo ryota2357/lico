@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn run_bool_method(bool: bool, name: &str, args: Vec<Object>) -> Result<Object, String> {
+pub fn run_bool_method(bool: bool, name: &str, args: &[Object]) -> Result<Object, String> {
     match name {
         "to_string" => {
             ensure_argument_length!(args, 0);
@@ -11,7 +11,7 @@ pub fn run_bool_method(bool: bool, name: &str, args: Vec<Object>) -> Result<Obje
     }
 }
 
-pub fn run_nil_method(name: &str, args: Vec<Object>) -> Result<Object, String> {
+pub fn run_nil_method(name: &str, args: &[Object]) -> Result<Object, String> {
     match name {
         "to_string" => {
             ensure_argument_length!(args, 0);

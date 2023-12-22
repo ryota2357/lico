@@ -14,7 +14,7 @@ pub struct TableObject {
 #[derive(Clone, Debug, PartialEq)]
 pub enum TableMethod {
     #[allow(clippy::type_complexity)]
-    Builtin(fn(Rc<RefCell<TableObject>>, Vec<Object>) -> Result<Object, String>),
+    Builtin(fn(Rc<RefCell<TableObject>>, &[Object]) -> Result<Object, String>),
     Custom(Rc<FunctionObject>),
 }
 
@@ -54,8 +54,8 @@ impl From<FunctionObject> for TableMethod {
     }
 }
 
-impl From<fn(Rc<RefCell<TableObject>>, Vec<Object>) -> Result<Object, String>> for TableMethod {
-    fn from(func: fn(Rc<RefCell<TableObject>>, Vec<Object>) -> Result<Object, String>) -> Self {
+impl From<fn(Rc<RefCell<TableObject>>, &[Object]) -> Result<Object, String>> for TableMethod {
+    fn from(func: fn(Rc<RefCell<TableObject>>, &[Object]) -> Result<Object, String>) -> Self {
         Self::Builtin(func)
     }
 }
@@ -76,7 +76,7 @@ impl DerefMut for TableObject {
 pub fn run_table_default_method(
     table: Rc<RefCell<TableObject>>,
     name: &str,
-    args: Vec<Object>,
+    args: &[Object],
 ) -> Result<Object, String> {
     match name {
         "keys" => {

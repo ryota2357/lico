@@ -33,7 +33,7 @@ impl DerefMut for ArrayObject {
 pub fn run_array_method(
     array: Rc<RefCell<ArrayObject>>,
     name: &str,
-    args: Vec<Object>,
+    args: &[Object],
 ) -> Result<Object, String> {
     match name {
         "__get_iterator" => {

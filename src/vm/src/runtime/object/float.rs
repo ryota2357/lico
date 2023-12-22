@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn run_float_method(float: f64, name: &str, args: Vec<Object>) -> Result<Object, String> {
+pub fn run_float_method(float: f64, name: &str, args: &[Object]) -> Result<Object, String> {
     match name {
         "abs" => {
             ensure_argument_length!(args, 0);
