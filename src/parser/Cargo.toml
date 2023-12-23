@@ -1,0 +1,9 @@
+[package]
+name = "parser"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+lexer.workspace = true
+rustc-hash = { workspace = true }

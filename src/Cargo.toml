@@ -18,4 +18,4 @@ lexer.path = "lexer"
 parser.path = "parser"
 vm.path = "vm"
 rustc-hash = "1.1.0"
-chumsky = { git = "https://github.com/zesterer/chumsky.git" }
+ecow = "0.2.0"
