@@ -1,4 +1,5 @@
 use super::*;
+use lexer::TextSpan;
 use parser::tree::*;
 
 impl<'node, 'src: 'node> Compilable<'node, 'src> for Block<'src> {
@@ -25,7 +26,7 @@ pub mod util {
     pub fn append_func_creation_fragment<'node, 'src: 'node>(
         fragment: &mut Fragment,
         chunk: &'node Chunk<'src>,
-        args: &'node [Ident<'src>],
+        args: &'node [(FunctArgAnnotation, &'src str, TextSpan)],
         context: &mut Context<'src>,
     ) -> Result<()> {
         let add_capture = chunk
@@ -43,7 +44,7 @@ pub mod util {
             let mut context = Context::new();
             context.begin_block();
             context.add_variable_many(chunk.captures.iter().map(|(name, _)| *name));
-            context.add_variable_many(args.iter().map(|Ident(name, _)| *name));
+            context.add_variable_many(args.iter().map(|(_, name, _)| *name));
             let mut fragment = Fragment::with_compile(&chunk.block, &mut context)?;
             if !matches!(fragment.last(), Some(ICode::Return)) {
                 fragment.append_many([ICode::LoadNil, ICode::Return]);

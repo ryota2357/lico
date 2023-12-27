@@ -1,14 +1,15 @@
 use super::*;
+use lexer::TextSpan;
 use parser::tree::*;
 
-impl<'node, 'src: 'node> Compilable<'node, 'src> for (Expression<'src>, Span) {
+impl<'node, 'src: 'node> Compilable<'node, 'src> for (Expression<'src>, TextSpan) {
     fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
         let (expr, span) = self;
         compile(expr, span.clone(), fragment, context)
     }
 }
 
-impl<'node, 'src: 'node> Compilable<'node, 'src> for (Box<Expression<'src>>, Span) {
+impl<'node, 'src: 'node> Compilable<'node, 'src> for (Box<Expression<'src>>, TextSpan) {
     fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
         let (expr, span) = self;
         compile(expr, span.clone(), fragment, context)
@@ -17,7 +18,7 @@ impl<'node, 'src: 'node> Compilable<'node, 'src> for (Box<Expression<'src>>, Spa
 
 fn compile<'node, 'src: 'node>(
     expr: &'node Expression<'src>,
-    span: Span,
+    span: TextSpan,
     fragment: &mut Fragment,
     context: &mut Context<'src>,
 ) -> Result<()> {
@@ -172,14 +173,14 @@ fn compile<'node, 'src: 'node>(
                 Ok(())
             }
         },
-        Expression::Ident(Ident(name, _)) => {
+        Expression::Local(name, _) => {
             let id = context
                 .resolve_variable(name)
                 .ok_or_else(|| Error::undefined_variable(name.to_string(), span.clone()))?;
             fragment.append(ICode::LoadLocal(id));
             Ok(())
         }
-        Expression::Primitive(primitive) => match primitive {
+        Expression::Primitive(primitive, _) => match primitive {
             Primitive::Int(x) => {
                 fragment.append(ICode::LoadInt(*x));
                 Ok(())
@@ -221,7 +222,7 @@ fn compile<'node, 'src: 'node>(
             util::append_func_creation_fragment(fragment, &function.body, &function.args, context)?;
             Ok(())
         }
-        Expression::Invoke { expr, args } => {
+        Expression::Call { expr, args } => {
             fragment
                 .append_compile(expr, context)?
                 .append_compile_many(args.iter(), context)?
@@ -230,7 +231,7 @@ fn compile<'node, 'src: 'node>(
         }
         Expression::MethodCall {
             expr,
-            name: Ident(name, _),
+            name: (name, _),
             args,
         } => {
             fragment
@@ -252,7 +253,7 @@ fn compile<'node, 'src: 'node>(
         }
         Expression::DotAccess {
             expr,
-            accesser: Ident(accesser, _),
+            accesser: (accesser, _),
         } => {
             fragment
                 .append_compile(expr, context)?
@@ -275,14 +276,15 @@ mod tests {
         context.begin_block();
         context.add_variable("a");
         context.add_variable("b");
+        let dummy_span = TextSpan::new(0, 0);
         let fragment = Fragment::with_compile(
             &(
                 Expression::Binary {
                     op: BinaryOp::And,
-                    lhs: (Box::new(Expression::Ident(Ident("a", 0..0))), 0..0),
-                    rhs: (Box::new(Expression::Ident(Ident("b", 0..0))), 0..0),
+                    lhs: (Box::new(Expression::Local("a", dummy_span)), dummy_span),
+                    rhs: (Box::new(Expression::Local("b", dummy_span)), dummy_span),
                 },
-                0..0,
+                dummy_span,
             ),
             &mut context,
         );
@@ -304,14 +306,15 @@ mod tests {
         context.begin_block();
         context.add_variable("a");
         context.add_variable("b");
+        let dummy_span = TextSpan::new(0, 0);
         let fragment = Fragment::with_compile(
             &(
                 Expression::Binary {
                     op: BinaryOp::Or,
-                    lhs: (Box::new(Expression::Ident(Ident("a", 0..0))), 0..0),
-                    rhs: (Box::new(Expression::Ident(Ident("b", 0..0))), 0..0),
+                    lhs: (Box::new(Expression::Local("a", dummy_span)), dummy_span),
+                    rhs: (Box::new(Expression::Local("b", dummy_span)), dummy_span),
                 },
-                0..0,
+                dummy_span,
             ),
             &mut context,
         );
