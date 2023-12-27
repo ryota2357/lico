@@ -58,11 +58,10 @@ pub enum Token<'src> {
     CloseBracket, // ]
 
     // other
-    At,
     Ident(&'src str),
-    WhiteSpace(usize),
-    NewLine(usize),
-    Error(char),
+    Attribute(&'src str),
+    Comment(&'src str),
+    Error(&'src str),
 }
 
 impl std::fmt::Display for Token<'_> {
@@ -113,10 +112,9 @@ impl std::fmt::Display for Token<'_> {
             Token::CloseBrace => write!(f, "}}"),
             Token::OpenBracket => write!(f, "["),
             Token::CloseBracket => write!(f, "]"),
-            Token::At => write!(f, "@"),
             Token::Ident(x) => write!(f, "{}", x),
-            Token::WhiteSpace(count) => write!(f, "{}", " ".repeat(*count)),
-            Token::NewLine(count) => write!(f, "{}", "\n".repeat(*count)),
+            Token::Attribute(x) => write!(f, "@{}", x),
+            Token::Comment(x) => write!(f, "#{}", x),
             Token::Error(c) => write!(f, "Error('{}')", c),
         }
     }

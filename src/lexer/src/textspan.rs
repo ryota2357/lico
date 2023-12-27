@@ -13,6 +13,11 @@ impl TextSpan {
     }
 
     #[inline]
+    pub const fn at(start: u32, len: u32) -> Self {
+        Self::new(start, start + len)
+    }
+
+    #[inline]
     pub const fn start(&self) -> u32 {
         self.start
     }
@@ -25,6 +30,11 @@ impl TextSpan {
     #[inline]
     pub const fn len(&self) -> u32 {
         self.end - self.start
+    }
+
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
+        self.end == self.start
     }
 
     #[inline]

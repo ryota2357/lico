@@ -1,37 +1,44 @@
 use super::*;
+use std::{num::ParseIntError, ops::RangeInclusive};
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Error {
-    pub kind: ErrorKind,
-    pub span: TextSpan,
-}
+use thiserror::Error;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ErrorKind {
-    InvalidCharacter(char),
-    ExpectedFound(Vec<char>, Option<char>),
-    InvalidEscapeSequence(Vec<char>),
-}
+#[derive(Error, Clone, Debug, PartialEq, Eq)]
+pub enum Error {
+    #[error("invalid input sequence")]
+    InvalidInputSequence(String, TextSpan),
 
-impl Error {
-    pub fn invalid_character(char: char, span: TextSpan) -> Self {
-        Self {
-            kind: ErrorKind::InvalidCharacter(char),
-            span,
-        }
-    }
+    #[error("unknown number literal")]
+    UnknownNumberLiteral(String, TextSpan),
 
-    pub fn expected_found(expected: Vec<char>, found: Option<char>, span: TextSpan) -> Self {
-        Self {
-            kind: ErrorKind::ExpectedFound(expected, found),
-            span,
-        }
-    }
+    #[error("{reason}")]
+    InvalidFloatLiteral {
+        info: (String, TextSpan),
+        reason: String,
+    },
 
-    pub fn invalid_escape_sequence(escape: impl Into<Vec<char>>, span: TextSpan) -> Self {
-        Self {
-            kind: ErrorKind::InvalidEscapeSequence(escape.into()),
-            span,
-        }
-    }
+    #[error("{source}")]
+    InvalidIntLiteral {
+        info: (String, TextSpan),
+        #[source]
+        source: ParseIntError,
+    },
+
+    #[error("missing a closing `{expected}`")]
+    MissingClosingDelimiter {
+        info: (Option<char>, TextSpan),
+        expected: char,
+    },
+
+    #[error("invalid escape sequence")]
+    InvalidEscapeSequence {
+        info: (String, TextSpan),
+        reason: String,
+    },
+
+    #[error("unexpected character `{}` in escape sequence", .info.0)]
+    UnexpectedCharInEscapeSequence {
+        info: (char, TextSpan),
+        expected: Vec<RangeInclusive<char>>,
+    },
 }
