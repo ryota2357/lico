@@ -171,7 +171,6 @@ impl<'node, 'src: 'node> Fragment {
                 ICode::Mul(span) => Code::Mul,
                 ICode::Div(span) => Code::Div,
                 ICode::Mod(span) => Code::Mod,
-                ICode::Pow(span) => Code::Pow,
                 ICode::Unm(span) => Code::Unm,
                 ICode::Eq(span) => Code::Eq,
                 ICode::NotEq(span) => Code::NotEq,

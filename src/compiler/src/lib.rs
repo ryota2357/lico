@@ -11,7 +11,7 @@ use block::*;
 mod expression;
 mod statement;
 
-pub fn compile<'src>(program: &'src parser::Program<'src>) -> Result<Vec<vm::code::Code>> {
+pub fn compile<'src>(program: &'src parser::tree::Program<'src>) -> Result<Vec<vm::code::Code>> {
     use vm::code::{ArgumentKind, BuiltinInstr};
 
     let mut fragment = Fragment::new();

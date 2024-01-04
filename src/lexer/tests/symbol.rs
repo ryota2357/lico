@@ -23,6 +23,7 @@ fn keyword() {
     assert_eq!(parse_ok("for"), vec![(Token::For, 0..3)]);
     assert_eq!(parse_ok("while"), vec![(Token::While, 0..5)]);
     assert_eq!(parse_ok("in"), vec![(Token::In, 0..2)]);
+    assert_eq!(parse_ok("ref"), vec![(Token::Ref, 0..3)]);
     assert_eq!(parse_ok("do"), vec![(Token::Do, 0..2)]);
     assert_eq!(parse_ok("end"), vec![(Token::End, 0..3)]);
     assert_eq!(parse_ok("return"), vec![(Token::Return, 0..6)]);
@@ -75,6 +76,7 @@ fn ident() {
     assert_eq!(parse_ok("a_1"), vec![(Token::Ident("a_1"), 0..3)]);
     assert_eq!(parse_ok("_foo"), vec![(Token::Ident("_foo"), 0..4)]);
     assert_eq!(parse_ok("bar_"), vec![(Token::Ident("bar_"), 0..4)]);
+    assert_eq!(parse_ok("あ"), vec![(Token::Ident("あ"), 0..3)]);
 }
 
 #[test]

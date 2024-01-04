@@ -1,4 +1,5 @@
 use super::*;
+use unicode_ident::{is_xid_continue, is_xid_start};
 
 pub fn tokenize(lexer: &mut Lexer) {
     loop {
@@ -8,7 +9,7 @@ pub fn tokenize(lexer: &mut Lexer) {
         };
         match c {
             '0'..='9' => tokenize_number(lexer, c),
-            'a'..='z' | 'A'..='Z' | '_' => tokenize_identifier(lexer),
+            _ if is_xid_start(c) || c == '_' => tokenize_identifier(lexer),
             '"' => tokenize_string(lexer, '"'),
             '\'' => tokenize_string(lexer, '\''),
             '@' => tokenize_attribute(lexer),
@@ -169,7 +170,7 @@ fn tokenize_number(lexer: &mut Lexer, start: char) {
 }
 
 fn tokenize_identifier(lexer: &mut Lexer<'_>) {
-    lexer.take_until(|c| c.is_whitespace());
+    lexer.take_while(is_xid_continue);
     let slice = lexer.get_slice();
     let token = match slice {
         "var" => Token::Var,
@@ -181,6 +182,7 @@ fn tokenize_identifier(lexer: &mut Lexer<'_>) {
         "for" => Token::For,
         "while" => Token::While,
         "in" => Token::In,
+        "ref" => Token::Ref,
         "do" => Token::Do,
         "end" => Token::End,
         "return" => Token::Return,

@@ -6,4 +6,6 @@ edition.workspace = true
 
 [dependencies]
 lexer.workspace = true
+ecow = { workspace = true }
 rustc-hash = { workspace = true }
+thiserror = { workspace = true }

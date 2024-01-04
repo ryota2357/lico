@@ -1,4 +1,4 @@
-pub use lexer::{TextSpan, Token};
+pub use lexer::Token;
 
 pub fn parse_ok(s: &str) -> Vec<(Token, std::ops::Range<u32>)> {
     let (tok, err) = lexer::parse(s);

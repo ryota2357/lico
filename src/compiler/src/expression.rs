@@ -5,14 +5,14 @@ use parser::tree::*;
 impl<'node, 'src: 'node> Compilable<'node, 'src> for (Expression<'src>, TextSpan) {
     fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
         let (expr, span) = self;
-        compile(expr, span.clone(), fragment, context)
+        compile(expr, *span, fragment, context)
     }
 }
 
 impl<'node, 'src: 'node> Compilable<'node, 'src> for (Box<Expression<'src>>, TextSpan) {
     fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
         let (expr, span) = self;
-        compile(expr, span.clone(), fragment, context)
+        compile(expr, *span, fragment, context)
     }
 }
 
@@ -80,13 +80,6 @@ fn compile<'node, 'src: 'node>(
                     .append_compile(lhs, context)?
                     .append_compile(rhs, context)?
                     .append(ICode::Mod(span));
-                Ok(())
-            }
-            BinaryOp::Pow => {
-                fragment
-                    .append_compile(lhs, context)?
-                    .append_compile(rhs, context)?
-                    .append(ICode::Pow(span));
                 Ok(())
             }
             BinaryOp::Eq => {
@@ -176,7 +169,7 @@ fn compile<'node, 'src: 'node>(
         Expression::Local(name, _) => {
             let id = context
                 .resolve_variable(name)
-                .ok_or_else(|| Error::undefined_variable(name.to_string(), span.clone()))?;
+                .ok_or_else(|| Error::undefined_variable(name.to_string(), span))?;
             fragment.append(ICode::LoadLocal(id));
             Ok(())
         }
@@ -190,7 +183,7 @@ fn compile<'node, 'src: 'node>(
                 Ok(())
             }
             Primitive::String(x) => {
-                fragment.append(ICode::LoadString(x.clone()));
+                fragment.append(ICode::LoadString(x.to_string()));
                 Ok(())
             }
             Primitive::Bool(x) => {

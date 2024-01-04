@@ -73,4 +73,4 @@ macro_rules! impl_from_pair {
         )*
     };
 }
-impl_from_pair!(u8, u16, u32);
+impl_from_pair!(i8, u8, i16, u16, u32, i32);

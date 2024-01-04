@@ -34,7 +34,6 @@ pub enum ICode {
     Mul(TextSpan),       // *
     Div(TextSpan),       // /
     Mod(TextSpan),       // %
-    Pow(TextSpan),       // *
     Unm(TextSpan),       // - (unary)
     Eq(TextSpan),        // ==
     NotEq(TextSpan),     // !=

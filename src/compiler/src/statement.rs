@@ -311,9 +311,18 @@ fn compile<'node, 'src: 'node>(
         }
 
         // [expr]([args])
-        Statement::Call { expr, args } => {
+        Statement::Call {
+            expr,
+            accesser,
+            args,
+        } => {
+            fragment.append_compile(expr, context)?;
+            for accesser in accesser {
+                fragment
+                    .append_compile(accesser, context)?
+                    .append(ICode::GetItem(accesser.1));
+            }
             fragment
-                .append_compile(expr, context)?
                 .append_compile_many(args.iter(), context)?
                 .append_many([ICode::Call(args.len() as u8, span), ICode::UnloadTop]);
         }
@@ -334,7 +343,11 @@ fn compile<'node, 'src: 'node>(
         }
 
         // @[name]([args])
-        Statement::Attribute { name: _, args: _ } => unimplemented!("attribute_statement"),
+        Statement::Attribute { name: _, args: _ } => todo!("compile attribute_statement"),
+
+        Statement::Error => {
+            panic!("found error");
+        }
     }
     Ok(())
 }
@@ -357,6 +370,7 @@ mod tests {
                 body: Block(vec![(
                     Statement::Call {
                         expr: (Expression::Local("print", dummy_span), dummy_span),
+                        accesser: vec![],
                         args: vec![],
                     },
                     dummy_span,
@@ -396,6 +410,7 @@ mod tests {
                 else_: Some(Block(vec![(
                     Statement::Call {
                         expr: (Expression::Local("print", dummy_span), dummy_span),
+                        accesser: vec![],
                         args: vec![],
                     },
                     dummy_span,
@@ -436,6 +451,7 @@ mod tests {
                     Block(vec![(
                         Statement::Call {
                             expr: (Expression::Local("print", dummy_span), dummy_span),
+                            accesser: vec![],
                             args: vec![],
                         },
                         dummy_span,
