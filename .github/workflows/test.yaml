@@ -11,11 +11,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup component add clippy rustfmt
+      - uses: ./.github/actions/setup/
 
       - name: Format
         run: make format
@@ -28,15 +24,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup component add clippy rustfmt
-
-      - uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
+      - uses: ./.github/actions/setup/
 
       - name: Test (cargo)
         run: |
@@ -51,15 +39,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        run: |
-          rustup toolchain install stable --profile minimal
-          rustup component add clippy rustfmt
-
-      - uses: denoland/setup-deno@v1
-        with:
-          deno-version: v1.x
+      - uses: ./.github/actions/setup/
 
       - name: Test (cargo)
         run: |

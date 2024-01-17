@@ -1,0 +1,14 @@
+name: Setup
+description: Setup Rust and Deno environment.
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Rust toolchain
+      shell: bash
+      run: |
+        rustup toolchain install stable --profile minimal
+        rustup component add clippy rustfmt
+    - uses: denoland/setup-deno@v1
+      with:
+        deno-version: v1.x
