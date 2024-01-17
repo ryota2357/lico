@@ -1,676 +1,455 @@
 mod common;
-use parser::tree::*;
+use pretty_assertions::assert_eq;
 
-fn do_expr_test(src: &str, expression: Expression<'_>) {
-    let src = format!("_={}", src);
-    let program = common::parse_program(&src);
-    let stats = program.body.block;
-    assert_eq!(stats.len(), 1);
-    let statement = &stats[0];
-    if let Statement::Variable(VariableStatement::Assign { expr, .. }) = &statement.0 {
-        assert_eq!(expr.0, expression);
-    } else {
-        panic!(
-            "Expected VariableStatement::Assign, but got {:?}",
-            statement
-        );
-    }
-}
-
-#[test]
-fn function_object() {
-    do_expr_test(
-        "func() end",
-        Expression::FunctionObject(FunctionObject {
-            args: vec![],
-            body: Chunk {
-                captures: vec![],
-                block: Block(vec![]),
-            },
-        }),
-    );
-    do_expr_test(
-        "func(a, b) return c end",
-        Expression::FunctionObject(FunctionObject {
-            args: vec![Ident("a", 7..8), Ident("b", 10..11)],
-            body: Chunk {
-                captures: vec![("c", 20..21)],
-                block: Block(vec![(
-                    Statement::Control(ControlStatement::Return {
-                        value: Some((Expression::Ident(Ident("c", 20..21)), 20..21)),
-                    }),
-                    13..21,
-                )]),
-            },
-        }),
-    )
-}
-
-#[test]
-fn array_object() {
-    do_expr_test("[]", Expression::ArrayObject(ArrayObject(vec![])));
-    do_expr_test(
-        "[1, [true, 'a'], {}]",
-        Expression::ArrayObject(ArrayObject(vec![
-            (Expression::Primitive(Primitive::Int(1)), 3..4),
-            (
-                Expression::ArrayObject(ArrayObject(vec![
-                    (Expression::Primitive(Primitive::Bool(true)), 7..11),
-                    (
-                        Expression::Primitive(Primitive::String("a".to_string())),
-                        13..16,
-                    ),
-                ])),
-                6..17,
-            ),
-            (Expression::TableObject(TableObject(vec![])), 19..21),
-        ])),
-    );
-}
-
-#[test]
-fn table_object() {
-    do_expr_test("{}", Expression::TableObject(TableObject(vec![])));
-    do_expr_test(
-        "{ a = 1, b = {a=1}, }",
-        Expression::TableObject(TableObject(vec![
-            (
-                (
-                    Expression::Primitive(Primitive::String("a".to_string())),
-                    4..5,
-                ),
-                (Expression::Primitive(Primitive::Int(1)), 8..9),
-            ),
-            (
-                (
-                    Expression::Primitive(Primitive::String("b".to_string())),
-                    11..12,
-                ),
-                (
-                    Expression::TableObject(TableObject(vec![(
-                        (
-                            Expression::Primitive(Primitive::String("a".to_string())),
-                            16..17,
-                        ),
-                        (Expression::Primitive(Primitive::Int(1)), 18..19),
-                    )])),
-                    15..20,
-                ),
-            ),
-        ])),
-    );
-}
-
-#[test]
-fn delimited_call() {
-    do_expr_test(
-        "(f())",
-        Expression::Invoke {
-            expr: (Box::new(Expression::Ident(Ident("f", 3..4))), 3..4),
-            args: vec![],
-        },
-    );
-    do_expr_test(
-        "(((f(1))))",
-        Expression::Invoke {
-            expr: (Box::new(Expression::Ident(Ident("f", 5..6))), 5..6),
-            args: vec![(Expression::Primitive(Primitive::Int(1)), 7..8)],
-        },
-    );
-}
-
-#[test]
-fn delimited_pratt() {
-    do_expr_test(
-        "(1+2)",
-        Expression::Binary {
-            op: BinaryOp::Add,
-            lhs: (Box::new(Expression::Primitive(Primitive::Int(1))), 3..4),
-            rhs: (Box::new(Expression::Primitive(Primitive::Int(2))), 5..6),
-        },
-    );
-    do_expr_test(
-        "(((1+2*3)))",
-        Expression::Binary {
-            op: BinaryOp::Add,
-            lhs: (Box::new(Expression::Primitive(Primitive::Int(1))), 5..6),
-            rhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Mul,
-                    lhs: (Box::new(Expression::Primitive(Primitive::Int(2))), 7..8),
-                    rhs: (Box::new(Expression::Primitive(Primitive::Int(3))), 9..10),
-                }),
-                7..10,
-            ),
-        },
-    );
-}
-
-#[test]
-fn delimited_primitive() {
-    do_expr_test("(1)", Expression::Primitive(Primitive::Int(1)));
-    do_expr_test(
-        "((('abc')))",
-        Expression::Primitive(Primitive::String("abc".to_string())),
-    );
-}
-
-#[test]
-fn delimited_local() {
-    do_expr_test("(a)", Expression::Ident(Ident("a", 3..4)));
-    do_expr_test("(((a)))", Expression::Ident(Ident("a", 5..6)));
-}
-#[test]
-fn delimited_local_access() {
-    do_expr_test(
-        "((a.b).c)",
-        Expression::DotAccess {
-            expr: (
-                Box::new(Expression::DotAccess {
-                    expr: (Box::new(Expression::Ident(Ident("a", 4..5))), 4..5),
-                    accesser: Ident("b", 6..7),
-                }),
-                (4..7),
-            ),
-            accesser: Ident("c", 9..10),
-        },
-    );
-    do_expr_test(
-        "(a['b'])",
-        Expression::IndexAccess {
-            expr: (Box::new(Expression::Ident(Ident("a", 3..4))), 3..4),
-            accesser: (
-                Box::new(Expression::Primitive(Primitive::String("b".to_string()))),
-                5..8,
-            ),
-        },
-    );
-}
-
-#[test]
-fn composition_func() {
-    let expr = Expression::Invoke {
-        expr: (Box::new(Expression::Ident(Ident("f", 2..3))), 2..3),
-        args: vec![(
-            Expression::Invoke {
-                expr: (Box::new(Expression::Ident(Ident("g", 4..5))), 4..5),
-                args: vec![],
-            },
-            4..7,
-        )],
+macro_rules! expression_test {
+    (name = $name:ident, source = $source:expr, expected = [$($lines:tt)*]) => {
+        #[test]
+        fn $name() {
+            use parser::tree::Statement;
+            fn decrement_ranges(input: &str, amount: u32) -> String {
+                let re = regex::Regex::new(r"@(\d+)\.\.(\d+)").unwrap();
+                let result = re.replace_all(input, |captures: &regex::Captures| {
+                    let start: u32 = captures[1].parse().unwrap();
+                    let end: u32 = captures[2].parse().unwrap();
+                    format!("@{}..{}", start - amount, end - amount)
+                });
+                result.to_string()
+            }
+            let src = format!("_={}", $source);
+            let program = common::parse_program(&src);
+            let stats = program.body.block;
+            assert_eq!(stats.len(), 1);
+            let statement = &stats[0];
+            let expected = vec![$($lines),*].join("\n");
+            if let Statement::Assign { expr, .. } = &statement.0 {
+                assert_eq!(decrement_ranges(expr.0.to_string().trim(), 2), expected);
+            } else {
+                panic!(
+                    "Expected Statement::Assign, but got {:?}",
+                    statement
+                );
+            }
+        }
     };
-    do_expr_test("f(g())", expr.clone());
-    do_expr_test("f(g(),)", expr);
 }
 
-#[test]
-fn multiple_call() {
-    do_expr_test(
-        "f()()",
-        Expression::Invoke {
-            expr: (
-                Box::new(Expression::Invoke {
-                    expr: (Box::new(Expression::Ident(Ident("f", 2..3))), 2..3),
-                    args: vec![],
-                }),
-                2..5,
-            ),
-            args: vec![],
-        },
-    );
-    do_expr_test(
-        "(f(1)(2))()(false)",
-        Expression::Invoke {
-            expr: (
-                Box::new(Expression::Invoke {
-                    expr: (
-                        Box::new(Expression::Invoke {
-                            expr: (
-                                Box::new(Expression::Invoke {
-                                    expr: (Box::new(Expression::Ident(Ident("f", 3..4))), 3..4),
-                                    args: vec![(Expression::Primitive(Primitive::Int(1)), 5..6)],
-                                }),
-                                3..7,
-                            ),
-                            args: vec![(Expression::Primitive(Primitive::Int(2)), 8..9)],
-                        }),
-                        3..10,
-                    ),
-                    args: vec![],
-                }),
-                2..13,
-            ),
-            args: vec![(Expression::Primitive(Primitive::Bool(false)), 14..19)],
-        },
-    );
+expression_test! {
+    name = empty_function_object,
+    source = "func() end",
+    expected = [
+        "FunctionObject (e)"
+        "  args: None"
+        "  body"
+        "    Chunk"
+        "      captures: None"
+        "      block: None"
+
+    ]
 }
 
-#[test]
-fn method_chain() {
-    do_expr_test(
-        "a->b()->c()",
-        Expression::MethodCall {
-            expr: (
-                Box::new(Expression::MethodCall {
-                    expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
-                    name: Ident("b", 5..6),
-                    args: vec![],
-                }),
-                2..8,
-            ),
-            name: Ident("c", 10..11),
-            args: vec![],
-        },
-    );
-    do_expr_test(
-        "((a->b(1))->c(2, 3))",
-        Expression::MethodCall {
-            expr: (
-                Box::new(Expression::MethodCall {
-                    expr: (Box::new(Expression::Ident(Ident("a", 4..5))), 4..5),
-                    name: Ident("b", 7..8),
-                    args: vec![(Expression::Primitive(Primitive::Int(1)), 9..10)],
-                }),
-                4..11,
-            ),
-            name: Ident("c", 14..15),
-            args: vec![
-                (Expression::Primitive(Primitive::Int(2)), 16..17),
-                (Expression::Primitive(Primitive::Int(3)), 19..20),
-            ],
-        },
-    )
+expression_test! {
+    name = function_object_with_args_trailing_comma,
+    source = "func(a,) end",
+    expected = [
+        "FunctionObject (e)"
+        "  args"
+        "    a @5..6"
+        "  body"
+        "    Chunk"
+        "      captures: None"
+        "      block: None"
+    ]
 }
 
-#[test]
-fn multiple_call_with_method() {
-    do_expr_test(
-        "a->b(1)(2)->c(3)",
-        Expression::MethodCall {
-            expr: (
-                Box::new(Expression::Invoke {
-                    expr: (
-                        Box::new(Expression::MethodCall {
-                            expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
-                            name: Ident("b", 5..6),
-                            args: vec![(Expression::Primitive(Primitive::Int(1)), 7..8)],
-                        }),
-                        2..9,
-                    ),
-                    args: vec![(Expression::Primitive(Primitive::Int(2)), 10..11)],
-                }),
-                2..12,
-            ),
-            name: Ident("c", 14..15),
-            args: vec![(Expression::Primitive(Primitive::Int(3)), 16..17)],
-        },
-    );
+expression_test! {
+    name = function_object_with_args_and_body,
+    source = "func(a, in b) return c end",
+    expected = [
+        "FunctionObject (e)"
+        "  args"
+        "    a @5..6"
+        "    b [in] @11..12"
+        "  body"
+        "    Chunk"
+        "      captures: c @21..22"
+        "      block"
+        "        Return (s) @14..22"
+        "          value"
+        "            Local (e) c @21..22"
+    ]
 }
 
-#[test]
-#[should_panic]
-fn error_func_call() {
-    do_expr_test(
-        "f(,)",
-        Expression::Invoke {
-            expr: (Box::new(Expression::Ident(Ident("f", 2..3))), 2..3),
-            args: vec![],
-        },
-    );
+expression_test! {
+    name = empty_array_object,
+    source = "[]",
+    expected = [ "ArrayObject (e)" ]
 }
 
-#[test]
-fn multiple_dot_access() {
-    do_expr_test(
-        "a.b.c",
-        Expression::DotAccess {
-            expr: (
-                Box::new(Expression::DotAccess {
-                    expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
-                    accesser: Ident("b", 4..5),
-                }),
-                2..5,
-            ),
-            accesser: Ident("c", 6..7),
-        },
-    );
+expression_test! {
+    name = array_object_with_trailing_comma,
+    source = "[1,]",
+    expected = [
+        "ArrayObject (e)"
+        "  000"
+        "    Primitive (e) 1 @1..2"
+    ]
 }
 
-#[test]
-fn multiple_index_access() {
-    do_expr_test(
-        "a['b'][1]",
-        Expression::IndexAccess {
-            expr: (
-                Box::new(Expression::IndexAccess {
-                    expr: (Box::new(Expression::Ident(Ident("a", 2..3))), 2..3),
-                    accesser: (
-                        Box::new(Expression::Primitive(Primitive::String("b".to_string()))),
-                        4..7,
-                    ),
-                }),
-                2..8,
-            ),
-            accesser: (Box::new(Expression::Primitive(Primitive::Int(1))), 9..10),
-        },
-    );
+expression_test! {
+    name = nested_array_object,
+    source = "[12, [true, 'a']]",
+    expected = [
+        "ArrayObject (e)"
+        "  000"
+        "    Primitive (e) 12 @1..3"
+        "  001"
+        "    ArrayObject (e) @5..16"
+        "      000"
+        "        Primitive (e) true @6..10"
+        "      001"
+        "        Primitive (e) \"a\" @12..15"
+    ]
 }
 
-#[test]
-fn arithmetic_op() {
-    do_expr_test(
-        "-1 + 2 * 3 / 4 - 5", // ((-1) + ((2 * 3) / 4)) - 5
-        Expression::Binary {
-            op: BinaryOp::Sub,
-            lhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Add,
-                    lhs: (Box::new(Expression::Primitive(Primitive::Int(-1))), 2..4),
-                    rhs: (
-                        Box::new(Expression::Binary {
-                            op: BinaryOp::Div,
-                            lhs: (
-                                Box::new(Expression::Binary {
-                                    op: BinaryOp::Mul,
-                                    lhs: (Box::new(Expression::Primitive(Primitive::Int(2))), 7..8),
-                                    rhs: (
-                                        Box::new(Expression::Primitive(Primitive::Int(3))),
-                                        11..12,
-                                    ),
-                                }),
-                                7..12,
-                            ),
-                            rhs: (Box::new(Expression::Primitive(Primitive::Int(4))), 15..16),
-                        }),
-                        7..16,
-                    ),
-                }),
-                2..16,
-            ),
-            rhs: (Box::new(Expression::Primitive(Primitive::Int(5))), 19..20),
-        },
-    );
-    do_expr_test(
-        "1 * 2 ** 3 ** 4 / 5", // (1 * (2 ** (3 ** 4))) / 5
-        Expression::Binary {
-            op: BinaryOp::Div,
-            lhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Mul,
-                    lhs: (Box::new(Expression::Primitive(Primitive::Int(1))), 2..3),
-                    rhs: (
-                        Box::new(Expression::Binary {
-                            op: BinaryOp::Pow,
-                            lhs: (Box::new(Expression::Primitive(Primitive::Int(2))), 6..7),
-                            rhs: (
-                                Box::new(Expression::Binary {
-                                    op: BinaryOp::Pow,
-                                    lhs: (
-                                        Box::new(Expression::Primitive(Primitive::Int(3))),
-                                        11..12,
-                                    ),
-                                    rhs: (
-                                        Box::new(Expression::Primitive(Primitive::Int(4))),
-                                        16..17,
-                                    ),
-                                }),
-                                11..17,
-                            ),
-                        }),
-                        6..17,
-                    ),
-                }),
-                2..17,
-            ),
-            rhs: (Box::new(Expression::Primitive(Primitive::Int(5))), 20..21),
-        },
-    );
+expression_test! {
+    name = empty_table_object,
+    source = "{}",
+    expected = [ "TableObject (e)" ]
 }
 
-#[test]
-fn arithmetic_op_with_paren() {
-    do_expr_test(
-        "(-1 + 2) * 3",
-        Expression::Binary {
-            op: BinaryOp::Mul,
-            lhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Add,
-                    lhs: (Box::new(Expression::Primitive(Primitive::Int(-1))), 3..5),
-                    rhs: (Box::new(Expression::Primitive(Primitive::Int(2))), 8..9),
-                }),
-                3..9,
-            ),
-            rhs: (Box::new(Expression::Primitive(Primitive::Int(3))), 13..14),
-        },
-    );
-    do_expr_test(
-        "(1 + (2 ** 3)) ** 4",
-        Expression::Binary {
-            op: BinaryOp::Pow,
-            lhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Add,
-                    lhs: (Box::new(Expression::Primitive(Primitive::Int(1))), 3..4),
-                    rhs: (
-                        Box::new(Expression::Binary {
-                            op: BinaryOp::Pow,
-                            lhs: (Box::new(Expression::Primitive(Primitive::Int(2))), 8..9),
-                            rhs: (Box::new(Expression::Primitive(Primitive::Int(3))), 13..14),
-                        }),
-                        8..14,
-                    ),
-                }),
-                3..14,
-            ),
-            rhs: (Box::new(Expression::Primitive(Primitive::Int(4))), 20..21),
-        },
-    )
+expression_test! {
+    name = table_object_with_trailing_comma,
+    source = "{a = 1,}",
+    expected = [
+        "TableObject (e)"
+        "  key: a @1..2"
+        "  value"
+        "    Primitive (e) 1 @5..6"
+    ]
 }
 
-#[test]
-fn logical_op() {
-    do_expr_test(
-        "not a == 10 or 5 >= b and false", // ((not a) == 10) or ((5 >= b) and false)
-        Expression::Binary {
-            op: BinaryOp::Or,
-            lhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Eq,
-                    lhs: (
-                        Box::new(Expression::Unary {
-                            op: UnaryOp::Not,
-                            expr: (Box::new(Expression::Ident(Ident("a", 6..7))), 6..7),
-                        }),
-                        2..7,
-                    ),
-                    rhs: (Box::new(Expression::Primitive(Primitive::Int(10))), 11..13),
-                }),
-                2..13,
-            ),
-            rhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::And,
-                    lhs: (
-                        Box::new(Expression::Binary {
-                            op: BinaryOp::GreaterEq,
-                            lhs: (Box::new(Expression::Primitive(Primitive::Int(5))), 17..18),
-                            rhs: (Box::new(Expression::Ident(Ident("b", 22..23))), 22..23),
-                        }),
-                        17..23,
-                    ),
-                    rhs: (
-                        Box::new(Expression::Primitive(Primitive::Bool(false))),
-                        28..33,
-                    ),
-                }),
-                17..33,
-            ),
-        },
-    );
+expression_test! {
+    name = nested_table_object,
+    source = "{a = 1, b = {c = 2}}",
+    expected = [
+        "TableObject (e)"
+        "  key: a @1..2"
+        "  value"
+        "    Primitive (e) 1 @5..6"
+        "  key: b @8..9"
+        "  value"
+        "    TableObject (e) @12..19"
+        "      key: c @13..14"
+        "      value"
+        "        Primitive (e) 2 @17..18"
+    ]
 }
 
-#[test]
-fn logical_op_with_paren() {
-    do_expr_test(
-        "(not (a != 10) or 5 < b) and false",
-        Expression::Binary {
-            op: BinaryOp::And,
-            lhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Or,
-                    lhs: (
-                        Box::new(Expression::Unary {
-                            op: UnaryOp::Not,
-                            expr: (
-                                Box::new(Expression::Binary {
-                                    op: BinaryOp::NotEq,
-                                    lhs: (Box::new(Expression::Ident(Ident("a", 8..9))), 8..9),
-                                    rhs: (
-                                        Box::new(Expression::Primitive(Primitive::Int(10))),
-                                        13..15,
-                                    ),
-                                }),
-                                8..15,
-                            ),
-                        }),
-                        3..16,
-                    ),
-                    rhs: (
-                        Box::new(Expression::Binary {
-                            op: BinaryOp::Less,
-                            lhs: (Box::new(Expression::Primitive(Primitive::Int(5))), 20..21),
-                            rhs: (Box::new(Expression::Ident(Ident("b", 24..25))), 24..25),
-                        }),
-                        20..25,
-                    ),
-                }),
-                3..25,
-            ),
-            rhs: (
-                Box::new(Expression::Primitive(Primitive::Bool(false))),
-                31..36,
-            ),
-        },
-    )
+expression_test! {
+    name = complicated_func_with_trailing_comma,
+    source = "f(g(),)",
+    expected = [
+        "Call (e)"
+        "  expr"
+        "    Local (e) f @0..1"
+        "  args"
+        "    Call (e) @2..5"
+        "      expr"
+        "        Local (e) g @2..3"
+        "      args: None"
+    ]
 }
 
-#[test]
-fn str_concat() {
-    do_expr_test(
-        "'a' .. 4 + 1 == 'a5'",
-        Expression::Binary {
-            op: BinaryOp::Eq,
-            lhs: (
-                Box::new(Expression::Binary {
-                    op: BinaryOp::Concat,
-                    lhs: (
-                        Box::new(Expression::Primitive(Primitive::String("a".to_string()))),
-                        2..5,
-                    ),
-                    rhs: (
-                        Box::new(Expression::Binary {
-                            op: BinaryOp::Add,
-                            lhs: (Box::new(Expression::Primitive(Primitive::Int(4))), 9..10),
-                            rhs: (Box::new(Expression::Primitive(Primitive::Int(1))), 13..14),
-                        }),
-                        9..14,
-                    ),
-                }),
-                2..14,
-            ),
-            rhs: (
-                Box::new(Expression::Primitive(Primitive::String("a5".to_string()))),
-                18..22,
-            ),
-        },
-    );
+// TODO: error test
+// expression_test! {
+//     name = call_with_only_comma,
+//     source = "f(,)",
+//     expected = [
+//         "Call (e)"
+//         "  expr"
+//         "    Local (e) f @0..1"
+//         "  args"
+//     ]
+// }
+
+expression_test! {
+    name = multiple_call,
+    source = "f(1)(2)(3)",
+    expected = [
+        "Call (e)"
+        "  expr"
+        "    Call (e) @0..7"
+        "      expr"
+        "        Call (e) @0..4"
+        "          expr"
+        "            Local (e) f @0..1"
+        "          args"
+        "            Primitive (e) 1 @2..3"
+        "      args"
+        "        Primitive (e) 2 @5..6"
+        "  args"
+        "    Primitive (e) 3 @8..9"
+    ]
 }
 
-#[test]
-fn complicated_pratt() {
-    do_expr_test(
-        "-(false or b).c[c.c() and -d()] ** 2",
-        Expression::Binary {
-            op: BinaryOp::Pow,
-            lhs: (
-                Box::new(Expression::Unary {
-                    op: UnaryOp::Neg,
-                    expr: (
-                        Box::new(Expression::IndexAccess {
-                            expr: (
-                                Box::new(Expression::DotAccess {
-                                    expr: (
-                                        Box::new(Expression::Binary {
-                                            op: BinaryOp::Or,
-                                            lhs: (
-                                                Box::new(Expression::Primitive(Primitive::Bool(
-                                                    false,
-                                                ))),
-                                                4..9,
-                                            ),
-                                            rhs: (
-                                                Box::new(Expression::Ident(Ident("b", 13..14))),
-                                                13..14,
-                                            ),
-                                        }),
-                                        4..14,
-                                    ),
-                                    accesser: Ident("c", 16..17),
-                                }),
-                                3..17,
-                            ),
-                            accesser: (
-                                Box::new(Expression::Binary {
-                                    op: BinaryOp::And,
-                                    lhs: (
-                                        Box::new(Expression::Invoke {
-                                            expr: (
-                                                Box::new(Expression::DotAccess {
-                                                    expr: (
-                                                        Box::new(Expression::Ident(Ident(
-                                                            "c",
-                                                            18..19,
-                                                        ))),
-                                                        18..19,
-                                                    ),
-                                                    accesser: Ident("c", 20..21),
-                                                }),
-                                                18..21,
-                                            ),
-                                            args: vec![],
-                                        }),
-                                        18..23,
-                                    ),
-                                    rhs: (
-                                        Box::new(Expression::Unary {
-                                            op: UnaryOp::Neg,
-                                            expr: (
-                                                Box::new(Expression::Invoke {
-                                                    expr: (
-                                                        Box::new(Expression::Ident(Ident(
-                                                            "d",
-                                                            29..30,
-                                                        ))),
-                                                        29..30,
-                                                    ),
-                                                    args: vec![],
-                                                }),
-                                                29..32,
-                                            ),
-                                        }),
-                                        28..32,
-                                    ),
-                                }),
-                                18..32,
-                            ),
-                        }),
-                        3..33,
-                    ),
-                }),
-                2..33,
-            ),
-            rhs: (Box::new(Expression::Primitive(Primitive::Int(2))), 37..38),
-        },
-    );
+expression_test! {
+    name = method_chain,
+    source = "a->b()->c()",
+    expected = [
+        "MethodCall (e)"
+        "  expr"
+        "    MethodCall (e) @0..6"
+        "      expr"
+        "        Local (e) a @0..1"
+        "      name: b @3..4"
+        "      args: None"
+        "  name: c @8..9"
+        "  args: None"
+    ]
+}
+
+expression_test! {
+    name = anonymous_func_call,
+    source = "(func(x) return x end)(1)",
+    expected = [
+        "Call (e)"
+        "  expr"
+        "    FunctionObject (e) @0..22"
+        "      args"
+        "        x @6..7"
+        "      body"
+        "        Chunk"
+        "          captures: None"
+        "          block"
+        "            Return (s) @9..17"
+        "              value"
+        "                Local (e) x @16..17"
+        "  args"
+        "    Primitive (e) 1 @23..24"
+    ]
+}
+
+expression_test! {
+    name = delimited_call,
+    source = "(f())",
+    expected = [
+        "Call (e)"
+        "  expr"
+        "    Local (e) f @1..2"
+        "  args: None"
+    ]
+}
+
+expression_test! {
+    name = more_delimited_call,
+    source = "(((f()))())",
+    expected = [
+        "Call (e)"
+        "  expr"
+        "    Call (e) @1..8"
+        "      expr"
+        "        Local (e) f @3..4"
+        "      args: None"
+        "  args: None"
+    ]
+}
+
+expression_test! {
+    name = delimited_primitive,
+    source = "(1)",
+    expected = [
+        "Primitive (e) 1 @1..2"
+    ]
+}
+
+expression_test! {
+    name = delimited_local,
+    source = "(a)",
+    expected = [
+        "Local (e) a @1..2"
+    ]
+}
+
+expression_test! {
+    name = four_arithmetic,
+    source = "-1 + 2 * 3 / 4 - 5", // ((-1) + ((2 * 3) / 4)) - 5
+    expected = [
+        "Binary (e)"
+        "  op: -"
+        "  lhs"
+        "    Binary (e) @0..14"
+        "      op: +"
+        "      lhs"
+        "        Primitive (e) -1 @0..2"
+        "      rhs"
+        "        Binary (e) @5..14"
+        "          op: /"
+        "          lhs"
+        "            Binary (e) @5..10"
+        "              op: *"
+        "              lhs"
+        "                Primitive (e) 2 @5..6"
+        "              rhs"
+        "                Primitive (e) 3 @9..10"
+        "          rhs"
+        "            Primitive (e) 4 @13..14"
+        "  rhs"
+        "    Primitive (e) 5 @17..18"
+    ]
+}
+
+expression_test! {
+    name = four_arithmetic_with_parentheses,
+    source = "-((1 + 2) * 3) / 4",
+    expected = [
+        "Binary (e)"
+        "  op: /"
+        "  lhs"
+        "    Unary (e) @0..14"
+        "      op: -"
+        "      expr"
+        "        Binary (e) @1..14"
+        "          op: *"
+        "          lhs"
+        "            Binary (e) @2..9"
+        "              op: +"
+        "              lhs"
+        "                Primitive (e) 1 @3..4"
+        "              rhs"
+        "                Primitive (e) 2 @7..8"
+        "          rhs"
+        "            Primitive (e) 3 @12..13"
+        "  rhs"
+        "    Primitive (e) 4 @17..18"
+    ]
+}
+
+expression_test! {
+    name = logical_op,
+    source = "not a == 10 or 5 >= b and false", // ((not a) == 10) or ((5 >= b) and false)
+    expected = [
+        "Binary (e)"
+        "  op: or"
+        "  lhs"
+        "    Binary (e) @0..11"
+        "      op: =="
+        "      lhs"
+        "        Unary (e) @0..5"
+        "          op: not"
+        "          expr"
+        "            Local (e) a @4..5"
+        "      rhs"
+        "        Primitive (e) 10 @9..11"
+        "  rhs"
+        "    Binary (e) @15..31"
+        "      op: and"
+        "      lhs"
+        "        Binary (e) @15..21"
+        "          op: >="
+        "          lhs"
+        "            Primitive (e) 5 @15..16"
+        "          rhs"
+        "            Local (e) b @20..21"
+        "      rhs"
+        "        Primitive (e) false @26..31"
+    ]
+}
+
+expression_test! {
+    name = logical_op_with_parentheses,
+    source = "(not (a != 10) or 5 < b) and false",
+    expected = [
+        "Binary (e)"
+        "  op: and"
+        "  lhs"
+        "    Binary (e) @0..24"
+        "      op: or"
+        "      lhs"
+        "        Unary (e) @1..14"
+        "          op: not"
+        "          expr"
+        "            Binary (e) @5..14"
+        "              op: !="
+        "              lhs"
+        "                Local (e) a @6..7"
+        "              rhs"
+        "                Primitive (e) 10 @11..13"
+        "      rhs"
+        "        Binary (e) @18..23"
+        "          op: <"
+        "          lhs"
+        "            Primitive (e) 5 @18..19"
+        "          rhs"
+        "            Local (e) b @22..23"
+        "  rhs"
+        "    Primitive (e) false @29..34"
+    ]
+}
+
+expression_test! {
+    name = string_concat,
+    source = "'a' .. 4 + 1 == 'a5'",
+    expected = [
+        "Binary (e)"
+        "  op: =="
+        "  lhs"
+        "    Binary (e) @0..12"
+        "      op: .."
+        "      lhs"
+        "        Primitive (e) \"a\" @0..3"
+        "      rhs"
+        "        Binary (e) @7..12"
+        "          op: +"
+        "          lhs"
+        "            Primitive (e) 4 @7..8"
+        "          rhs"
+        "            Primitive (e) 1 @11..12"
+        "  rhs"
+        "    Primitive (e) \"a5\" @16..20"
+    ]
+}
+
+expression_test! {
+    name = complicated_pratt,
+    source = "-(false or b).c[c.c() and -d()] * 2",
+    expected = [
+        "Binary (e)"
+        "  op: *"
+        "  lhs"
+        "    Unary (e) @0..31"
+        "      op: -"
+        "      expr"
+        "        IndexAccess (e) @1..31"
+        "          expr"
+        "            DotAccess (e) @1..15"
+        "              expr"
+        "                Binary (e) @1..13"
+        "                  op: or"
+        "                  lhs"
+        "                    Primitive (e) false @2..7"
+        "                  rhs"
+        "                    Local (e) b @11..12"
+        "              accessor: c @14..15"
+        "          accessor"
+        "            Binary (e) @16..30"
+        "              op: and"
+        "              lhs"
+        "                Call (e) @16..21"
+        "                  expr"
+        "                    DotAccess (e) @16..19"
+        "                      expr"
+        "                        Local (e) c @16..17"
+        "                      accessor: c @18..19"
+        "                  args: None"
+        "              rhs"
+        "                Unary (e) @26..30"
+        "                  op: -"
+        "                  expr"
+        "                    Call (e) @27..30"
+        "                      expr"
+        "                        Local (e) d @27..28"
+        "                      args: None"
+        "  rhs"
+        "    Primitive (e) 2 @34..35"
+    ]
 }

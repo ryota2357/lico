@@ -1,178 +1,112 @@
 use super::*;
-
 use crate::error::Error;
+use std::{iter::Peekable, str::CharIndices};
 
-type LexerInput<'a> = &'a str;
-type LexerOutput<'a> = Vec<(Token<'a>, Span)>;
-type LexerExtra<'a> = extra::Err<Error>;
+#[derive(Debug)]
+pub struct Lexer<'src> {
+    tokens: Vec<(Token<'src>, TextSpan)>,
+    errors: Vec<Error>,
+    chars: Peekable<CharIndices<'src>>,
+    start_pos: Option<u32>,
+    count: u32,
+    rest: &'src str,
+}
 
-pub(super) fn lexer<'src>(
-) -> impl Parser<'src, LexerInput<'src>, LexerOutput<'src>, LexerExtra<'src>> {
-    let int = text::digits(10)
-        .to_slice()
-        .from_str()
-        .unwrapped()
-        .map(Token::Int);
+impl<'src> Lexer<'src> {
+    pub fn new(source: &'src str) -> Self {
+        if source.len() > u32::MAX as usize {
+            panic!("Source code is too long");
+        }
+        let chars = source.char_indices().peekable();
+        Self {
+            tokens: Vec::new(),
+            errors: Vec::new(),
+            chars,
+            start_pos: None,
+            count: 0,
+            rest: source,
+        }
+    }
 
-    let float = text::digits(10)
-        .then(just('.').then(text::digits(10)))
-        .to_slice()
-        .from_str()
-        .unwrapped()
-        .map(Token::Float);
+    pub fn next(&mut self) -> Option<char> {
+        let (i, c) = self.chars.next().map(|(i, c)| (i as u32, c))?;
+        if self.start_pos.is_none() {
+            self.start_pos = Some(i);
+        }
+        self.count += c.len_utf8() as u32;
+        Some(c)
+    }
 
-    let attribute = just('@')
-        .ignore_then(text::ascii::ident())
-        .map(Token::Attribute);
+    #[inline]
+    pub fn peek(&mut self) -> Option<char> {
+        self.chars.peek().map(|(_, c)| *c)
+    }
 
-    let string = {
-        // TODO: Improve error handling in \x and \u
-        let escape = just('\\').ignore_then(choice((
-            just('\\'),
-            just('n').to('\n'),
-            just('r').to('\r'),
-            just('t').to('\t'),
-            just('0').to('\0'),
-            just('x')
-                .ignore_then(one_of("01234567"))
-                .then(one_of("0123456789abcdefABCDEF"))
-                .map(|(o, x): (char, char)| {
-                    let o = o.to_digit(16).unwrap();
-                    let x = x.to_digit(16).unwrap();
-                    std::char::from_u32(o * 16 + x).unwrap()
-                }),
-            just('u')
-                .ignore_then(just('{'))
-                .ignore_then(
-                    one_of("0123456789abcdefABCDEF")
-                        .repeated()
-                        .at_least(1)
-                        .at_most(6)
-                        .to_slice(),
-                )
-                .then_ignore(just('}'))
-                .validate(|digits, extra, emitter| {
-                    let num = u32::from_str_radix(digits, 16).unwrap();
-                    // NOTE: If the number is greater than 10FFFF, it is invalid.
-                    std::char::from_u32(num).unwrap_or_else(|| {
-                        let span = {
-                            let s: Span = extra.span();
-                            (s.start - 1..s.end).into() //  -1 means the position of `\`
-                        };
-                        emitter.emit(Error::invalid_escape_sequence(
-                            format!("\\u{{{}}}", digits).chars().collect::<Vec<_>>(),
-                            span,
-                        ));
-                        ' '
-                    })
-                }),
-            any().validate(|c, extra, emitter| {
-                let span = {
-                    let s: Span = extra.span();
-                    (s.start - 1..s.end).into() //  -1 means the position of `\`
-                };
-                emitter.emit(Error::invalid_escape_sequence(['\\', c], span));
-                c
-            }),
-        )));
+    pub fn consume_ws(&mut self) {
+        assert!(
+            self.start_pos.is_none(),
+            "Cannot consume whitespace during tokenization."
+        );
+        let mut count = 0;
+        while let Some((_, c)) = self.chars.peek() {
+            if !c.is_whitespace() {
+                break;
+            }
+            count += c.len_utf8();
+            self.chars.next();
+        }
+        self.rest = &self.rest[count..];
+    }
 
-        let str1 = just('"')
-            .ignore_then(
-                none_of(r#"\""#)
-                    .or(just(r#"\""#).to('"'))
-                    .or(escape)
-                    .repeated()
-                    .collect(),
-            )
-            .then_ignore(just('"'));
-        let str2 = just('\'')
-            .ignore_then(
-                none_of(r"\'")
-                    .or(just(r"\'").to('\''))
-                    .or(escape)
-                    .repeated()
-                    .collect(),
-            )
-            .then_ignore(just('\''));
+    pub fn take_until(&mut self, pred: impl Fn(char) -> bool) {
+        while let Some(c) = self.peek() {
+            if pred(c) {
+                break;
+            }
+            self.next();
+        }
+    }
 
-        str1.or(str2).map(Token::String)
-    };
+    pub fn take_while(&mut self, pred: impl Fn(char) -> bool) {
+        while let Some(c) = self.peek() {
+            if pred(c) {
+                self.next();
+            } else {
+                break;
+            }
+        }
+    }
 
-    let symbol = choice((
-        // operator
-        just('+').to(Token::Plus),
-        just("->").to(Token::Arrow),
-        just('-').to(Token::Minus),
-        just("**").to(Token::Star2),
-        just('*').to(Token::Star),
-        just('/').to(Token::Div),
-        just('%').to(Token::Mod),
-        just("==").to(Token::Eq),
-        just("!=").to(Token::NotEq),
-        just("<=").to(Token::LessEq),
-        just('<').to(Token::Less),
-        just(">=").to(Token::GreaterEq),
-        just('>').to(Token::Greater),
-        just("..").to(Token::Dot2),
-        just('.').to(Token::Dot),
-        just('=').to(Token::Assign),
-        // delimiter
-        just(',').to(Token::Comma),
-        just(':').to(Token::Colon),
-        just('(').to(Token::OpenParen),
-        just(')').to(Token::CloseParen),
-        just('{').to(Token::OpenBrace),
-        just('}').to(Token::CloseBrace),
-        just('[').to(Token::OpenBracket),
-        just(']').to(Token::CloseBracket),
-    ));
+    #[inline]
+    pub fn get_slice(&self) -> &'src str {
+        &self.rest[..self.count as usize]
+    }
 
-    let word = text::ascii::ident().map(|ident: &str| match ident {
-        // literals
-        "true" => Token::Bool(true),
-        "false" => Token::Bool(false),
-        "nil" => Token::Nil,
+    pub fn get_span(&self) -> TextSpan {
+        let start_pos = self.start_pos.expect("No start position");
+        let length = self.count;
+        TextSpan::at(start_pos, length)
+    }
 
-        // keywords
-        "var" => Token::Var,
-        "func" => Token::Func,
-        "if" => Token::If,
-        "then" => Token::Then,
-        "elif" => Token::Elif,
-        "else" => Token::Else,
-        "for" => Token::For,
-        "while" => Token::While,
-        "in" => Token::In,
-        "do" => Token::Do,
-        "end" => Token::End,
-        "return" => Token::Return,
-        "break" => Token::Break,
-        "continue" => Token::Continue,
+    pub fn bump(&mut self, token: Token<'src>) {
+        let span = {
+            let start_pos = self.start_pos.take().expect("No start position");
+            let length = self.count;
+            TextSpan::at(start_pos, length)
+        };
+        self.tokens.push((token, span));
+        self.rest = &self.rest[self.count as usize..];
+        self.count = 0;
+    }
 
-        // keyword operators
-        "and" => Token::And,
-        "or" => Token::Or,
-        "not" => Token::Not,
+    pub fn report(&mut self, reporter: impl FnOnce(TextSpan) -> Error) {
+        let span = self.get_span();
+        let error = reporter(span);
+        self.errors.push(error);
+    }
 
-        // other
-        _ => Token::Ident(ident),
-    });
-
-    let comment = just("#")
-        .then(any().and_is(text::newline().not()).repeated())
-        .padded();
-
-    let token = choice((float, int, string, symbol, attribute, word)).or(any().validate(
-        |c, extra, emitter| {
-            emitter.emit(Error::invalid_character(c, extra.span()));
-            Token::Error(c)
-        },
-    ));
-
-    token
-        .map_with(|token, ext| (token, ext.span()))
-        .padded()
-        .padded_by(comment.repeated())
-        .repeated()
-        .collect()
+    #[inline]
+    pub fn into_tokens_errors(self) -> (Vec<(Token<'src>, TextSpan)>, Vec<Error>) {
+        (self.tokens, self.errors)
+    }
 }

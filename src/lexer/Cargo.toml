@@ -5,4 +5,9 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-chumsky = { workspace = true }
+ecow = { workspace = true }
+thiserror = { workspace = true }
+unicode-ident = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }

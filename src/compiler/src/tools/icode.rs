@@ -1,3 +1,4 @@
+use lexer::TextSpan;
 use vm::code::{ArgumentKind, BuiltinInstr};
 
 use super::*;
@@ -24,24 +25,23 @@ pub enum ICode {
     JumpIfTrue(isize),
     JumpIfFalse(isize),
 
-    CallMethod(Cow<'static, str>, u8, Span),
-    Call(u8, Span),
-    SetItem(Span),
-    GetItem(Span),
-    Add(Span),       // +
-    Sub(Span),       // -
-    Mul(Span),       // *
-    Div(Span),       // /
-    Mod(Span),       // %
-    Pow(Span),       // *
-    Unm(Span),       // - (unary)
-    Eq(Span),        // ==
-    NotEq(Span),     // !=
-    Less(Span),      // <
-    LessEq(Span),    // <=
-    Greater(Span),   // >
-    GreaterEq(Span), // >=
-    Concat(Span),    // ..
+    CallMethod(Cow<'static, str>, u8, TextSpan),
+    Call(u8, TextSpan),
+    SetItem(TextSpan),
+    GetItem(TextSpan),
+    Add(TextSpan),       // +
+    Sub(TextSpan),       // -
+    Mul(TextSpan),       // *
+    Div(TextSpan),       // /
+    Mod(TextSpan),       // %
+    Unm(TextSpan),       // - (unary)
+    Eq(TextSpan),        // ==
+    NotEq(TextSpan),     // !=
+    Less(TextSpan),      // <
+    LessEq(TextSpan),    // <=
+    Greater(TextSpan),   // >
+    GreaterEq(TextSpan), // >=
+    Concat(TextSpan),    // ..
 
     Builtin(BuiltinInstr, u8),
 

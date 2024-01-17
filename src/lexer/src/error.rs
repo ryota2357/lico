@@ -1,53 +1,71 @@
 use super::*;
+use std::{num::ParseIntError, ops::RangeInclusive};
+use thiserror::Error;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct Error {
-    pub kind: ErrorKind,
-    pub span: Span,
-}
+#[derive(Error, Clone, Debug, PartialEq, Eq)]
+pub enum Error {
+    #[error("Invalid input sequence")]
+    InvalidInputSequence(String, TextSpan),
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ErrorKind {
-    InvalidCharacter(char),
-    ExpectedFound(Vec<char>, Option<char>),
-    InvalidEscapeSequence(Vec<char>),
+    #[error("Unknown number literal")]
+    UnknownNumberLiteral(String, TextSpan),
+
+    #[error("{reason}")]
+    InvalidFloatLiteral {
+        info: (String, TextSpan),
+        reason: String,
+    },
+
+    #[error("Invalid int literal: {source}")]
+    InvalidIntLiteral {
+        info: (String, TextSpan),
+        #[source]
+        source: ParseIntError,
+    },
+
+    #[error("Missing a closing `{expected}`")]
+    MissingClosingDelimiter {
+        info: (Option<char>, TextSpan),
+        expected: char,
+    },
+
+    #[error("Invalid escape sequence")]
+    InvalidEscapeSequence {
+        info: (String, TextSpan),
+        reason: String,
+    },
+
+    #[error("Unexpected character `{}` in escape sequence", .info.0)]
+    UnexpectedCharInEscapeSequence {
+        info: (char, TextSpan),
+        expected: Vec<RangeInclusive<char>>,
+    },
 }
 
 impl Error {
-    pub fn invalid_character(char: char, span: Span) -> Self {
-        Self {
-            kind: ErrorKind::InvalidCharacter(char),
-            span,
+    pub fn text(&self) -> Option<String> {
+        use Error::*;
+        match self {
+            InvalidInputSequence(x, _) => Some(x.clone()),
+            UnknownNumberLiteral(x, _) => Some(x.clone()),
+            InvalidFloatLiteral { info: (x, _), .. } => Some(x.clone()),
+            InvalidIntLiteral { info: (x, _), .. } => Some(x.clone()),
+            MissingClosingDelimiter { info: (x, _), .. } => x.map(|x| x.to_string()),
+            InvalidEscapeSequence { info: (x, _), .. } => Some(x.clone()),
+            UnexpectedCharInEscapeSequence { info: (x, _), .. } => Some(x.to_string()),
         }
     }
 
-    pub fn expected_found(expected: Vec<char>, found: Option<char>, span: Span) -> Self {
-        Self {
-            kind: ErrorKind::ExpectedFound(expected, found),
-            span,
+    pub fn span(&self) -> TextSpan {
+        use Error::*;
+        match self {
+            InvalidInputSequence(_, x) => *x,
+            UnknownNumberLiteral(_, x) => *x,
+            InvalidFloatLiteral { info: (_, x), .. } => *x,
+            InvalidIntLiteral { info: (_, x), .. } => *x,
+            MissingClosingDelimiter { info: (_, x), .. } => *x,
+            InvalidEscapeSequence { info: (_, x), .. } => *x,
+            UnexpectedCharInEscapeSequence { info: (_, x), .. } => *x,
         }
-    }
-
-    pub fn invalid_escape_sequence(escape: impl Into<Vec<char>>, span: Span) -> Self {
-        Self {
-            kind: ErrorKind::InvalidEscapeSequence(escape.into()),
-            span,
-        }
-    }
-}
-
-impl<'a> chumsky::error::Error<'a, &'a str> for Error {
-    fn expected_found<E: IntoIterator<Item = Option<chumsky::util::Maybe<char, &'a char>>>>(
-        expected: E,
-        found: Option<chumsky::util::Maybe<char, &'a char>>,
-        span: Span,
-    ) -> Self {
-        let expected = expected
-            .into_iter()
-            .flatten()
-            .map(|x| x.into_inner())
-            .collect();
-        let found = found.map(|x| x.into_inner());
-        Self::expected_found(expected, found, span)
     }
 }

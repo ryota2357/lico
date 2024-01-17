@@ -1,9 +1,6 @@
-#![allow(dead_code)]
-
 pub mod error;
 use error::Error;
 
-type Span = std::ops::Range<usize>;
 type Result<T> = std::result::Result<T, Error>;
 
 mod tools;
@@ -14,7 +11,7 @@ use block::*;
 mod expression;
 mod statement;
 
-pub fn compile<'src>(program: &'src parser::Program<'src>) -> Result<Vec<vm::code::Code>> {
+pub fn compile<'src>(program: &'src parser::tree::Program<'src>) -> Result<Vec<vm::code::Code>> {
     use vm::code::{ArgumentKind, BuiltinInstr};
 
     let mut fragment = Fragment::new();
@@ -54,7 +51,7 @@ pub fn compile<'src>(program: &'src parser::Program<'src>) -> Result<Vec<vm::cod
                 unimplemented!("require")
             }
             name => {
-                return Err(Error::undefined_variable(name.to_string(), span.clone()));
+                return Err(Error::undefined_variable(name.to_string(), *span));
             }
         }
     }

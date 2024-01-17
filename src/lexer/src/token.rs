@@ -1,9 +1,11 @@
+use ecow::EcoString;
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token<'src> {
     // literals
     Int(i64),
     Float(f64),
-    String(String),
+    String(EcoString),
     Bool(bool),
     Nil,
 
@@ -17,6 +19,7 @@ pub enum Token<'src> {
     For,
     While,
     In,
+    Ref,
     Do,
     End,
     Return,
@@ -29,7 +32,6 @@ pub enum Token<'src> {
     Star,      // *
     Div,       // /
     Mod,       // %
-    Star2,     // **
     Eq,        // ==
     NotEq,     // !=
     Less,      // <
@@ -59,7 +61,8 @@ pub enum Token<'src> {
     // other
     Ident(&'src str),
     Attribute(&'src str),
-    Error(char),
+    Comment(&'src str),
+    Error(&'src str),
 }
 
 impl std::fmt::Display for Token<'_> {
@@ -79,6 +82,7 @@ impl std::fmt::Display for Token<'_> {
             Token::For => write!(f, "for"),
             Token::While => write!(f, "while"),
             Token::In => write!(f, "in"),
+            Token::Ref => write!(f, "ref"),
             Token::Do => write!(f, "do"),
             Token::End => write!(f, "end"),
             Token::Return => write!(f, "return"),
@@ -89,7 +93,6 @@ impl std::fmt::Display for Token<'_> {
             Token::Star => write!(f, "*"),
             Token::Div => write!(f, "/"),
             Token::Mod => write!(f, "%"),
-            Token::Star2 => write!(f, "^"),
             Token::Eq => write!(f, "=="),
             Token::NotEq => write!(f, "!="),
             Token::Less => write!(f, "<"),
@@ -113,6 +116,7 @@ impl std::fmt::Display for Token<'_> {
             Token::CloseBracket => write!(f, "]"),
             Token::Ident(x) => write!(f, "{}", x),
             Token::Attribute(x) => write!(f, "@{}", x),
+            Token::Comment(x) => write!(f, "#{}", x),
             Token::Error(c) => write!(f, "Error('{}')", c),
         }
     }

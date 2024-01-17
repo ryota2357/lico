@@ -1,23 +1,28 @@
 use super::*;
+use lexer::TextSpan;
 use parser::tree::*;
 
-impl<'node, 'src: 'node> Compilable<'node, 'src> for (Expression<'src>, Span) {
-    fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
-        let (expr, span) = self;
-        compile(expr, span.clone(), fragment, context)
-    }
+macro_rules! impl_compilable_for_spanned {
+    ($ty:ty) => {
+        impl<'node, 'src: 'node> Compilable<'node, 'src> for ($ty, TextSpan) {
+            fn compile(
+                &'node self,
+                fragment: &mut Fragment,
+                context: &mut Context<'src>,
+            ) -> Result<()> {
+                let (expr, span) = self;
+                compile(expr, *span, fragment, context)
+            }
+        }
+    };
 }
-
-impl<'node, 'src: 'node> Compilable<'node, 'src> for (Box<Expression<'src>>, Span) {
-    fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {
-        let (expr, span) = self;
-        compile(expr, span.clone(), fragment, context)
-    }
-}
+impl_compilable_for_spanned!(Expression<'src>);
+impl_compilable_for_spanned!(&Expression<'src>);
+impl_compilable_for_spanned!(Box<Expression<'src>>);
 
 fn compile<'node, 'src: 'node>(
     expr: &'node Expression<'src>,
-    span: Span,
+    span: TextSpan,
     fragment: &mut Fragment,
     context: &mut Context<'src>,
 ) -> Result<()> {
@@ -79,13 +84,6 @@ fn compile<'node, 'src: 'node>(
                     .append_compile(lhs, context)?
                     .append_compile(rhs, context)?
                     .append(ICode::Mod(span));
-                Ok(())
-            }
-            BinaryOp::Pow => {
-                fragment
-                    .append_compile(lhs, context)?
-                    .append_compile(rhs, context)?
-                    .append(ICode::Pow(span));
                 Ok(())
             }
             BinaryOp::Eq => {
@@ -172,14 +170,14 @@ fn compile<'node, 'src: 'node>(
                 Ok(())
             }
         },
-        Expression::Ident(Ident(name, _)) => {
+        Expression::Local(name, _) => {
             let id = context
                 .resolve_variable(name)
-                .ok_or_else(|| Error::undefined_variable(name.to_string(), span.clone()))?;
+                .ok_or_else(|| Error::undefined_variable(name.to_string(), span))?;
             fragment.append(ICode::LoadLocal(id));
             Ok(())
         }
-        Expression::Primitive(primitive) => match primitive {
+        Expression::Primitive(primitive, _) => match primitive {
             Primitive::Int(x) => {
                 fragment.append(ICode::LoadInt(*x));
                 Ok(())
@@ -189,7 +187,7 @@ fn compile<'node, 'src: 'node>(
                 Ok(())
             }
             Primitive::String(x) => {
-                fragment.append(ICode::LoadString(x.clone()));
+                fragment.append(ICode::LoadString(x.to_string()));
                 Ok(())
             }
             Primitive::Bool(x) => {
@@ -203,10 +201,16 @@ fn compile<'node, 'src: 'node>(
         },
         Expression::TableObject(table) => {
             for (key, value) in table.iter() {
-                fragment
-                    .append_compile(value, context)?
-                    .append_compile(key, context)?
-                    .append(ICode::MakeNamed);
+                fragment.append_compile(value, context)?;
+                match key {
+                    TableFieldKey::Ident(key, _) => {
+                        fragment.append(ICode::LoadString(key.to_string()));
+                    }
+                    TableFieldKey::Expr(expr, span) => {
+                        fragment.append_compile(&(expr, *span), context)?;
+                    }
+                }
+                fragment.append(ICode::MakeNamed);
             }
             fragment.append(ICode::MakeTable(table.len() as u32));
             Ok(())
@@ -221,7 +225,7 @@ fn compile<'node, 'src: 'node>(
             util::append_func_creation_fragment(fragment, &function.body, &function.args, context)?;
             Ok(())
         }
-        Expression::Invoke { expr, args } => {
+        Expression::Call { expr, args } => {
             fragment
                 .append_compile(expr, context)?
                 .append_compile_many(args.iter(), context)?
@@ -230,7 +234,7 @@ fn compile<'node, 'src: 'node>(
         }
         Expression::MethodCall {
             expr,
-            name: Ident(name, _),
+            name: (name, _),
             args,
         } => {
             fragment
@@ -243,20 +247,20 @@ fn compile<'node, 'src: 'node>(
                 ));
             Ok(())
         }
-        Expression::IndexAccess { expr, accesser } => {
+        Expression::IndexAccess { expr, accessor } => {
             fragment
                 .append_compile(expr, context)?
-                .append_compile(accesser, context)?
+                .append_compile(accessor, context)?
                 .append(ICode::GetItem(span));
             Ok(())
         }
         Expression::DotAccess {
             expr,
-            accesser: Ident(accesser, _),
+            accessor: (accessor, _),
         } => {
             fragment
                 .append_compile(expr, context)?
-                .append(ICode::LoadString(accesser.to_string()))
+                .append(ICode::LoadString(accessor.to_string()))
                 .append(ICode::GetItem(span));
             Ok(())
         }
@@ -267,6 +271,7 @@ fn compile<'node, 'src: 'node>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    pub use pretty_assertions::assert_eq;
     use vm::code::{Code, LocalId};
 
     #[test]
@@ -275,14 +280,15 @@ mod tests {
         context.begin_block();
         context.add_variable("a");
         context.add_variable("b");
+        let dummy_span = TextSpan::new(0, 0);
         let fragment = Fragment::with_compile(
             &(
                 Expression::Binary {
                     op: BinaryOp::And,
-                    lhs: (Box::new(Expression::Ident(Ident("a", 0..0))), 0..0),
-                    rhs: (Box::new(Expression::Ident(Ident("b", 0..0))), 0..0),
+                    lhs: (Box::new(Expression::Local("a", dummy_span)), dummy_span),
+                    rhs: (Box::new(Expression::Local("b", dummy_span)), dummy_span),
                 },
-                0..0,
+                dummy_span,
             ),
             &mut context,
         );
@@ -304,14 +310,15 @@ mod tests {
         context.begin_block();
         context.add_variable("a");
         context.add_variable("b");
+        let dummy_span = TextSpan::new(0, 0);
         let fragment = Fragment::with_compile(
             &(
                 Expression::Binary {
                     op: BinaryOp::Or,
-                    lhs: (Box::new(Expression::Ident(Ident("a", 0..0))), 0..0),
-                    rhs: (Box::new(Expression::Ident(Ident("b", 0..0))), 0..0),
+                    lhs: (Box::new(Expression::Local("a", dummy_span)), dummy_span),
+                    rhs: (Box::new(Expression::Local("b", dummy_span)), dummy_span),
                 },
-                0..0,
+                dummy_span,
             ),
             &mut context,
         );

@@ -6,5 +6,10 @@ edition.workspace = true
 
 [dependencies]
 lexer.workspace = true
-chumsky = { workspace = true, features = ["pratt"] }
+ecow = { workspace = true }
 rustc-hash = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+regex = { workspace = true}

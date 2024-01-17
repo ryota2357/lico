@@ -12,23 +12,19 @@ pub fn start(file: &PathBuf) {
         return;
     }
 
-    let (tree, err) = parser::parse(&tokens, buf_str.len()..buf_str.len());
+    let (tree, err) = parser::parse(&tokens);
     if !err.is_empty() {
         for e in err {
             println!("{e:?}");
         }
         return;
     }
-    let Some(tree) = tree else {
-        println!("No tree");
-        return;
-    };
 
     let code = match compiler::compile(&tree) {
         Ok(x) => x,
         Err(e) => {
             println!("Compilation error: {:?}", e);
-            let (start, end) = match get_line_column_range(buf_str, e.span) {
+            let (start, end) = match get_line_column_range(buf_str, e.span.to_range()) {
                 Some(x) => x,
                 None => {
                     println!("Invalid span");
@@ -46,9 +42,15 @@ pub fn start(file: &PathBuf) {
 
 fn get_line_column_range(
     source: &str,
-    span: std::ops::Range<usize>,
-) -> Option<((usize, usize), (usize, usize))> {
-    let source_len = source.chars().count();
+    span: std::ops::Range<u32>,
+) -> Option<((u32, u32), (u32, u32))> {
+    let source_len = {
+        let len = source.chars().count();
+        if len > u32::MAX as usize {
+            return None;
+        }
+        len as u32
+    };
 
     // Return None if the start and end positions of the range are outside the document range
     if span.start >= source_len || span.end > source_len || span.start > span.end {
@@ -65,13 +67,13 @@ fn get_line_column_range(
         offsets
     };
 
-    let calc_line_column = |offset: usize| {
+    let calc_line_column = |offset: u32| {
         let line = line_start_offsets
             .iter()
-            .position(|&line_start_offset| line_start_offset > offset)
+            .position(|&line_start_offset| line_start_offset as u32 > offset)
             .unwrap_or(line_start_offsets.len() - 1);
-        let column = offset - line_start_offsets[line - 1];
-        (line, column)
+        let column = offset - line_start_offsets[line - 1] as u32;
+        (line as u32, column)
     };
 
     let start = calc_line_column(span.start);

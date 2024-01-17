@@ -1,18 +1,22 @@
-use chumsky::prelude::*;
-
-mod lexer;
-use lexer::lexer;
+#![allow(dead_code)]
 
 mod token;
 pub use token::Token;
 
+mod textspan;
+pub use textspan::TextSpan;
+
+mod lexer;
+use lexer::Lexer;
+
+mod tokenize;
+use tokenize::tokenize;
+
 pub mod error;
+use error::Error;
 
-type Span = chumsky::span::SimpleSpan<usize>;
-
-pub fn parse(src: &str) -> (Vec<(Token, Span)>, Vec<error::Error>) {
-    let result = lexer().parse(src);
-    let (output, errors) = result.into_output_errors();
-    let tokens = output.unwrap_or(Vec::new());
-    (tokens, errors)
+pub fn parse(source: &str) -> (Vec<(Token, TextSpan)>, Vec<Error>) {
+    let mut lexer = Lexer::new(source);
+    tokenize(&mut lexer);
+    lexer.into_tokens_errors()
 }

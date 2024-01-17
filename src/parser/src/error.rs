@@ -1,48 +1,35 @@
 use super::*;
-use chumsky::input::SpannedInput;
-use lexer::Token;
+use thiserror::Error;
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Error<'src> {
-    pub kind: ErrorKind<'src>,
-    pub span: Span,
-}
+#[derive(Error, Clone, Debug, PartialEq, Eq)]
+pub enum Error {
+    #[error("Unexpected symbol `{0}`")]
+    UnexpectedSymbol(&'static str, TextSpan),
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum ErrorKind<'src> {
-    ExpectedFound(Vec<Token<'src>>, Option<Token<'src>>),
-}
+    #[error("Missing symbol `{0}`")]
+    UnexpectedEof(&'static str, TextSpan),
 
-impl<'src> Error<'src> {
-    pub fn expected_found(
-        expected: Vec<Token<'src>>,
-        found: Option<Token<'src>>,
-        span: Span,
-    ) -> Self {
-        Self {
-            kind: ErrorKind::ExpectedFound(expected, found),
-            span,
-        }
-    }
-}
+    #[error("Expected {expected}, found `{}`", .found.0)]
+    ExpectedFound {
+        expected: &'static str,
+        found: (String, TextSpan),
+    },
 
-impl<'tokens, 'src: 'tokens>
-    chumsky::error::Error<
-        'tokens,
-        SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]>,
-    > for Error<'src>
-{
-    fn expected_found<E: IntoIterator<Item = Option<chumsky::util::MaybeRef<'tokens, <SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]> as chumsky::prelude::Input<'tokens>>::Token>>>>(
-        expected: E,
-        found: Option<chumsky::util::MaybeRef<'tokens, <SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]> as chumsky::prelude::Input<'tokens>>::Token>>,
-        span: <SpannedInput<Token<'src>, SimpleSpan, &'tokens [(Token<'src>, SimpleSpan)]> as chumsky::prelude::Input<'tokens>>::Span,
-    ) -> Self{
-        let expected = expected
-            .into_iter()
-            .flatten()
-            .map(|x| x.into_inner())
-            .collect();
-        let found = found.map(|x| x.into_inner());
-        Self::expected_found(expected, found, span.into())
-    }
+    #[error("`{0}` is required")]
+    MissingRequiredElement(&'static str, TextSpan),
+
+    #[error("Missing a closing `{expected}`")]
+    MissingClosingSymbol {
+        info: (Option<String>, TextSpan),
+        expected: String,
+    },
+
+    #[error("{reason}")]
+    InvalidStatement {
+        info: (String, TextSpan),
+        reason: String,
+    },
+
+    #[error("{0}")]
+    Contextual(String, TextSpan),
 }
