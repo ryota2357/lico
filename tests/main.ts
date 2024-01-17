@@ -43,7 +43,7 @@ async function main() {
   const test_all = async function (group: string) {
     const ngs: { name: string; actual: string; expected: string }[] = [];
 
-    printf("%s\n", colors.gray(`Running test cases of '${group}'`));
+    printf("%s\n", colors.gray(`Running test cases in '${group}'`));
     for (const test_case of await get_test_cases(group)) {
       printf("%s ...", test_case.name);
       const output = await run(test_case.path, test_case.input);
