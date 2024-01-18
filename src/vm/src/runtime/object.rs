@@ -1,5 +1,5 @@
 use super::*;
-use std::fmt::Display;
+use std::{cell::RefCell, rc::Rc};
 
 #[macro_use]
 mod macros;
@@ -114,7 +114,7 @@ impl Object {
     );
 }
 
-impl Display for Object {
+impl std::fmt::Display for Object {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Object::Int(x) => write!(f, "{}", x),

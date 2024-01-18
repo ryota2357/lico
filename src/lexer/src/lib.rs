@@ -1,12 +1,12 @@
 use foundation::*;
 
+mod error;
 mod lexer;
-use lexer::Lexer;
-
 mod tokenize;
+
+use lexer::Lexer;
 use tokenize::tokenize;
 
-mod error;
 pub use error::Error;
 
 pub fn parse(source: &str) -> (Vec<(Token, TextSpan)>, Vec<Error>) {

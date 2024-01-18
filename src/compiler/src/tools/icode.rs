@@ -1,7 +1,6 @@
-use vm::code::{ArgumentKind, BuiltinInstr};
-
 use super::*;
 use std::borrow::Cow;
+use vm::code::{ArgumentKind, BuiltinInstr};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ICode {

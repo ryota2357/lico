@@ -1,16 +1,15 @@
+use foundation::{ast::*, TextSpan, Token};
+
 mod error;
 mod parser;
 mod walker;
 
-use error::Error;
-use parser::Parser;
-
-use foundation::{ast::*, TextSpan, Token};
+pub use error::Error;
 
 pub fn parse<'tokens, 'src: 'tokens>(
     tokens: &'tokens [(Token<'src>, TextSpan)],
 ) -> (Program<'src>, Vec<Error>) {
-    let (mut program, errors) = Parser::parse(tokens);
+    let (mut program, errors) = parser::parse(tokens);
 
     let mut walker = walker::Walker::new();
     walker.go(&mut program.body.block);

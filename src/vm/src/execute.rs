@@ -1,7 +1,9 @@
 use super::*;
-use Code::*;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
+    use Code::*;
+
     let mut pc = 0;
     loop {
         // println!("code: {:?}", code[pc]);

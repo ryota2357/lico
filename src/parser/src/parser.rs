@@ -5,16 +5,18 @@ mod expression;
 mod statement;
 mod util;
 
-pub struct Parser<'tokens, 'src: 'tokens>(internal::ParserCore<'tokens, 'src>);
+pub fn parse<'tokens, 'src: 'tokens>(
+    tokens: &'tokens [(Token<'src>, TextSpan)],
+) -> (Program<'src>, Vec<Error>) {
+    let mut parser = Parser(internal::ParserCore::new(tokens));
+    let program = parser.program();
+    let errors = parser.done();
+    (program, errors)
+}
+
+struct Parser<'tokens, 'src: 'tokens>(internal::ParserCore<'tokens, 'src>);
 
 impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
-    pub fn parse(tokens: &'tokens [(Token<'src>, TextSpan)]) -> (Program<'src>, Vec<Error>) {
-        let mut parser = Self(internal::ParserCore::new(tokens));
-        let program = parser.program();
-        let errors = parser.done();
-        (program, errors)
-    }
-
     pub fn program(&mut self) -> Program<'src> {
         let chunk = self.chunk();
         Program {
