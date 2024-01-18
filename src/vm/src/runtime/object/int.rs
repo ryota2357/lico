@@ -178,6 +178,14 @@ pub fn run_int_method(int: i64, name: &str, args: &[Object]) -> Result<Object, S
             ensure_argument_length!(args, 0);
             Ok(Object::Float((int as f64).log2()))
         }
+        "lshift" => {
+            ensure_argument_length!(args, 1);
+            if let Object::Int(other) = args[0] {
+                Ok(Object::Int(int << other))
+            } else {
+                Err(format!("{} takes an int", name))
+            }
+        }
         "pow" => {
             ensure_argument_length!(args, 1);
             unimplemented!("int pow")
@@ -189,6 +197,14 @@ pub fn run_int_method(int: i64, name: &str, args: &[Object]) -> Result<Object, S
         "round" => {
             ensure_argument_length!(args, 0);
             Ok(Object::Int(int))
+        }
+        "rshift" => {
+            ensure_argument_length!(args, 1);
+            if let Object::Int(other) = args[0] {
+                Ok(Object::Int(int >> other))
+            } else {
+                Err(format!("{} takes an int", name))
+            }
         }
         "sin" => {
             ensure_argument_length!(args, 0);
@@ -314,6 +330,14 @@ pub fn run_int_method(int: i64, name: &str, args: &[Object]) -> Result<Object, S
                 }),
             );
             Ok(Object::new_table(range_tbl))
+        }
+        "xor" => {
+            ensure_argument_length!(args, 1);
+            if let Object::Int(other) = args[0] {
+                Ok(Object::Int(int ^ other))
+            } else {
+                Err(format!("{} takes an int", name))
+            }
         }
         _ => Err(format!("{} is not a method of int", name)),
     }
