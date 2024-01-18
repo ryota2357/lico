@@ -358,7 +358,9 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
             AddCapture(_) => panic!("[BUG] AddCapture is not allowed here."),
             AddArgument(_) => panic!("[BUG] AddArgument is not allowed here."),
             EndFuncCreation => panic!("[BUG] EndFuncCreation is not allowed here."),
-            Nop => {}
+            Nop => {
+                pc += 1;
+            }
             Return => {
                 return Ok(runtime.stack.pop().ensure_object());
             }
