@@ -5,11 +5,12 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-lexer.workspace = true
+foundation.workspace = true
 ecow = { workspace = true }
 rustc-hash = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+lexer.workspace = true
 pretty_assertions = { workspace = true }
 regex = { workspace = true}

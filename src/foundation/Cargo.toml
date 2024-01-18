@@ -1,8 +1,8 @@
 [package]
-name = "run"
+name = "foundation"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-lico_core.workspace = true
+ecow = { workspace = true }

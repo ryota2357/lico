@@ -1,4 +1,4 @@
-pub use lexer::Token;
+pub use foundation::Token;
 
 pub fn parse_ok(s: &str) -> Vec<(Token, std::ops::Range<u32>)> {
     let (tok, err) = lexer::parse(s);

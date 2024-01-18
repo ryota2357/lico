@@ -1,14 +1,11 @@
-pub mod tree;
-
 mod error;
 mod parser;
 mod walker;
 
 use error::Error;
 use parser::Parser;
-use tree::*;
 
-use lexer::{TextSpan, Token};
+use foundation::{ast::*, TextSpan, Token};
 
 pub fn parse<'tokens, 'src: 'tokens>(
     tokens: &'tokens [(Token<'src>, TextSpan)],

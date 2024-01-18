@@ -2,24 +2,42 @@
 resolver = "2"
 members = [
     "compiler",
+    "foundation",
     "lexer",
     "parser",
     "vm",
 ]
 
 [workspace.package]
-version = "0.0.0"
+version = "0.1.0"
 authors = ["ryota2357"]
 edition = "2021"
 
 [workspace.dependencies]
-compiler.path = "compiler"
-lexer.path = "lexer"
-parser.path = "parser"
-vm.path = "vm"
+compiler.path = "./compiler/"
+lexer.path = "./lexer/"
+parser.path = "./parser/"
+vm.path = "./vm/"
+foundation.path = "./foundation/"
 ecow = "0.2.0"
 pretty_assertions = "1.4.0"
 regex = "1.10.2"
 rustc-hash = "1.1.0"
 thiserror = "1.0.56"
 unicode-ident = "1.0.12"
+
+[package]
+name = "lico_core"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+compiler.workspace = true
+lexer.workspace = true
+parser.workspace = true
+vm.workspace = true
+foundation.workspace = true

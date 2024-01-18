@@ -1,3 +1,4 @@
+use lico_core::*;
 use std::path::PathBuf;
 
 pub fn start(file: &PathBuf) {

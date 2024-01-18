@@ -98,10 +98,9 @@ checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
 name = "compiler"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
- "lexer",
- "parser",
+ "foundation",
  "rustc-hash",
  "vm",
 ]
@@ -113,6 +112,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6ea5e3f9cda726431da9d1a8d5a29785d544b31e98e1ca7a210906244002e02"
 
 [[package]]
+name = "foundation"
+version = "0.1.0"
+dependencies = [
+ "ecow",
+]
+
+[[package]]
 name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -120,27 +126,38 @@ checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 
 [[package]]
 name = "lexer"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
- "ecow",
+ "foundation",
  "thiserror",
  "unicode-ident",
 ]
 
 [[package]]
 name = "lico"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "clap",
  "run",
 ]
 
 [[package]]
+name = "lico_core"
+version = "0.1.0"
+dependencies = [
+ "compiler",
+ "foundation",
+ "lexer",
+ "parser",
+ "vm",
+]
+
+[[package]]
 name = "parser"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "ecow",
- "lexer",
+ "foundation",
  "rustc-hash",
  "thiserror",
 ]
@@ -165,12 +182,9 @@ dependencies = [
 
 [[package]]
 name = "run"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
- "compiler",
- "lexer",
- "parser",
- "vm",
+ "lico_core",
 ]
 
 [[package]]
@@ -230,7 +244,7 @@ checksum = "711b9620af191e0cdc7468a8d14e709c3dcdb115b36f838e601583af800a370a"
 
 [[package]]
 name = "vm"
-version = "0.0.0"
+version = "0.1.0"
 
 [[package]]
 name = "windows-sys"

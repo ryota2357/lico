@@ -1,6 +1,4 @@
 use super::*;
-use lexer::TextSpan;
-use parser::tree::*;
 
 macro_rules! impl_compilable_for_spanned {
     ($ty:ty) => {

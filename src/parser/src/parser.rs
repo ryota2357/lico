@@ -56,7 +56,7 @@ mod internal {
         }
 
         #[inline]
-        pub fn look(&self, i: isize) -> Option<&(lexer::Token<'_>, lexer::TextSpan)> {
+        pub fn look(&self, i: isize) -> Option<&(Token<'_>, TextSpan)> {
             let index = self.0.index as isize + i;
             debug_assert!(index >= 0);
             self.0.tokens.get(index as usize)

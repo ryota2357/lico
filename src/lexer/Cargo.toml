@@ -5,7 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-ecow = { workspace = true }
+foundation.workspace = true
 thiserror = { workspace = true }
 unicode-ident = { workspace = true }
 

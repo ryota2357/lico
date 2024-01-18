@@ -5,7 +5,7 @@ macro_rules! expression_test {
     (name = $name:ident, source = $source:expr, expected = [$($lines:tt)*]) => {
         #[test]
         fn $name() {
-            use parser::tree::Statement;
+            use foundation::ast::Statement;
             fn decrement_ranges(input: &str, amount: u32) -> String {
                 let re = regex::Regex::new(r"@(\d+)\.\.(\d+)").unwrap();
                 let result = re.replace_all(input, |captures: &regex::Captures| {

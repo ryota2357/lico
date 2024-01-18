@@ -1,4 +1,4 @@
-use lexer::TextSpan;
+use foundation::TextSpan;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Error {

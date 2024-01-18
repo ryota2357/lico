@@ -1,8 +1,20 @@
-[package]
-name = "lico"
-version = "0.0.0"
+[workspace]
+resolver = "2"
+members = ["run"]
+
+[workspace.package]
+version = "0.1.0"
 authors = ["ryota2357"]
 edition = "2021"
+
+[workspace.dependencies]
+lico_core.path = "../src/"
+
+[package]
+name = "lico"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
 description = "TODO"
 license = "MIT"
 
@@ -12,20 +24,5 @@ path = "main.rs"
 doc = false
 
 [dependencies]
-run.path = "run"
+run.path = "./run/"
 clap = { version = "4.4.18", features = ["derive"] }
-
-[workspace]
-resolver = "2"
-members = ["run"]
-
-[workspace.package]
-version = "0.0.0"
-authors = ["ryota2357"]
-edition = "2021"
-
-[workspace.dependencies]
-compiler.path = "../src/compiler"
-lexer.path = "../src/lexer"
-parser.path = "../src/parser"
-vm.path = "../src/vm"

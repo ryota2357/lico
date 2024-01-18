@@ -1,4 +1,3 @@
-use lexer::TextSpan;
 use vm::code::{ArgumentKind, BuiltinInstr};
 
 use super::*;

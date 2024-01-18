@@ -1,10 +1,4 @@
-#![allow(dead_code)]
-
-mod token;
-pub use token::Token;
-
-mod textspan;
-pub use textspan::TextSpan;
+use foundation::*;
 
 mod lexer;
 use lexer::Lexer;
@@ -12,8 +6,8 @@ use lexer::Lexer;
 mod tokenize;
 use tokenize::tokenize;
 
-pub mod error;
-use error::Error;
+mod error;
+pub use error::Error;
 
 pub fn parse(source: &str) -> (Vec<(Token, TextSpan)>, Vec<Error>) {
     let mut lexer = Lexer::new(source);

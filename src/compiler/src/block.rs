@@ -1,6 +1,4 @@
 use super::*;
-use lexer::TextSpan;
-use parser::tree::*;
 
 impl<'node, 'src: 'node> Compilable<'node, 'src> for Block<'src> {
     fn compile(&'node self, fragment: &mut Fragment, context: &mut Context<'src>) -> Result<()> {

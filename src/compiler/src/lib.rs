@@ -1,6 +1,8 @@
 pub mod error;
 use error::Error;
 
+use foundation::{ast::*, TextSpan};
+
 type Result<T> = std::result::Result<T, Error>;
 
 mod tools;
@@ -11,7 +13,7 @@ use block::*;
 mod expression;
 mod statement;
 
-pub fn compile<'src>(program: &'src parser::tree::Program<'src>) -> Result<Vec<vm::code::Code>> {
+pub fn compile<'src>(program: &'src Program<'src>) -> Result<Vec<vm::code::Code>> {
     use vm::code::{ArgumentKind, BuiltinInstr};
 
     let mut fragment = Fragment::new();
