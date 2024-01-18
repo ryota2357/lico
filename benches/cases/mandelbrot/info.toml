@@ -1,0 +1,18 @@
+warmup = 0
+runs = 10
+
+[[benches]]
+name = "Node.js (JavaScript)"
+base = true
+command = "node"
+path = "main.js"
+
+[[benches]]
+name = "Python"
+command = "python"
+path = "main.py"
+
+[[benches]]
+name = "Lico"
+command = "lico run"
+path = "main.lico"

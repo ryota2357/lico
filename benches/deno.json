@@ -1,0 +1,8 @@
+{
+  "tasks": {
+    "bench": "deno run  --allow-read  --allow-write --allow-run main.ts",
+    "upgrade": "deno run --allow-read --allow-net --allow-write https://deno.land/x/udd/main.ts scripts/deps.ts"
+  },
+  "lock": false
+}
+
