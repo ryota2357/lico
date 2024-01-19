@@ -2,103 +2,139 @@ use super::*;
 
 pub fn run_float_method(float: f64, name: &str, args: &[Object]) -> Result<Object, String> {
     match name {
+        // abs() -> Float
         "abs" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.abs()))
         }
+
+        // acos() -> Float
         "acos" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.acos()))
         }
+
+        // acosh() -> Float
         "acosh" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.acosh()))
         }
+
+        // asin() -> Float
         "asin" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.asin()))
         }
+
+        // asinh() -> Float
         "asinh" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.asinh()))
         }
+
+        // atan() -> Float
         "atan" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.atan()))
         }
+
+        // atan2(float) -> Float
         "atan2" => {
-            ensure_argument_length!(args, 1);
-            let Object::Float(other) = args[0] else {
-                return Err(format!("{} takes an float", name));
-            };
+            let other = extract_argument!(args, [Float]);
             Ok(Object::Float(float.atan2(other)))
         }
+
+        // atanh() -> Float
         "atanh" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.atanh()))
         }
+
+        // cbrt() -> Float
         "cbar" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.cbrt()))
         }
+
+        // ceil() -> Float
         "ceil" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.ceil()))
         }
+
+        // clamp(min: Float, max: Float) -> Float
         "clamp" => {
-            ensure_argument_length!(args, 2);
-            let Object::Float(min) = args[0] else {
-                return Err(format!("{} takes an float", name));
-            };
-            let Object::Float(max) = args[1] else {
-                return Err(format!("{} takes an float", name));
-            };
+            let (min, max) = extract_argument!(args, [Float, Float]);
             Ok(Object::Float(float.clamp(min, max)))
         }
+
+        // cos() -> Float
         "cos" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.cos()))
         }
+
+        // cosh() -> Float
         "cosh" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.cosh()))
         }
+
+        // exp() -> Float
         "exp" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.exp()))
         }
+
+        // exp2() -> Float
         "exp2" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.exp2()))
         }
+
+        // floor() -> Float
         "floor" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.floor()))
         }
+
+        // fract() -> Float
         "fract" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.fract()))
         }
+
+        // ln() -> Float
         "ln" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.ln()))
         }
+
+        // log(base: Float|Int) -> Float
         "log" => {
-            ensure_argument_length!(args, 1);
-            match args[0] {
-                Object::Float(base) => Ok(Object::Float(float.log(base))),
-                Object::Int(base) => Ok(Object::Float(float.log(base as f64))),
-                _ => Err(format!("{} takes an float", name)),
-            }
+            let base = extract_argument!(args, [
+                {
+                    Object::Float(base) => *base,
+                    Object::Int(base) => *base as f64,
+                    _ => return Err(format!("{} takes an float", name)),
+                }
+            ]);
+            Ok(Object::Float(float.log(base)))
         }
+
+        // log10() -> Float
         "log10" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.log10()))
         }
+
+        // log2() -> Float
         "log2" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.log2()))
         }
+
+        // pow(exp: Float|Int) -> Float
         "pow" => {
             ensure_argument_length!(args, 1);
             match args[0] {
@@ -115,51 +151,74 @@ pub fn run_float_method(float: f64, name: &str, args: &[Object]) -> Result<Objec
                 _ => Err(format!("{} takes an float", name)),
             }
         }
+
+        // recip() -> Float
         "recip" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.recip()))
         }
+
+        // round() -> Float
         "round" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.round()))
         }
+
+        // sin() -> Float
         "sin" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.sin()))
         }
+
+        // sinh() -> Float
         "sinh" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.sinh()))
         }
+
+        // sqrt() -> Float
         "sqrt" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.sqrt()))
         }
+
+        // tan() -> Float
         "tan" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.tan()))
         }
+
+        // tanh() -> Float
         "tanh" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.tanh()))
         }
+
+        // to_degrees() -> Float
         "to_degrees" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.to_degrees()))
         }
+
+        // to_radians() -> Float
         "to_string" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             let string = float.to_string();
             Ok(Object::new_string(string))
         }
+
+        // to_radians() -> Float
         "to_radians" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.to_radians()))
         }
+
+        // trunc() -> Float
         "trunc" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Float(float.trunc()))
         }
+
         _ => Err(format!("{} is not a method of float", name)),
     }
 }

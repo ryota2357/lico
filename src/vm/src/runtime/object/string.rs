@@ -66,12 +66,15 @@ pub fn run_string_method(
     args: &[Object],
 ) -> Result<Object, String> {
     match name {
+        // len() -> Int
         "len" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Int(string.get_chars().len() as i64))
         }
+
+        // to_string() -> String
         "to_string" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::String(string))
         }
         _ => Err(format!("{} is not a method of string", name)),

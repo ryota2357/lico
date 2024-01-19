@@ -81,8 +81,9 @@ pub fn run_table_default_method(
     args: &[Object],
 ) -> Result<Object, String> {
     match name {
+        // keys() -> Array
         "keys" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             let keys = table
                 .borrow()
                 .keys()
@@ -92,32 +93,30 @@ pub fn run_table_default_method(
             let array = ArrayObject::new(keys);
             Ok(Object::new_array(array))
         }
+
+        // values() -> Array
         "values" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             let values = table.borrow().values().cloned().collect();
             let array = ArrayObject::new(values);
             Ok(Object::new_array(array))
         }
+
+        // len() -> Int
         "len" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Int(table.borrow().len() as i64))
         }
+
+        // contains(key: String) -> Bool
         "contains" => {
-            ensure_argument_length!(args, 1);
-            let key = if let Object::String(key) = &args[0] {
-                key
-            } else {
-                return Err(format!("expected string, got {:?}", args[0]));
-            };
+            let key = extract_argument!(args, [String]);
             Ok(Object::Bool(table.borrow().contains_key(key.as_str())))
         }
+
+        // remove(key: String) -> Any
         "remove" => {
-            ensure_argument_length!(args, 1);
-            let key = if let Object::String(key) = &args[0] {
-                key
-            } else {
-                return Err(format!("expected string, got {:?}", args[0]));
-            };
+            let key = extract_argument!(args, [String]);
             Ok(table
                 .borrow_mut()
                 .remove(key.as_str())

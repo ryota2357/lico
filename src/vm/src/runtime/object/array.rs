@@ -36,8 +36,9 @@ pub fn run_array_method(
     args: &[Object],
 ) -> Result<Object, String> {
     match name {
+        // __get_iterator() -> Table
         "__get_iterator" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             // iter = {
             //     __array = array,
             //     __version = array.version,
@@ -74,9 +75,9 @@ pub fn run_array_method(
                 .collect(),
             );
             iter_tbl.add_method(
-                "__move_next",
+                "__move_next", // __move_next() -> Bool
                 TableMethod::Builtin(|iter: Rc<RefCell<TableObject>>, args| {
-                    ensure_argument_length!(args, 0);
+                    extract_argument!(args, []);
                     let (array, version, index) = table_extract_values!(iter, {
                         __array: Array, __version: Int, __index: Int,
                     });
@@ -98,9 +99,9 @@ pub fn run_array_method(
                 }),
             );
             iter_tbl.add_method(
-                "__current",
+                "__current", // __current() -> Object
                 TableMethod::Builtin(|iter, args| {
-                    ensure_argument_length!(args, 0);
+                    extract_argument!(args, []);
                     let current = iter.borrow().get("__current").cloned();
                     Ok(current.unwrap_or(Object::Nil))
                 }),
@@ -108,19 +109,23 @@ pub fn run_array_method(
 
             Ok(Object::new_table(iter_tbl))
         }
+
+        // len() -> Int
         "len" => {
-            ensure_argument_length!(args, 0);
+            extract_argument!(args, []);
             Ok(Object::Int(array.borrow().len() as i64))
         }
+
+        // push(value: Object) -> Nil
         "push" => {
-            ensure_argument_length!(args, 1);
-            array.borrow_mut().push(args[0].clone());
+            let value = extract_argument!(args, [{ x => x.clone() }]);
+            array.borrow_mut().push(value);
             Ok(Object::Nil)
         }
-        "pop" => {
-            ensure_argument_length!(args, 0);
-            Ok(array.borrow_mut().pop().unwrap_or(Object::Nil))
-        }
+
+        // pop() -> Object
+        "pop" => Ok(array.borrow_mut().pop().unwrap_or(Object::Nil)),
+
         _ => Err(format!("array has no method {}", name)),
     }
 }
