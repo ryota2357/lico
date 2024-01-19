@@ -298,3 +298,103 @@ fn custom_method() {
         unreachable!()
     }
 }
+
+#[test]
+fn call() {
+    use vm::runtime::{FunctionObject, TableObject};
+
+    let table_obj_0 = Object::new_table(TableObject::new(
+        [("key".into(), Object::Int(1))].into_iter().collect(),
+    ));
+    let table_obj_1 = Object::new_table(TableObject::new(
+        [("key".into(), Object::Int(2))].into_iter().collect(),
+    ));
+    let (func_obj_0, func_obj_1) = {
+        let code = [
+            LoadInt(100),
+            LoadLocal(LocalId(0)),
+            LoadString(Rc::new("key".to_string())),
+            SetItem,
+            LoadNil,
+            Return,
+        ];
+        (
+            Object::new_function(FunctionObject {
+                id: (0, 0),
+                env: vec![],
+                args: vec![ArgumentKind::Copy],
+                code: code.to_vec(),
+            }),
+            Object::new_function(FunctionObject {
+                id: (0, 0),
+                env: vec![],
+                args: vec![ArgumentKind::Auto],
+                code: code.to_vec(),
+            }),
+        )
+    };
+
+    let mut runtime = Runtime::new();
+    runtime.variable_table.push(table_obj_0); // 0
+    runtime.variable_table.push(table_obj_1); // 1
+    runtime.variable_table.push(func_obj_0); // 2
+    runtime.variable_table.push(func_obj_1); // 3
+    vm::execute(
+        &[
+            LoadLocal(LocalId(2)),
+            LoadLocal(LocalId(0)),
+            Call(1),
+            LoadLocal(LocalId(3)),
+            LoadLocal(LocalId(1)),
+            Call(1),
+            Exit,
+        ],
+        &mut runtime,
+    )
+    .unwrap();
+
+    if let Object::Table(table_1) = runtime.variable_table.get(LocalId(0)) {
+        assert_eq!(table_1.borrow().get("key"), Some(&Object::Int(1)));
+    } else {
+        unreachable!()
+    }
+    if let Object::Table(table_2) = runtime.variable_table.get(LocalId(1)) {
+        assert_eq!(table_2.borrow().get("key"), Some(&Object::Int(100)));
+    } else {
+        unreachable!()
+    }
+}
+
+#[test]
+fn set_item() {
+    use vm::runtime::TableObject;
+
+    let table_obj = Object::new_table(TableObject::new(
+        [("a".into(), Object::Int(1))].into_iter().collect(),
+    ));
+
+    let mut runtime = Runtime::new();
+    runtime.variable_table.push(table_obj);
+    vm::execute(
+        &[
+            LoadInt(2),
+            LoadLocal(LocalId(0)),
+            LoadString(Rc::new("a".to_string())),
+            SetItem,
+            LoadBool(true),
+            LoadLocal(LocalId(0)),
+            LoadString(Rc::new("b".to_string())),
+            SetItem,
+            Exit,
+        ],
+        &mut runtime,
+    )
+    .unwrap();
+
+    if let Object::Table(table) = runtime.variable_table.get(LocalId(0)) {
+        assert_eq!(table.borrow().get("a"), Some(&Object::Int(2)));
+        assert_eq!(table.borrow().get("b"), Some(&Object::Bool(true)));
+    } else {
+        unreachable!()
+    }
+}

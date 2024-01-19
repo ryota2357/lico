@@ -193,8 +193,7 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 let accesser = runtime.stack.pop().ensure_object();
                 let target = runtime.stack.pop();
                 let value = runtime.stack.pop().ensure_object();
-                let res = code_impl::set_item(target, accesser, value)?;
-                runtime.stack.push(res);
+                code_impl::set_item(target, accesser, value)?;
                 pc += 1;
             }
             GetItem => {
@@ -526,36 +525,30 @@ mod code_impl {
         }
     }
 
-    pub fn set_item(
-        target: StackValue,
-        accesser: Object,
-        value: Object,
-    ) -> Result<StackValue, String> {
+    pub fn set_item(target: StackValue, accesser: Object, value: Object) -> Result<(), String> {
         // TODO: array bounds check
-        let res = match target {
+        match target {
             StackValue::RawArray(mut array) => {
                 let index = accesser.ensure_int()?;
                 array[index as usize] = value;
-                StackValue::RawArray(array)
             }
             StackValue::Object(Object::Array(array)) => {
                 let index = accesser.ensure_int()?;
                 array.borrow_mut()[index as usize] = value;
-                StackValue::Object(Object::Array(array))
             }
             StackValue::Object(Object::Table(table)) => {
                 let index = accesser.ensure_string()?;
-                if let Some(t) = table.borrow_mut().get_mut(index.as_str()) {
+                let mut table = table.borrow_mut();
+                if let Some(t) = table.get_mut(index.as_str()) {
                     *t = value;
                 } else {
                     let index = index.to_string();
-                    table.borrow_mut().insert(index.into(), value);
+                    table.insert(index.into(), value);
                 }
-                StackValue::Object(Object::Table(table))
             }
             x => Err(format!("Expected Array or Table, but got {:?}", x))?,
         };
-        Ok(res)
+        Ok(())
     }
 
     pub fn get_item(target: StackValue, accesser: Object) -> Result<Object, String> {
