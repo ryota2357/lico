@@ -30,6 +30,13 @@ impl StringObject {
     pub fn as_str(&self) -> &str {
         self.value.as_str()
     }
+
+    pub fn deep_clone(&self) -> Self {
+        Self {
+            value: Rc::new(self.value.as_str().to_string()),
+            chars: None,
+        }
+    }
 }
 
 impl PartialEq for StringObject {

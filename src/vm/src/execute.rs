@@ -446,8 +446,15 @@ mod shared_proc {
             runtime.variable_table.push_ref(Rc::clone(value));
         }
         let args_len = func.args.len();
-        for (i, _attr) in func.args.iter().enumerate() {
-            let value = args.get(args_len - i - 1).cloned().unwrap_or(Object::Nil);
+        for (i, attr) in func.args.iter().enumerate() {
+            let value = args
+                .get(args_len - i - 1)
+                .map(|arg| match attr {
+                    ArgumentKind::Copy => arg.deep_clone(),
+                    ArgumentKind::Ref => todo!("ref argument"),
+                    ArgumentKind::Auto => arg.clone(),
+                })
+                .unwrap_or(Object::Nil);
             runtime.variable_table.push(value);
         }
         let ret = execute(&func.code, runtime)?;

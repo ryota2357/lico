@@ -84,6 +84,20 @@ impl Object {
         }
     }
 
+    pub fn deep_clone(&self) -> Self {
+        match self {
+            Object::Int(x) => Object::Int(*x),
+            Object::Float(x) => Object::Float(*x),
+            Object::String(x) => Object::String(x.deep_clone()),
+            Object::Bool(x) => Object::Bool(*x),
+            Object::Nil => Object::Nil,
+            Object::Function(x) => Object::Function(Rc::clone(x)), // It is ok because FunctionObject is immutable
+            Object::Array(x) => Object::new_array(x.borrow().deep_clone()),
+            Object::Table(x) => Object::new_table(x.borrow().deep_clone()),
+            Object::RustFunction(x) => Object::RustFunction(*x),
+        }
+    }
+
     ensure_fn!(
         ensure_int -> i64,
         Object::Int(x) => Ok(x)

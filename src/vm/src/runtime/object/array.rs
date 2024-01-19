@@ -14,6 +14,13 @@ impl ArrayObject {
             version: 0,
         }
     }
+
+    pub fn deep_clone(&self) -> Self {
+        Self {
+            value: self.value.iter().map(|x| x.deep_clone()).collect(),
+            version: 0,
+        }
+    }
 }
 
 impl Deref for ArrayObject {

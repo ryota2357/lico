@@ -27,6 +27,21 @@ impl TableObject {
         }
     }
 
+    pub fn deep_clone(&self) -> Self {
+        let value = self
+            .value
+            .iter()
+            .map(|(k, v)| (k.clone(), v.deep_clone()))
+            .collect();
+        let methods = self.methods.as_ref().map(|methods| {
+            methods
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect()
+        });
+        Self { value, methods }
+    }
+
     pub fn add_method(&mut self, name: impl Into<Cow<'static, str>>, func: impl Into<TableMethod>) {
         if let Some(methods) = &mut self.methods {
             methods.insert(name.into(), func.into());
