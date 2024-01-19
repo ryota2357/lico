@@ -37,7 +37,7 @@ fn operator() {
     assert_eq!(parse_ok("+"), vec![(Token::Plus, 0..1)]);
     assert_eq!(parse_ok("-"), vec![(Token::Minus, 0..1)]);
     assert_eq!(parse_ok("*"), vec![(Token::Star, 0..1)]);
-    assert_eq!(parse_ok("/"), vec![(Token::Div, 0..1)]);
+    assert_eq!(parse_ok("/"), vec![(Token::Slash, 0..1)]);
     assert_eq!(parse_ok("%"), vec![(Token::Mod, 0..1)]);
     assert_eq!(parse_ok("=="), vec![(Token::Eq, 0..2)]);
     assert_eq!(parse_ok("!="), vec![(Token::NotEq, 0..2)]);

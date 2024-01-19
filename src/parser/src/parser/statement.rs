@@ -52,7 +52,7 @@ impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
                 self.report(Error::UnexpectedSymbol("*", span));
                 Some((Statement::Error, span))
             }
-            Token::Div => {
+            Token::Slash => {
                 self.report(Error::UnexpectedSymbol("/", span));
                 Some((Statement::Error, span))
             }

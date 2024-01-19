@@ -33,7 +33,7 @@ impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
             Token::Plus
             | Token::Minus
             | Token::Star
-            | Token::Div
+            | Token::Slash
             | Token::Mod
             | Token::Eq
             | Token::NotEq
@@ -488,7 +488,7 @@ mod binding_power {
         #[rustfmt::skip]
         let (bp, err, op) = match token {
             Token::Star      => (left(MULTIPLICATIVE), None, BinaryOp::Mul),
-            Token::Div       => (left(MULTIPLICATIVE), None, BinaryOp::Div),
+            Token::Slash     => (left(MULTIPLICATIVE), None, BinaryOp::Div),
             Token::Mod       => (left(MULTIPLICATIVE), None, BinaryOp::Mod),
             Token::Plus      => (left(ADDITIVE),       None, BinaryOp::Add),
             Token::Minus     => (left(ADDITIVE),       None, BinaryOp::Sub),

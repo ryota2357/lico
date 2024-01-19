@@ -18,7 +18,7 @@ pub fn tokenize(lexer: &mut Lexer) {
             // operators
             '+' => lexer.bump(Token::Plus),
             '*' => lexer.bump(Token::Star),
-            '/' => lexer.bump(Token::Div),
+            '/' => lexer.bump(Token::Slash),
             '%' => lexer.bump(Token::Mod),
             '-' => {
                 if lexer.peek() == Some('>') {

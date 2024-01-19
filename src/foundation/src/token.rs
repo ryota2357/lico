@@ -30,7 +30,7 @@ pub enum Token<'src> {
     Plus,      // +
     Minus,     // -
     Star,      // *
-    Div,       // /
+    Slash,     // /
     Mod,       // %
     Eq,        // ==
     NotEq,     // !=
@@ -91,7 +91,7 @@ impl std::fmt::Display for Token<'_> {
             Token::Plus => write!(f, "+"),
             Token::Minus => write!(f, "-"),
             Token::Star => write!(f, "*"),
-            Token::Div => write!(f, "/"),
+            Token::Slash => write!(f, "/"),
             Token::Mod => write!(f, "%"),
             Token::Eq => write!(f, "=="),
             Token::NotEq => write!(f, "!="),
