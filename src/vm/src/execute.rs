@@ -508,7 +508,6 @@ mod code_impl {
         runtime: &mut Runtime,
     ) -> Result<Object, String> {
         match callee {
-            StackValue::RawFunction(func) => shared_proc::execute_func(&func, args, runtime),
             StackValue::Object(Object::Function(func)) => {
                 shared_proc::execute_func(&func, args, runtime)
             }

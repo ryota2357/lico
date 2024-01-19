@@ -32,7 +32,6 @@ impl Stack {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum StackValue {
-    RawFunction(FunctionObject),
     RawArray(Vec<Object>),
     Object(Object),
     Named(Rc<String>, Object),
@@ -41,7 +40,6 @@ pub enum StackValue {
 impl StackValue {
     pub fn ensure_object(self) -> Object {
         match self {
-            StackValue::RawFunction(func) => Object::new_function(func),
             StackValue::RawArray(array) => Object::new_array(ArrayObject::new(array)),
             StackValue::Object(obj) => obj,
             x => panic!("[BUG] Expected Object, but got {:?}", x),
@@ -65,7 +63,6 @@ macro_rules! impl_from {
         }
     };
 }
-impl_from!(FunctionObject => RawFunction);
 impl_from!(Vec<Object> => RawArray);
 impl_from!(Object => Object);
 impl From<(Rc<String>, Object)> for StackValue {
