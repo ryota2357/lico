@@ -8,6 +8,7 @@ import {
 const info = await Promise.all([
   load_benchmark_info("fibonacci"),
   load_benchmark_info("mandelbrot"),
+  load_benchmark_info("nbody"),
 ]);
 
 await Promise.all(info.map(async (info) => {
@@ -36,17 +37,7 @@ await Promise.all(info.map(async (info) => {
 
   display_benchmark_result({
     name: info.name,
-    base: {
-      name: base_result.name,
-      mean: base_result.mean,
-      median: base_result.median,
-    },
-    compare: compare_results.sort((a, b) => a.name.localeCompare(b.name)).map((
-      result,
-    ) => ({
-      name: result.name,
-      mean: result.mean,
-      median: result.median,
-    })),
+    base: { ...base_result },
+    compare: compare_results.sort((a, b) => a.name.localeCompare(b.name)),
   });
 }));

@@ -1,0 +1,155 @@
+var PI = 3.141592653589793
+var SOLAR_MASS = 4 * PI * PI
+var DAYS_PER_YEAR = 365.24
+
+func Body(x, y, z, vx, vy, vz, mass)
+    return {
+        x = x,
+        y = y,
+        z = z,
+        vx = vx * DAYS_PER_YEAR,
+        vy = vy * DAYS_PER_YEAR,
+        vz = vz * DAYS_PER_YEAR,
+        mass = mass * SOLAR_MASS,
+    }
+end
+
+func jupiter()
+    return Body(
+        4.84143144246472090,
+        -1.16032004402742839,
+        -0.103622044471123109,
+        0.00166007664274403694,
+        0.00769901118419740425,
+        -0.0000690460016972063023,
+        0.000954791938424326609,
+    )
+end
+
+func saturn()
+    return Body(
+        8.34336671824457987,
+        4.12479856412430479,
+        -0.403523417114321381,
+        -0.00276742510726862411,
+        0.00499852801234917238,
+        0.0000230417297573763929,
+        0.000285885980666130812,
+    )
+end
+
+func uranus()
+    return Body(
+        12.8943695621391310,
+        -15.1111514016986312,
+        -0.223307578892655734,
+        0.00296460137564761618,
+        0.00237847173959480950,
+        -0.0000296589568540237556,
+        0.0000436624404335156298,
+    )
+end
+
+func neptune()
+    return Body(
+        15.3796971148509165,
+        -25.9193146099879641,
+        0.179258772950371181,
+        0.00268067772490389322,
+        0.00162824170038242295,
+        -0.0000951592254519715870,
+        0.0000515138902046611451,
+    )
+end
+
+func sun()
+    return Body(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0)
+end
+
+var bodies = [sun(), jupiter(), saturn(), uranus(), neptune()]
+
+func offset_momentum()
+    var px = 0
+    var py = 0
+    var pz = 0
+    for body in bodies do
+        px = px + body.vx * body.mass
+        py = py + body.vy * body.mass
+        pz = pz + body.vz * body.mass
+    end
+
+    var body = bodies[0]
+    body.vx = -(px / SOLAR_MASS)
+    body.vy = -(py / SOLAR_MASS)
+    body.vz = -(pz / SOLAR_MASS)
+end
+
+func advance(dt)
+    for i in 0->upto(bodies->len() - 1) do
+        var body_i = bodies[i]
+
+        for j in (i + 1)->upto(bodies->len() - 1) do
+            var body_j = bodies[j]
+
+            var dx = body_i.x - body_j.x
+            var dy = body_i.y - body_j.y
+            var dz = body_i.z - body_j.z
+
+            var dist2 = dx * dx + dy * dy + dz * dz
+            var mag = dt / (dist2 * dist2->sqrt())
+
+            body_i.vx = body_i.vx - (dx * body_j.mass * mag)
+            body_i.vy = body_i.vy - (dy * body_j.mass * mag)
+            body_i.vz = body_i.vz - (dz * body_j.mass * mag)
+
+            body_j.vx = body_j.vx + (dx * body_i.mass * mag)
+            body_j.vy = body_j.vy + (dy * body_i.mass * mag)
+            body_j.vz = body_j.vz + (dz * body_i.mass * mag)
+        end
+    end
+
+    for body in bodies do
+        body.x = body.x + dt * body.vx
+        body.y = body.y + dt * body.vy
+        body.z = body.z + dt * body.vz
+    end
+end
+
+func energy()
+    var e = 0
+
+    for i in 0->upto(bodies->len() - 1) do
+        var body_i = bodies[i]
+        e = e + (
+            0.5
+            * body_i.mass
+            * (
+                body_i.vx * body_i.vx
+                + body_i.vy * body_i.vy
+                + body_i.vz * body_i.vz
+            )
+        )
+
+        for j in (i + 1)->upto(bodies->len() - 1) do
+            var body_j = bodies[j]
+            var dx = body_i.x - body_j.x
+            var dy = body_i.y - body_j.y
+            var dz = body_i.z - body_j.z
+
+            var distance = (dx * dx + dy * dy + dz * dz)->sqrt()
+            e = e - (body_i.mass * body_j.mass) / distance
+        end
+    end
+    return e
+end
+
+# const n = require("stdio").read_line()->parse_int()
+var n = 50000
+
+offset_momentum()
+
+println(energy())
+for i in 0->upto(n - 1) do
+    advance(0.01)
+end
+println(energy())
