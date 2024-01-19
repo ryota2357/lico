@@ -1,4 +1,5 @@
 use super::*;
+use smallvec::SmallVec;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
@@ -117,16 +118,74 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 }
             }
             CallMethod(name, args_len) => {
-                let args = create_args_vec(*args_len, runtime);
-                let self_obj = runtime.stack.pop().ensure_object();
-                let res = code_impl::call_method(self_obj, name, args, runtime)?;
+                let res = match args_len {
+                    0 => {
+                        let self_obj = runtime.stack.pop().ensure_object();
+                        code_impl::call_method(self_obj, name, &[], runtime)?
+                    }
+                    1 => {
+                        let arg = runtime.stack.pop().ensure_object();
+                        let self_obj = runtime.stack.pop().ensure_object();
+                        code_impl::call_method(self_obj, name, &[arg], runtime)?
+                    }
+                    2 => {
+                        let arg2 = runtime.stack.pop().ensure_object();
+                        let arg1 = runtime.stack.pop().ensure_object();
+                        let self_obj = runtime.stack.pop().ensure_object();
+                        code_impl::call_method(self_obj, name, &[arg2, arg1], runtime)?
+                    }
+                    3 => {
+                        let arg3 = runtime.stack.pop().ensure_object();
+                        let arg2 = runtime.stack.pop().ensure_object();
+                        let arg1 = runtime.stack.pop().ensure_object();
+                        let self_obj = runtime.stack.pop().ensure_object();
+                        code_impl::call_method(self_obj, name, &[arg3, arg2, arg1], runtime)?
+                    }
+                    _ => {
+                        let mut args = Vec::with_capacity(*args_len as usize);
+                        for _ in 0..*args_len {
+                            args.push(runtime.stack.pop().ensure_object());
+                        }
+                        let self_obj = runtime.stack.pop().ensure_object();
+                        code_impl::call_method(self_obj, name, &args, runtime)?
+                    }
+                };
                 runtime.stack.push(res.into());
                 pc += 1;
             }
             Call(args_len) => {
-                let args = create_args_vec(*args_len, runtime);
-                let callee = runtime.stack.pop();
-                let res = code_impl::call(callee, args, runtime)?;
+                let res = match args_len {
+                    0 => {
+                        let callee = runtime.stack.pop();
+                        code_impl::call(callee, &[], runtime)?
+                    }
+                    1 => {
+                        let arg = runtime.stack.pop().ensure_object();
+                        let callee = runtime.stack.pop();
+                        code_impl::call(callee, &[arg], runtime)?
+                    }
+                    2 => {
+                        let arg2 = runtime.stack.pop().ensure_object();
+                        let arg1 = runtime.stack.pop().ensure_object();
+                        let callee = runtime.stack.pop();
+                        code_impl::call(callee, &[arg2, arg1], runtime)?
+                    }
+                    3 => {
+                        let arg3 = runtime.stack.pop().ensure_object();
+                        let arg2 = runtime.stack.pop().ensure_object();
+                        let arg1 = runtime.stack.pop().ensure_object();
+                        let callee = runtime.stack.pop();
+                        code_impl::call(callee, &[arg3, arg2, arg1], runtime)?
+                    }
+                    _ => {
+                        let mut args = Vec::with_capacity(*args_len as usize);
+                        for _ in 0..*args_len {
+                            args.push(runtime.stack.pop().ensure_object());
+                        }
+                        let callee = runtime.stack.pop();
+                        code_impl::call(callee, &args, runtime)?
+                    }
+                };
                 runtime.stack.push(res.into());
                 pc += 1;
             }
@@ -264,10 +323,13 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 pc += 1;
             }
             Builtin(instr, args_len) => {
-                let args = create_args_vec(*args_len, runtime);
+                let mut args = SmallVec::<[_; 2]>::with_capacity(*args_len as usize);
+                for _ in 0..*args_len {
+                    args.push(runtime.stack.pop().ensure_object());
+                }
                 match instr {
                     BuiltinInstr::Write => {
-                        for arg in args {
+                        for arg in args.iter().rev() {
                             runtime.stdio.write(format!("{}", arg));
                         }
                     }
@@ -276,7 +338,7 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                         runtime.stdio.flush();
                     }
                     BuiltinInstr::WriteError => {
-                        for arg in args {
+                        for arg in args.iter().rev() {
                             runtime.stdio.write_err(format!("{}", arg));
                         }
                     }
@@ -371,36 +433,22 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
     }
 }
 
-fn create_args_vec(args_len: u8, runtime: &mut Runtime) -> Vec<Object> {
-    let mut args = Vec::with_capacity(args_len as usize);
-    for _ in 0..args_len {
-        args.push(runtime.stack.pop().ensure_object());
-    }
-    args.reverse();
-    args
-}
-
 mod shared_proc {
     use super::*;
 
     pub fn execute_func(
         func: &FunctionObject,
-        args: Vec<Object>,
+        args: &[Object],
         runtime: &mut Runtime,
     ) -> Result<Object, String> {
-        if func.args.len() != args.len() {
-            return Err(format!(
-                "Expected {} arguments, but got {} arguments.",
-                func.args.len(),
-                args.len()
-            ));
-        }
         runtime.variable_table.push_scope();
         for value in func.env.iter() {
             runtime.variable_table.push_ref(Rc::clone(value));
         }
-        for (_attr, value) in func.args.iter().zip(args.iter()) {
-            runtime.variable_table.push(value.clone());
+        let args_len = func.args.len();
+        for (i, _attr) in func.args.iter().enumerate() {
+            let value = args.get(args_len - i - 1).cloned().unwrap_or(Object::Nil);
+            runtime.variable_table.push(value);
         }
         let ret = execute(&func.code, runtime)?;
         runtime.variable_table.pop_scope();
@@ -410,17 +458,22 @@ mod shared_proc {
     pub fn exec_table_method(
         table: Rc<RefCell<TableObject>>,
         name: &str,
-        mut args: Vec<Object>,
+        args: &[Object],
         runtime: &mut Runtime,
     ) -> Result<Object, String> {
         let method = table.borrow().get_method(name);
         match method {
-            Some(TableMethod::Builtin(func)) => func(table, &args),
+            Some(TableMethod::Builtin(func)) => func(table, args),
             Some(TableMethod::Custom(func)) => {
-                args.insert(0, Object::Table(table));
-                execute_func(&func, args, runtime)
+                let args = args
+                    .iter()
+                    .cloned()
+                    .chain(std::iter::once(Object::Table(table)))
+                    .collect::<SmallVec<[Object; 3]>>();
+                execute_func(&func, &args, runtime)
             }
-            None => run_table_default_method(table, name, &args),
+            Some(TableMethod::CustomNoSelf(func)) => execute_func(&func, args, runtime),
+            None => run_table_default_method(table, name, args),
         }
     }
 }
@@ -432,16 +485,16 @@ mod code_impl {
     pub fn call_method(
         self_obj: Object,
         name: &str,
-        args: Vec<Object>,
+        args: &[Object],
         runtime: &mut Runtime,
     ) -> Result<Object, String> {
         match self_obj {
-            Object::Int(int) => run_int_method(int, name, &args),
-            Object::Float(float) => run_float_method(float, name, &args),
-            Object::String(string) => run_string_method(string, name, &args),
-            Object::Bool(boolean) => run_bool_method(boolean, name, &args),
-            Object::Nil => run_nil_method(name, &args),
-            Object::Array(array) => run_array_method(array, name, &args),
+            Object::Int(int) => run_int_method(int, name, args),
+            Object::Float(float) => run_float_method(float, name, args),
+            Object::String(string) => run_string_method(string, name, args),
+            Object::Bool(boolean) => run_bool_method(boolean, name, args),
+            Object::Nil => run_nil_method(name, args),
+            Object::Array(array) => run_array_method(array, name, args),
             Object::Table(table) => shared_proc::exec_table_method(table, name, args, runtime),
             Object::Function(_) | Object::RustFunction(_) => {
                 Err("Function does not have methods.".to_string())?
@@ -451,7 +504,7 @@ mod code_impl {
 
     pub fn call(
         callee: StackValue,
-        args: Vec<Object>,
+        args: &[Object],
         runtime: &mut Runtime,
     ) -> Result<Object, String> {
         match callee {
@@ -462,7 +515,7 @@ mod code_impl {
             StackValue::Object(Object::Table(table)) => {
                 shared_proc::exec_table_method(table, &Cow::from("__call"), args, runtime)
             }
-            StackValue::Object(Object::RustFunction(func)) => func(&args),
+            StackValue::Object(Object::RustFunction(func)) => func(args),
             x => Err(format!("Expected Callable Object, but got {:?}", x))?,
         }
     }

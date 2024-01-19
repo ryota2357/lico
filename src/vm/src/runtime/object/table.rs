@@ -16,6 +16,7 @@ pub enum TableMethod {
     #[allow(clippy::type_complexity)]
     Builtin(fn(Rc<RefCell<TableObject>>, &[Object]) -> Result<Object, String>),
     Custom(Rc<FunctionObject>),
+    CustomNoSelf(Rc<FunctionObject>),
 }
 
 impl TableObject {
@@ -41,6 +42,7 @@ impl TableObject {
             methods.get(name).map(|f| match f {
                 TableMethod::Builtin(f) => TableMethod::Builtin(*f),
                 TableMethod::Custom(f) => TableMethod::Custom(Rc::clone(f)),
+                TableMethod::CustomNoSelf(f) => TableMethod::CustomNoSelf(Rc::clone(f)),
             })
         } else {
             None
