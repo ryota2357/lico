@@ -25,6 +25,8 @@ impl ArrayObject {
 
 impl Deref for ArrayObject {
     type Target = Vec<Object>;
+
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.value
     }

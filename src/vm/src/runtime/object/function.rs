@@ -9,6 +9,7 @@ pub struct FunctionObject {
 }
 
 impl PartialEq for FunctionObject {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.id == other.id
     }

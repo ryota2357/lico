@@ -79,12 +79,15 @@ impl From<fn(Rc<RefCell<TableObject>>, &[Object]) -> Result<Object, String>> for
 
 impl Deref for TableObject {
     type Target = HashMap<Cow<'static, str>, Object>;
+
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.value
     }
 }
 
 impl DerefMut for TableObject {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }

@@ -6,6 +6,7 @@ pub struct VariableTable {
 }
 
 impl VariableTable {
+    #[inline]
     pub fn new() -> Self {
         Self {
             scopes: vec![internal::Scope::new()],
