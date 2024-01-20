@@ -7,6 +7,9 @@ pub enum Error {
     #[error("Invalid input sequence")]
     InvalidInputSequence(String, TextSpan),
 
+    #[error("Unsupported operator `{}`", .0)]
+    UnsupportedOperator(&'static str, TextSpan),
+
     #[error("Unknown number literal")]
     UnknownNumberLiteral(String, TextSpan),
 
@@ -47,6 +50,7 @@ impl Error {
         use Error::*;
         match self {
             InvalidInputSequence(x, _) => Some(x.clone()),
+            UnsupportedOperator(x, _) => Some(x.to_string()),
             UnknownNumberLiteral(x, _) => Some(x.clone()),
             InvalidFloatLiteral { info: (x, _), .. } => Some(x.clone()),
             InvalidIntLiteral { info: (x, _), .. } => Some(x.clone()),
@@ -60,6 +64,7 @@ impl Error {
         use Error::*;
         match self {
             InvalidInputSequence(_, x) => *x,
+            UnsupportedOperator(_, x) => *x,
             UnknownNumberLiteral(_, x) => *x,
             InvalidFloatLiteral { info: (_, x), .. } => *x,
             InvalidIntLiteral { info: (_, x), .. } => *x,

@@ -321,6 +321,47 @@ pub fn execute(code: &[Code], runtime: &mut Runtime) -> Result<Object, String> {
                 runtime.stack.push(res.into());
                 pc += 1;
             }
+            BitAnd => {
+                let rhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let lhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let res = Object::Int(lhs & rhs);
+                runtime.stack.push(res.into());
+                pc += 1;
+            }
+            BitOr => {
+                let rhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let lhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let res = Object::Int(lhs | rhs);
+                runtime.stack.push(res.into());
+                pc += 1;
+            }
+            BitXor => {
+                let rhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let lhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let res = Object::Int(lhs ^ rhs);
+                runtime.stack.push(res.into());
+                pc += 1;
+            }
+            BitNot => {
+                let obj = runtime.stack.pop().ensure_object().ensure_int()?;
+                let res = Object::Int(!obj);
+                runtime.stack.push(res.into());
+                pc += 1;
+            }
+            ShiftL => {
+                let rhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let lhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let res = Object::Int(lhs << rhs);
+                runtime.stack.push(res.into());
+                pc += 1;
+            }
+            ShiftR => {
+                let rhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let lhs = runtime.stack.pop().ensure_object().ensure_int()?;
+                let res = Object::Int(lhs >> rhs);
+                runtime.stack.push(res.into());
+                pc += 1;
+            }
             Builtin(instr, args_len) => {
                 let mut args = SmallVec::<[_; 2]>::with_capacity(*args_len as usize);
                 for _ in 0..*args_len {

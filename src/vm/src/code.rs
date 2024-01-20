@@ -51,6 +51,12 @@ pub enum Code {
     Greater,   // >
     GreaterEq, // >=
     Concat,    // ..
+    BitAnd,    // &
+    BitOr,     // |
+    BitXor,    // ^
+    BitNot,    // ~
+    ShiftL,    // <<
+    ShiftR,    // >>
 
     Builtin(BuiltinInstr, u8),
 

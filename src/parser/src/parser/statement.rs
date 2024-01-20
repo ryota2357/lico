@@ -60,6 +60,22 @@ impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
                 self.report(Error::UnexpectedSymbol("%", span));
                 Some((Statement::Error, span))
             }
+            Token::Amp => {
+                self.report(Error::UnexpectedSymbol("&", span));
+                Some((Statement::Error, span))
+            }
+            Token::Pipe => {
+                self.report(Error::UnexpectedSymbol("|", span));
+                Some((Statement::Error, span))
+            }
+            Token::Caret => {
+                self.report(Error::UnexpectedSymbol("^", span));
+                Some((Statement::Error, span))
+            }
+            Token::Tilde => {
+                self.report(Error::UnexpectedSymbol("~", span));
+                Some((Statement::Error, span))
+            }
             Token::Eq => {
                 self.report(Error::UnexpectedSymbol("=", span));
                 Some((Statement::Error, span))
@@ -76,12 +92,20 @@ impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
                 self.report(Error::UnexpectedSymbol("<=", span));
                 Some((Statement::Error, span))
             }
+            Token::Less2 => {
+                self.report(Error::UnexpectedSymbol("<<", span));
+                Some((Statement::Error, span))
+            }
             Token::Greater => {
                 self.report(Error::UnexpectedSymbol(">", span));
                 Some((Statement::Error, span))
             }
             Token::GreaterEq => {
                 self.report(Error::UnexpectedSymbol(">=", span));
+                Some((Statement::Error, span))
+            }
+            Token::Greater2 => {
+                self.report(Error::UnexpectedSymbol(">>", span));
                 Some((Statement::Error, span))
             }
             Token::Dot => {

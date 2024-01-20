@@ -47,6 +47,12 @@ fn compile<'node, 'src: 'node>(
                 ]);
                 Ok(())
             }
+            UnaryOp::BNot => {
+                fragment
+                    .append_compile(expr, context)?
+                    .append(ICode::BitNot(span));
+                Ok(())
+            }
         },
         Expression::Binary { op, lhs, rhs } => match op {
             BinaryOp::Add => {
@@ -160,6 +166,49 @@ fn compile<'node, 'src: 'node>(
                     .append_many([ICode::Jump(2), ICode::LoadBool(true)]);
                 Ok(())
             }
+            BinaryOp::BitAnd => {
+                fragment
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::BitAnd(span));
+                Ok(())
+            }
+            BinaryOp::BitOr => {
+                fragment
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::BitOr(span));
+                Ok(())
+            }
+            BinaryOp::BitXor => {
+                fragment
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::BitXor(span));
+                Ok(())
+            }
+            BinaryOp::BitNot => {
+                fragment
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::BitNot(span));
+                Ok(())
+            }
+            BinaryOp::ShiftLeft => {
+                fragment
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::ShiftL(span));
+                Ok(())
+            }
+            BinaryOp::ShiftRight => {
+                fragment
+                    .append_compile(lhs, context)?
+                    .append_compile(rhs, context)?
+                    .append(ICode::ShiftR(span));
+                Ok(())
+            }
+
             BinaryOp::Concat => {
                 fragment
                     .append_compile(lhs, context)?

@@ -472,6 +472,7 @@ fn expression_pretty_print_inner(builder: &mut PrettyPrintBuilder, expr: &Expres
             let op = match op {
                 UnaryOp::Not => "not",
                 UnaryOp::Neg => "-",
+                UnaryOp::BNot => "~",
             };
             builder.append(2, format!("op: {}", op));
             builder.append(2, "expr");
@@ -499,6 +500,12 @@ fn expression_pretty_print_inner(builder: &mut PrettyPrintBuilder, expr: &Expres
                 BinaryOp::LessEq => "<=",
                 BinaryOp::Greater => ">",
                 BinaryOp::GreaterEq => ">=",
+                BinaryOp::BitAnd => "&",
+                BinaryOp::BitOr => "|",
+                BinaryOp::BitXor => "^",
+                BinaryOp::BitNot => "~",
+                BinaryOp::ShiftLeft => "<<",
+                BinaryOp::ShiftRight => ">>",
                 BinaryOp::Concat => "..",
             };
             builder.append(2, format!("op: {}", op));

@@ -387,6 +387,42 @@ expression_test! {
 }
 
 expression_test! {
+    name = bitwise_op,
+    source = "a | b >> 1 & c << 2 ^ ~d",
+    expected = [
+        "Binary (e)"
+        "  op: |"
+        "  lhs"
+        "    Local (e) a @0..1"
+        "  rhs"
+        "    Binary (e) @4..24"
+        "      op: ^"
+        "      lhs"
+        "        Binary (e) @4..19"
+        "          op: &"
+        "          lhs"
+        "            Binary (e) @4..10"
+        "              op: >>"
+        "              lhs"
+        "                Local (e) b @4..5"
+        "              rhs"
+        "                Primitive (e) 1 @9..10"
+        "          rhs"
+        "            Binary (e) @13..19"
+        "              op: <<"
+        "              lhs"
+        "                Local (e) c @13..14"
+        "              rhs"
+        "                Primitive (e) 2 @18..19"
+        "      rhs"
+        "        Unary (e) @22..24"
+        "          op: ~"
+        "          expr"
+        "            Local (e) d @23..24"
+    ]
+}
+
+expression_test! {
     name = string_concat,
     source = "'a' .. 4 + 1 == 'a5'",
     expected = [

@@ -37,12 +37,12 @@ while y < size do
         bit_num = bit_num + 1
 
         if bit_num == 8 then
-            sum = sum->xor(byte_acc)
+            sum = sum ^ byte_acc
             byte_acc = 0
             bit_num = 0
         elif x == size - 1 then
-            byte_acc = byte_acc->lshift(8 - bit_num)
-            sum = sum->xor(byte_acc)
+            byte_acc = byte_acc << (8 - bit_num)
+            sum = sum ^ byte_acc
             byte_acc = 0
             bit_num = 0
         end

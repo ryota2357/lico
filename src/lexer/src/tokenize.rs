@@ -16,58 +16,124 @@ pub fn tokenize(lexer: &mut Lexer) {
             '#' => tokenize_comment(lexer),
 
             // operators
-            '+' => lexer.bump(Token::Plus),
-            '*' => lexer.bump(Token::Star),
-            '/' => lexer.bump(Token::Slash),
-            '%' => lexer.bump(Token::Mod),
-            '-' => {
-                if lexer.peek() == Some('>') {
+            '+' => match lexer.peek() {
+                Some('+') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("++", span));
+                    lexer.bump(Token::Error("++"));
+                }
+                _ => lexer.bump(Token::Plus),
+            },
+            '-' => match lexer.peek() {
+                Some('>') => {
                     lexer.next();
                     lexer.bump(Token::Arrow);
-                } else {
-                    lexer.bump(Token::Minus)
                 }
-            }
-            '=' => {
-                if lexer.peek() == Some('=') {
+                Some('-') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("--", span));
+                    lexer.bump(Token::Error("--"));
+                }
+                _ => lexer.bump(Token::Minus),
+            },
+            '*' => match lexer.peek() {
+                Some('*') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("**", span));
+                    lexer.bump(Token::Error("**"));
+                }
+                _ => lexer.bump(Token::Star),
+            },
+            '/' => match lexer.peek() {
+                Some('/') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("//", span));
+                    lexer.bump(Token::Error("//"));
+                }
+                _ => lexer.bump(Token::Slash),
+            },
+            '%' => lexer.bump(Token::Mod),
+            '&' => match lexer.peek() {
+                Some('&') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("&&", span));
+                    lexer.bump(Token::Error("&&"));
+                }
+                _ => lexer.bump(Token::Amp),
+            },
+            '|' => match lexer.peek() {
+                Some('|') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("||", span));
+                    lexer.bump(Token::Error("||"));
+                }
+                Some('>') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("|>", span));
+                    lexer.bump(Token::Error("|>"));
+                }
+                _ => lexer.bump(Token::Pipe),
+            },
+            '^' => lexer.bump(Token::Caret),
+            '~' => match lexer.peek() {
+                Some('=') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("~=", span));
+                    lexer.bump(Token::Error("~="));
+                }
+                _ => lexer.bump(Token::Tilde),
+            },
+            '=' => match lexer.peek() {
+                Some('=') => {
                     lexer.next();
                     lexer.bump(Token::Eq);
-                } else {
-                    lexer.bump(Token::Assign);
                 }
-            }
-            '!' => {
-                if lexer.peek() == Some('=') {
+                Some('>') => {
+                    lexer.next();
+                    lexer.report(|span| Error::UnsupportedOperator("=>", span));
+                    lexer.bump(Token::Error("=>"));
+                }
+                _ => lexer.bump(Token::Assign),
+            },
+            '!' => match lexer.peek() {
+                Some('=') => {
                     lexer.next();
                     lexer.bump(Token::NotEq);
-                } else {
-                    lexer.bump(Token::Not);
                 }
-            }
-            '<' => {
-                if lexer.peek() == Some('=') {
+                _ => {
+                    lexer.report(|span| Error::UnsupportedOperator("!", span));
+                    lexer.bump(Token::Error("!"));
+                }
+            },
+            '<' => match lexer.peek() {
+                Some('=') => {
                     lexer.next();
                     lexer.bump(Token::LessEq);
-                } else {
-                    lexer.bump(Token::Less);
                 }
-            }
-            '>' => {
-                if lexer.peek() == Some('=') {
+                Some('<') => {
+                    lexer.next();
+                    lexer.bump(Token::Less2);
+                }
+                _ => lexer.bump(Token::Less),
+            },
+            '>' => match lexer.peek() {
+                Some('=') => {
                     lexer.next();
                     lexer.bump(Token::GreaterEq);
-                } else {
-                    lexer.bump(Token::Greater);
                 }
-            }
-            '.' => {
-                if lexer.peek() == Some('.') {
+                Some('>') => {
+                    lexer.next();
+                    lexer.bump(Token::Greater2);
+                }
+                _ => lexer.bump(Token::Greater),
+            },
+            '.' => match lexer.peek() {
+                Some('.') => {
                     lexer.next();
                     lexer.bump(Token::Dot2);
-                } else {
-                    lexer.bump(Token::Dot);
                 }
-            }
+                _ => lexer.bump(Token::Dot),
+            },
 
             // delimiters
             ',' => lexer.bump(Token::Comma),

@@ -35,12 +35,18 @@ impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
             | Token::Star
             | Token::Slash
             | Token::Mod
+            | Token::Amp
+            | Token::Pipe
+            | Token::Caret
+            | Token::Tilde
             | Token::Eq
             | Token::NotEq
             | Token::Less
             | Token::LessEq
+            | Token::Less2
             | Token::Greater
             | Token::GreaterEq
+            | Token::Greater2
             | Token::Dot
             | Token::Arrow
             | Token::Dot2
@@ -83,7 +89,10 @@ impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
         };
 
         let (mut lhs, mut lhs_span) = match binding_power::prefix_op(current) {
-            Some((op, r_bp)) => {
+            Some((op, r_bp, err)) => {
+                if let Some(err) = err {
+                    self.report(Error::Contextual(err, current_span));
+                }
                 let (rhs, rhs_span) = self.expr_bp(r_bp);
                 let span = TextSpan::new(current_span.start(), rhs_span.end());
                 match (op, rhs) {
@@ -429,52 +438,61 @@ impl<'tokens, 'src: 'tokens> Parser<'tokens, 'src> {
     }
 }
 
-/// |       Precedence        | Associativity |   Operators   |
-/// | ----------------------- | ------------- | ------------- |
-/// | 9: Call                 |    postfix    | (), ->ident() |
-/// | 8: Dot and Indexing     |    postfix    | .ident, []    |
-/// | 7: Unary                |    prefix     | +, -, not     |
-/// | 6: Multiplicative       |   left infix  | *, /, %       |
-/// | 5: Additive             |   left infix  | +, -          |
-/// | 4: String concatenation |  right infix  | ..            |
-/// | 3: Relational           |   left infix  | <, <=, >, >=  |
-/// | 2: Equality             |   left infix  | ==, !=        |
-/// | 1: Logical-AND          |   left infix  | and           |
-/// | 0: Logical-OR           |   left infix  | or            |
+/// |        Precedence        | Associativity |     Operators     |
+/// | -----------------------  | ------------- | ----------------- |
+/// | 12: Unary Postfix        |    postfix    | .x, [], (), ->x() |
+/// | 11: Unary Prefix         |    prefix     | +, -, not         |
+/// | 10: Multiplicative       |   left infix  | *, /, %           |
+/// |  9: Additive             |   left infix  | +, -              |
+/// |  8: String concatenation |  right infix  | ..                |
+/// |  7: Shift                |   left infix  | <<, >>            |
+/// |  6: Relational           |   left infix  | <, <=, >, >=      |
+/// |  5: Equality             |   left infix  | ==, !=            |
+/// |  4: Boolean-AND          |   left infix  | &                 |
+/// |  3: Boolean-XOR          |   left infix  | ^                 |
+/// |  2: Boolean-OR           |   left infix  | |                 |
+/// |  1: Logical-AND          |   left infix  | and               |
+/// |  0: Logical-OR           |   left infix  | or                |
 mod binding_power {
     use super::*;
 
-    const CALL: u8 = 9;
-    const DOT_INDEX: u8 = 8;
-    const UNARY: u8 = 7;
-    const MULTIPLICATIVE: u8 = 6;
-    const ADDITIVE: u8 = 5;
-    const STRING_CONCAT: u8 = 4;
-    const RELATIONAL: u8 = 3;
-    const EQUALITY: u8 = 2;
+    const UNARY_POSTFIX: u8 = 12;
+    const UNARY_PREFIX: u8 = 11;
+    const MULTIPLICATIVE: u8 = 10;
+    const ADDITIVE: u8 = 9;
+    const STRING_CONCAT: u8 = 8;
+    const SHIFT: u8 = 7;
+    const RELATIONAL: u8 = 6;
+    const EQUALITY: u8 = 5;
+    const BIT_AND: u8 = 4;
+    const BIT_XOR: u8 = 3;
+    const BIT_OR: u8 = 2;
     const LOGICAL_AND: u8 = 1;
     const LOGICAL_OR: u8 = 0;
 
-    pub fn prefix_op(token: &Token) -> Option<(UnaryOp, u8)> {
+    pub fn prefix_op(token: &Token) -> Option<(UnaryOp, u8, Option<String>)> {
         #[rustfmt::skip]
-        let op = match token {
-            Token::Minus => UnaryOp::Neg,
-            Token::Not   => UnaryOp::Not,
+        let (op, err) = match token {
+            Token::Minus        => (UnaryOp::Neg,    None),
+            Token::Not          => (UnaryOp::Not,    None),
+            Token::Tilde        => (UnaryOp::BNot, None),
+            Token::Error("!")   => (UnaryOp::BNot, Some("Should use `~` for bitwise not")),
             _ => return None,
         };
-        Some((op, 2 * UNARY + 1))
+        Some((op, 2 * UNARY_PREFIX + 1, err.map(|s| s.to_string())))
     }
 
     pub fn postfix_op(token: &Token) -> Option<u8> {
-        #[rustfmt::skip]
-        let precedence = match token {
-            Token::OpenParen   => CALL,
-            Token::Arrow       => CALL,
-            Token::Dot         => DOT_INDEX,
-            Token::OpenBracket => DOT_INDEX,
-            _ => return None,
-        };
-        Some(2 * precedence + 2)
+        if !matches!(
+            token,
+            Token::Dot           // .x (dot access)
+            | Token::OpenBracket // [] (indexing)
+            | Token::OpenParen   // () (function call)
+            | Token::Arrow // ->x() (method call)
+        ) {
+            return None;
+        }
+        Some(2 * UNARY_POSTFIX + 2)
     }
 
     pub fn infix_op(token: &Token) -> Option<(BinaryOp, (u8, u8), Option<String>)> {
@@ -486,31 +504,35 @@ mod binding_power {
         }
 
         #[rustfmt::skip]
-        let (bp, err, op) = match token {
-            Token::Star      => (left(MULTIPLICATIVE), None, BinaryOp::Mul),
-            Token::Slash     => (left(MULTIPLICATIVE), None, BinaryOp::Div),
-            Token::Mod       => (left(MULTIPLICATIVE), None, BinaryOp::Mod),
-            Token::Plus      => (left(ADDITIVE),       None, BinaryOp::Add),
-            Token::Minus     => (left(ADDITIVE),       None, BinaryOp::Sub),
-            Token::Dot2      => (right(STRING_CONCAT), None, BinaryOp::Concat),
-            Token::Less      => (left(RELATIONAL),     None, BinaryOp::Less),
-            Token::LessEq    => (left(RELATIONAL),     None, BinaryOp::LessEq),
-            Token::Greater   => (left(RELATIONAL),     None, BinaryOp::Greater),
-            Token::GreaterEq => (left(RELATIONAL),     None, BinaryOp::GreaterEq),
-            Token::Eq        => (left(EQUALITY),       None, BinaryOp::Eq),
-            Token::NotEq     => (left(EQUALITY),       None, BinaryOp::NotEq),
-            Token::And       => (left(LOGICAL_AND),    None, BinaryOp::And),
-            Token::Or        => (left(LOGICAL_OR),     None, BinaryOp::Or),
+        let (bp, op, err) = match token {
+            Token::Star      => (left(MULTIPLICATIVE), BinaryOp::Mul,        None),
+            Token::Slash     => (left(MULTIPLICATIVE), BinaryOp::Div,        None),
+            Token::Mod       => (left(MULTIPLICATIVE), BinaryOp::Mod,        None),
+            Token::Plus      => (left(ADDITIVE),       BinaryOp::Add,        None),
+            Token::Minus     => (left(ADDITIVE),       BinaryOp::Sub,        None),
+            Token::Dot2      => (right(STRING_CONCAT), BinaryOp::Concat,     None),
+            Token::Less2     => (left(SHIFT),          BinaryOp::ShiftLeft,  None),
+            Token::Greater2  => (left(SHIFT),          BinaryOp::ShiftRight, None),
+            Token::Less      => (left(RELATIONAL),     BinaryOp::Less,       None),
+            Token::LessEq    => (left(RELATIONAL),     BinaryOp::LessEq,     None),
+            Token::Greater   => (left(RELATIONAL),     BinaryOp::Greater,    None),
+            Token::GreaterEq => (left(RELATIONAL),     BinaryOp::GreaterEq,  None),
+            Token::Eq        => (left(EQUALITY),       BinaryOp::Eq,         None),
+            Token::NotEq     => (left(EQUALITY),       BinaryOp::NotEq,      None),
+            Token::Amp       => (left(BIT_AND),        BinaryOp::BitAnd,     None),
+            Token::Caret     => (left(BIT_XOR),        BinaryOp::BitXor,     None),
+            Token::Pipe      => (left(BIT_OR),         BinaryOp::BitOr,      None),
+            Token::And       => (left(LOGICAL_AND),    BinaryOp::And,        None),
+            Token::Or        => (left(LOGICAL_OR),     BinaryOp::Or,         None),
             // Token::Assign    => {
             //     let err = "Should use `==` for equal".to_string();
             //     (left(EQUALITY), Some(err), BinaryOp::Eq)
             // }
-            Token::Error("~=") => {
-                let err = "Should use `!=` for not equal".to_string();
-                (left(EQUALITY), Some(err), BinaryOp::NotEq)
-            }
+            Token::Error("~=") => (left(EQUALITY),   BinaryOp::NotEq,     Some("Should use `!=` for not equal")),
+            Token::Error("=<") => (left(RELATIONAL), BinaryOp::LessEq,    Some("Should use `<=` for less or equal")),
+            Token::Error("=>") => (left(RELATIONAL), BinaryOp::GreaterEq, Some("Should use `>=` for greater or equal")),
             _ => return None,
         };
-        Some((op, bp, err))
+        Some((op, bp, err.map(|s| s.to_string())))
     }
 }

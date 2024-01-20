@@ -32,12 +32,18 @@ pub enum Token<'src> {
     Star,      // *
     Slash,     // /
     Mod,       // %
+    Amp,       // &
+    Pipe,      // |
+    Caret,     // ^
+    Tilde,     // ~
     Eq,        // ==
     NotEq,     // !=
     Less,      // <
     LessEq,    // <=
+    Less2,     // <<
     Greater,   // >
     GreaterEq, // >=
+    Greater2,  // >>
     Dot,       // .
     Arrow,     // ->
     Dot2,      // ..
@@ -93,12 +99,18 @@ impl std::fmt::Display for Token<'_> {
             Token::Star => write!(f, "*"),
             Token::Slash => write!(f, "/"),
             Token::Mod => write!(f, "%"),
+            Token::Amp => write!(f, "&"),
+            Token::Pipe => write!(f, "|"),
+            Token::Caret => write!(f, "^"),
+            Token::Tilde => write!(f, "~"),
             Token::Eq => write!(f, "=="),
             Token::NotEq => write!(f, "!="),
             Token::Less => write!(f, "<"),
             Token::LessEq => write!(f, "<="),
+            Token::Less2 => write!(f, "<<"),
             Token::Greater => write!(f, ">"),
             Token::GreaterEq => write!(f, ">="),
+            Token::Greater2 => write!(f, ">>"),
             Token::Dot => write!(f, "."),
             Token::Arrow => write!(f, "->"),
             Token::Dot2 => write!(f, ".."),

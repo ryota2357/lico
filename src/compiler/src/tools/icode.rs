@@ -40,6 +40,12 @@ pub enum ICode {
     Greater(TextSpan),   // >
     GreaterEq(TextSpan), // >=
     Concat(TextSpan),    // ..
+    BitAnd(TextSpan),    // &
+    BitOr(TextSpan),     // |
+    BitXor(TextSpan),    // ^
+    BitNot(TextSpan),    // ~ (unary)
+    ShiftL(TextSpan),    // <<
+    ShiftR(TextSpan),    // >>
 
     Builtin(BuiltinInstr, u8),
 

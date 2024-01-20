@@ -39,12 +39,18 @@ fn operator() {
     assert_eq!(parse_ok("*"), vec![(Token::Star, 0..1)]);
     assert_eq!(parse_ok("/"), vec![(Token::Slash, 0..1)]);
     assert_eq!(parse_ok("%"), vec![(Token::Mod, 0..1)]);
+    assert_eq!(parse_ok("&"), vec![(Token::Amp, 0..1)]);
+    assert_eq!(parse_ok("|"), vec![(Token::Pipe, 0..1)]);
+    assert_eq!(parse_ok("^"), vec![(Token::Caret, 0..1)]);
+    assert_eq!(parse_ok("~"), vec![(Token::Tilde, 0..1)]);
     assert_eq!(parse_ok("=="), vec![(Token::Eq, 0..2)]);
     assert_eq!(parse_ok("!="), vec![(Token::NotEq, 0..2)]);
     assert_eq!(parse_ok("<"), vec![(Token::Less, 0..1)]);
     assert_eq!(parse_ok("<="), vec![(Token::LessEq, 0..2)]);
+    assert_eq!(parse_ok("<<"), vec![(Token::Less2, 0..2)]);
     assert_eq!(parse_ok(">"), vec![(Token::Greater, 0..1)]);
     assert_eq!(parse_ok(">="), vec![(Token::GreaterEq, 0..2)]);
+    assert_eq!(parse_ok(">>"), vec![(Token::Greater2, 0..2)]);
     assert_eq!(parse_ok("."), vec![(Token::Dot, 0..1)]);
     assert_eq!(parse_ok("->"), vec![(Token::Arrow, 0..2)]);
     assert_eq!(parse_ok(".."), vec![(Token::Dot2, 0..2)]);

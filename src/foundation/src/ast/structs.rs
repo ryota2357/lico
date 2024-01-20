@@ -149,8 +149,9 @@ pub enum Expression<'src> {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum UnaryOp {
-    Neg, // -
-    Not, // not
+    Neg,  // -
+    Not,  // not
+    BNot, // ~
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -173,6 +174,14 @@ pub enum BinaryOp {
     // logical
     And, // and
     Or,  // or
+
+    // bitwise
+    BitAnd,     // &
+    BitOr,      // |
+    BitXor,     // ^
+    BitNot,     // ~
+    ShiftLeft,  // <<
+    ShiftRight, // >>
 
     // other
     Concat, // ..
