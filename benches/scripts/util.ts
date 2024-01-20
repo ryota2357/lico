@@ -1,4 +1,4 @@
-import { colors, ensure, fs, is, path, printf, toml } from "./deps.ts";
+import { colors, ensure, fs, is, path, sprintf, toml } from "./deps.ts";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 
@@ -7,26 +7,70 @@ export type BenchmarkResult = {
   base: {
     name: string;
     mean: number;
-    median: number;
+    stddev: number;
+    min: number;
+    max: number;
   };
   compare: {
     name: string;
     mean: number;
-    median: number;
+    stddev: number;
+    min: number;
+    max: number;
   }[];
 };
 
 export function display_benchmark_result(data: BenchmarkResult) {
-  printf("\n%s\n", colors.inverse(data.name));
-  printf(" %s\n", data.base.name);
-  printf("   mean:   %.8fms\n", data.base.mean * 1000);
-  printf("   median: %.8fms\n", data.base.median * 1000);
+  const c = {
+    title: (s: string) => colors.inverse(s),
+    section: (s: string) => colors.bold(s),
+    mean: (s: string) => colors.green(colors.bold(s)),
+    stddev: (s: string) => colors.green(s),
+    min: (s: string) => colors.cyan(s),
+    max: (s: string) => colors.magenta(s),
+  };
+  const p = console.log;
+  const f = (value: number, length: number) =>
+    value.toString().substring(0, length);
+
+  p();
+  p(c.title(data.name));
+  p(`  ${c.section(data.base.name)}`);
+  p(`    Time:   ${
+    sprintf(
+      "%s  ±  %s",
+      c.mean(`${f(data.base.mean * 1000, 7)} ms`),
+      c.stddev(`${f(data.base.stddev * 1000, 7)} ms`),
+    )
+  }`);
+  p(`    Range:  ${
+    sprintf(
+      "%s  …  %s",
+      c.min(`${f(data.base.min * 1000, 7)} ms`),
+      c.max(`${f(data.base.max * 1000, 7)} ms`),
+    )
+  }`);
+
   for (const compare of data.compare) {
-    printf(" %s\n", compare.name);
-    const mean = compare.mean / data.base.mean;
-    const median = compare.median / data.base.median;
-    printf("   mean:   ×%.8f (%.8fms)\n", mean, compare.mean * 1000);
-    printf("   median: ×%.8f (%.8fms)\n", median, compare.median * 1000);
+    const mean_rate = colors.italic(
+      c.mean(`×${f(compare.mean / data.base.mean, 4)}`),
+    );
+
+    p(`  ${c.section(compare.name)}`);
+    p(`    Time:   ${
+      sprintf(
+        "%s  ±  %s",
+        c.mean(`${f(compare.mean * 1000, 7)} ms`),
+        c.stddev(`${f(compare.stddev * 1000, 7)} ms`),
+      )
+    }  (${mean_rate})`);
+    p(`    Range:  ${
+      sprintf(
+        "%s  …  %s",
+        c.min(`${f(compare.min * 1000, 7)} ms`),
+        c.max(`${f(compare.max * 1000, 7)} ms`),
+      )
+    }`);
   }
 }
 
