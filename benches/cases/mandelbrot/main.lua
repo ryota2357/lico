@@ -1,26 +1,26 @@
-var size = 500
+local size = 500
 
-var sum = 0
-var byte_acc = 0
-var bit_num = 0
+local sum = 0
+local byte_acc = 0
+local bit_num = 0
 
-var y = 0
+local y = 0
 
 while y < size do
-    var ci = (2.0 * y / size) - 1.0
-    var x  = 0
+    local ci = (2.0 * y / size) - 1.0
+    local x  = 0
 
     while x < size do
-        var zrzr = 0.0
-        var zi = 0.0
-        var zizi = 0.0
-        var cr = (2.0 * x / size) - 1.5
+        local zrzr = 0.0
+        local zi = 0.0
+        local zizi = 0.0
+        local cr = (2.0 * x / size) - 1.5
 
-        var z = 0
-        var not_done = true
-        var escape = 0
+        local z = 0
+        local not_done = true
+        local escape = 0
         while not_done and z < 50 do
-            var zr = zrzr - zizi + cr
+            local zr = zrzr - zizi + cr
             zi = 2.0 * zr * zi + ci
 
             zrzr = zr * zr
@@ -37,12 +37,12 @@ while y < size do
         bit_num = bit_num + 1
 
         if bit_num == 8 then
-            sum = sum ^ byte_acc
+            sum = sum ~ byte_acc
             byte_acc = 0
             bit_num = 0
-        elif x == size - 1 then
+        elseif x == size - 1 then
             byte_acc = byte_acc << (8 - bit_num)
-            sum = sum ^ byte_acc
+            sum = sum ~ byte_acc
             byte_acc = 0
             bit_num = 0
         end
@@ -51,4 +51,4 @@ while y < size do
     y = y + 1
 end
 
-println(sum)
+print(sum)

@@ -129,15 +129,9 @@ class NBodySystem:
 
         for i in range(len(self._bodies)):
             body_i = self._bodies[i]
-            e += (
-                0.5
-                * body_i.mass
-                * (
-                    body_i.vx * body_i.vx
-                    + body_i.vy * body_i.vy
-                    + body_i.vz * body_i.vz
-                )
-            )
+            e += 0.5 * body_i.mass * (body_i.vx * body_i.vx +
+                                      body_i.vy * body_i.vy +
+                                      body_i.vz * body_i.vz)
 
             for j in range(i + 1, len(self._bodies)):
                 body_j = self._bodies[j]

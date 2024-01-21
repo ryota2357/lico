@@ -1,11 +1,11 @@
-warmup = 0
+warmup = 1
 runs = 10
 
 [[benches]]
-name = "Node.js (JavaScript)"
+name = "Lua"
 base = true
-command = "node"
-path = "main.js"
+command = "lua"
+path = "main.lua"
 
 [[benches]]
 name = "Python"

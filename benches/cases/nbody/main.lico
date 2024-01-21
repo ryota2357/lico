@@ -120,15 +120,9 @@ func energy()
 
     for i in 0->upto(bodies->len() - 1) do
         var body_i = bodies[i]
-        e = e + (
-            0.5
-            * body_i.mass
-            * (
-                body_i.vx * body_i.vx
-                + body_i.vy * body_i.vy
-                + body_i.vz * body_i.vz
-            )
-        )
+        e = e + 0.5 * body_i.mass * (body_i.vx * body_i.vx +
+                                     body_i.vy * body_i.vy +
+                                     body_i.vz * body_i.vz)
 
         for j in (i + 1)->upto(bodies->len() - 1) do
             var body_j = bodies[j]
@@ -143,7 +137,7 @@ func energy()
     return e
 end
 
-# const n = require("stdio").read_line()->parse_int()
+# var n = require("stdio").read_line()->parse_int()
 var n = 50000
 
 offset_momentum()

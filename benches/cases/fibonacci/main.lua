@@ -1,4 +1,4 @@
-func fib(x)
+local function fib(x)
     if x < 3 then
         return 1
     else
@@ -6,4 +6,4 @@ func fib(x)
     end
 end
 
-println(fib(34))
+print(fib(34))
