@@ -128,3 +128,42 @@ export async function load_benchmark_info(
     })),
   };
 }
+
+export type VersionCommand = {
+  name: string;
+  command: string;
+};
+
+export async function dump_environment(commands: VersionCommand[]) {
+  if (commands.length === 0) {
+    return;
+  }
+  const textDecoder = new TextDecoder();
+
+  const results = await Promise.all(commands.map(async (data) => {
+    const splitted = data.command.split(" ");
+    const cmd = ensure(splitted.shift(), is.String);
+    const prosess = new Deno.Command(
+      cmd,
+      {
+        args: [splitted.join(" ")],
+        stdin: "null",
+        stdout: "piped",
+        stderr: "inherit",
+      },
+    ).spawn();
+    const { stdout } = await prosess.output();
+    return {
+      name: data.name,
+      info: textDecoder.decode(stdout),
+    };
+  }));
+
+  const name_max_width = results.map((r) => r.name.length + 1).sort().pop()!;
+  console.log();
+  for (const result of results) {
+    const name = `${result.name}:`.padEnd(name_max_width, " ");
+    const info = result.info.split("\n").join(" ");
+    console.log(`${name}  ${colors.cyan(info)}`);
+  }
+}

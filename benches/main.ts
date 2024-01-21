@@ -2,8 +2,16 @@ import { path } from "./scripts/deps.ts";
 import { hyperfine } from "./scripts/hyperfile.ts";
 import {
   display_benchmark_result,
+  dump_environment,
   load_benchmark_info,
 } from "./scripts/util.ts";
+
+await dump_environment([
+  { name: "Date", command: "date +%Y/%m/%d %H:%M:%S %Z" },
+  { name: "OS", command: "uname -om" },
+  { name: "Lua", command: "lua -v" },
+  { name: "Python", command: "python --version" },
+]);
 
 const info = await Promise.all([
   load_benchmark_info("fibonacci"),
