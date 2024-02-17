@@ -357,7 +357,7 @@ fn tokenize_string(lexer: &mut Lexer<'_>, start: char) {
                             }
                             c @ (None | Some('\n' | '\r')) => {
                                 report_missing_closing_delimiter(lexer, start, c);
-                                lexer.bump(Token::String((content + &format!(r"\x{}", o)).into()));
+                                lexer.bump(Token::String(format!(r"{content}\x{o}").into()));
                                 return;
                             }
                             Some(c) if c == start => {
@@ -422,7 +422,7 @@ fn tokenize_string(lexer: &mut Lexer<'_>, start: char) {
                                     if let Some(char) = char {
                                         content.push(char);
                                     } else {
-                                        let esc_string = r"\u{".to_owned() + &codepoint + "}";
+                                        let esc_string = format!(r"\u{{{}}}", codepoint);
                                         lexer.report(|span| {
                                             let esc_len = esc_string.len() as u32;
                                             let span = TextSpan::at(span.end() - esc_len, esc_len);
@@ -442,7 +442,7 @@ fn tokenize_string(lexer: &mut Lexer<'_>, start: char) {
                                     continue;
                                 }
                                 Some(c) if c == start => {
-                                    let esc_string = r"\u{".to_owned() + &codepoint;
+                                    let esc_string = format!(r"\u{{{}}}", codepoint);
                                     lexer.report(|span| {
                                         let esc_len = esc_string.len() as u32;
                                         let span = TextSpan::at(span.end() - esc_len, esc_len);
@@ -457,7 +457,7 @@ fn tokenize_string(lexer: &mut Lexer<'_>, start: char) {
                                 }
                                 c @ (None | Some('\n' | '\r')) => {
                                     report_missing_closing_delimiter(lexer, start, c);
-                                    let string = content + r"\u{" + &codepoint;
+                                    let string = format!(r"{}\u{{{}", content, codepoint);
                                     lexer.bump(Token::String(string.into()));
                                     return;
                                 }
