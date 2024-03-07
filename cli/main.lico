@@ -1,0 +1,12 @@
+var a = 1 << 2
+println(a)
+# var tbl = {}
+# func test(t)
+#     t.a = 123
+# end
+# func test2()
+#     tbl.a = 10
+#     test(tbl)
+# end
+# test2()
+# println(tbl.a)

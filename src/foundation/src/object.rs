@@ -1,21 +1,20 @@
-mod integer;
-use integer::*;
-
-mod uni_string;
-use uni_string::*;
+mod array;
+pub use array::Array;
 
 mod function;
-use function::*;
-
-mod array;
-use array::*;
+pub use function::Function;
 
 mod table;
-use table::*;
+pub use table::Table;
+
+mod uni_string;
+pub use uni_string::UniString;
+
+mod pms;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object {
-    Int(Integer),
+    Int(i64),
     Float(f64),
     String(UniString),
     Bool(bool),
@@ -24,4 +23,27 @@ pub enum Object {
     Array(Array),
     Table(Table),
     RustFunction(fn(&[Object]) -> Result<Object, String>),
+}
+
+mod private {
+    use super::*;
+    use core::fmt::Debug;
+
+    pub trait TObject: Clone + Debug + PartialEq {
+        fn into_object(self) -> Object;
+        fn as_object(&self) -> &Object;
+        fn as_object_mut(&mut self) -> &mut Object;
+    }
+
+    impl TObject for Object {
+        fn into_object(self) -> Object {
+            self
+        }
+        fn as_object(&self) -> &Object {
+            self
+        }
+        fn as_object_mut(&mut self) -> &mut Object {
+            self
+        }
+    }
 }

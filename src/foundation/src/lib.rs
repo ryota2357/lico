@@ -1,3 +1,5 @@
+#![feature(dropck_eyepatch, allocator_api)]
+
 mod textspan;
 pub use textspan::TextSpan;
 

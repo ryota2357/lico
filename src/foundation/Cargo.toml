@@ -5,4 +5,7 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+ahash = { workspace = true }
 ecow = { workspace = true }
+hashbrown = { workspace = true }
+paste = { workspace = true }
