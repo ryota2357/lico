@@ -1,14 +1,7 @@
 #![allow(dead_code)]
 
-use super::{pms::*, Function, Object};
-use core::{
-    // alloc::{Allocator, Layout},
-    cell::Cell,
-    marker::PhantomData,
-    // mem::forget,
-    // ptr,
-    ptr::NonNull,
-};
+use super::{pms::*, private::*, Function, Object};
+use core::{cell::Cell, marker::PhantomData, ptr::NonNull};
 use std::borrow::Cow;
 
 use collections::*;
@@ -18,16 +11,16 @@ pub struct Table<T: TObject = Object> {
     ptr: NonNull<Inner<T>>,
     phantom: PhantomData<Inner<T>>,
 }
-impl<T: TObject> HasPmsInner<Inner<T>> for Table<T> {
+impl<T: TObject> PmsObject<Inner<T>> for Table<T> {
     fn ptr(&self) -> NonNull<Inner<T>> {
         self.ptr
     }
-    unsafe fn iter_inner_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
-        todo!()
+    fn ptr_mut(&mut self) -> &mut NonNull<Inner<T>> {
+        &mut self.ptr
     }
 }
 
-struct Inner<T: TObject = Object> {
+pub struct Inner<T: TObject = Object> {
     data: SwitchMap<Cow<'static, str>, T>,
     methods: LinerMap<Cow<'static, str>, Method>,
     _ref_count: Cell<usize>,
@@ -39,6 +32,16 @@ impl<T: TObject> PmsInner for Inner<T> {
     }
     fn color_ref(&self) -> &Cell<Color> {
         &self._color
+    }
+
+    unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
+        todo!();
+        std::iter::empty()
+    }
+
+    unsafe fn into_iter_children(self) -> impl Iterator<Item = Object> {
+        todo!();
+        std::iter::empty()
     }
 }
 
@@ -85,6 +88,12 @@ impl<T: TObject> PartialEq for Table<T> {
 impl<T: TObject> Clone for Table<T> {
     fn clone(&self) -> Self {
         todo!()
+    }
+}
+
+impl<T: TObject> Drop for Table<T> {
+    fn drop(&mut self) {
+        Table::custom_drop(self);
     }
 }
 
