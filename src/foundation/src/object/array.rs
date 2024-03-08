@@ -18,15 +18,15 @@ impl<T: TObject> PmsObject<Inner<T>> for Array<T> {
 pub struct Inner<T: TObject> {
     data: Vec<T>,
     version: u64,
-    _ref_count: Cell<usize>,
-    _color: Cell<Color>,
+    ref_count: Cell<usize>,
+    color: Cell<Color>,
 }
 impl<T: TObject> PmsInner for Inner<T> {
     fn ref_count_ref(&self) -> &Cell<usize> {
-        &self._ref_count
+        &self.ref_count
     }
     fn color_ref(&self) -> &Cell<Color> {
-        &self._color
+        &self.color
     }
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
@@ -41,6 +41,7 @@ impl<T: TObject> Array<T> {
     pub fn new() -> Self {
         Array::from(Vec::new())
     }
+
     fn inner_mut(&mut self) -> &mut Inner<T> {
         unsafe {
             let inner = PmsObject::inner_mut(self);
@@ -82,7 +83,8 @@ impl Array {
         self.inner_mut().data.remove(index)
     }
     pub fn clear(&mut self) {
-        self.inner_mut().data.clear();
+        todo!("Pms cared clear() call");
+        // self.inner_mut().data.clear();
     }
 
     pub fn contains(&self, value: &Object) -> bool {
@@ -101,8 +103,8 @@ impl<T: TObject> From<Vec<T>> for Array<T> {
         let ptr = Box::leak(Box::new(Inner {
             data: array,
             version: 0,
-            _ref_count: Cell::new(1),
-            _color: Cell::new(Color::Black),
+            ref_count: Cell::new(1),
+            color: Cell::new(Color::Black),
         }));
         Array {
             ptr: NonNull::from(ptr),

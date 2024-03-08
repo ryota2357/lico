@@ -20,18 +20,18 @@ impl<T: TObject> PmsObject<Inner<T>> for Table<T> {
     }
 }
 
-pub struct Inner<T: TObject = Object> {
+pub struct Inner<T: TObject> {
     data: SwitchMap<Cow<'static, str>, T>,
     methods: LinerMap<Cow<'static, str>, Method>,
-    _ref_count: Cell<usize>,
-    _color: Cell<Color>,
+    ref_count: Cell<usize>,
+    color: Cell<Color>,
 }
 impl<T: TObject> PmsInner for Inner<T> {
     fn ref_count_ref(&self) -> &Cell<usize> {
-        &self._ref_count
+        &self.ref_count
     }
     fn color_ref(&self) -> &Cell<Color> {
-        &self._color
+        &self.color
     }
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
@@ -69,8 +69,8 @@ impl<T: TObject, const N: usize> From<[(Cow<'static, str>, T); N]> for Table<T> 
         let ptr = Box::leak(Box::new(Inner {
             data: SwitchMap::from(value),
             methods: LinerMap::new(),
-            _ref_count: Cell::new(1),
-            _color: Cell::new(Color::Black),
+            ref_count: Cell::new(1),
+            color: Cell::new(Color::Black),
         }));
         Table {
             ptr: NonNull::from(ptr),
@@ -87,7 +87,11 @@ impl<T: TObject> PartialEq for Table<T> {
 
 impl<T: TObject> Clone for Table<T> {
     fn clone(&self) -> Self {
-        todo!()
+        self.inner().inc_ref_count();
+        Self {
+            ptr: self.ptr,
+            phantom: PhantomData,
+        }
     }
 }
 
