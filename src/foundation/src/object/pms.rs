@@ -22,7 +22,7 @@ pub trait PmsInner {
     fn color_ref(&self) -> &Cell<Color>;
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object>;
-    unsafe fn into_iter_children(self) -> impl Iterator<Item = Object>;
+    unsafe fn into_children_iter(self) -> impl Iterator<Item = Object>;
 
     fn color(&self) -> Color {
         self.color_ref().get()
@@ -37,16 +37,12 @@ pub trait PmsInner {
 
     fn inc_ref_count(&self) {
         let ref_count = self.ref_count_ref().get();
-        if ref_count == 0 || ref_count == usize::MAX {
-            panic!("Reference count overflow");
-        }
+        assert_ne!(ref_count, usize::MAX, "Reference count overflow");
         self.ref_count_ref().set(ref_count + 1);
     }
     fn dec_ref_count(&self) {
         let ref_count = self.ref_count_ref().get();
-        if ref_count == 0 {
-            panic!("Reference count underflow");
-        }
+        assert_ne!(ref_count, 0, "Reference count underflow");
         self.ref_count_ref().set(ref_count - 1);
     }
 }
@@ -65,12 +61,11 @@ pub trait PmsObject<I: PmsInner> {
     }
 
     unsafe fn deallocate_inner(this: &mut Self) {
-        assert!(this.inner().ref_count() == 0);
-        assert!(this.inner().color() == Color::White);
+        assert_eq!(this.inner().ref_count(), 0);
         assert!(!is_freed_ptr(this.ptr()));
 
         let inner = ptr::read(this.ptr().as_ptr());
-        for next in inner.into_iter_children() {
+        for next in inner.into_children_iter() {
             match next {
                 Object::Int(_) => {}          // No need to drop for `i64`  (Copy type)
                 Object::Float(_) => {}        // No need to drop for `f64`  (Copy type)
@@ -86,13 +81,13 @@ pub trait PmsObject<I: PmsInner> {
                 Object::Array(next) => {
                     forget(next);
                 }
-                Object::Table(_) => {
-                    todo!();
+                Object::Table(table) => {
+                    forget(table);
                 }
             }
-            Global.deallocate(this.ptr().cast(), Layout::for_value(this.ptr().as_ref()));
-            *this.ptr_mut() = NonNull::new_unchecked(usize::MAX as *mut _);
         }
+        Global.deallocate(this.ptr().cast(), Layout::for_value(this.ptr().as_ref()));
+        *this.ptr_mut() = NonNull::new_unchecked(usize::MAX as *mut _);
     }
 
     fn custom_drop(this: &mut Self) {
@@ -114,7 +109,25 @@ pub trait PmsObject<I: PmsInner> {
 
                 // If the reference count is zero, we can drop this object.
                 unsafe {
+                    // Mark this object as white as it is a candidate for collection.
+                    this.inner().paint(Color::White);
+
+                    // Next, we need to collect objects that can be traced from `this` that are suspected to be circular references.
+                    //
+                    // Q: Why do not we call `mem::drop_in_place()` on `this.prt()`?
+                    // A: It has a performance problems.
+                    //    Please imagine the following case:
+                    //      - Root node has only k leaves.
+                    //      - Each leaf has circular references between leaves.
+                    //      - `this` is the root node.
+                    //    In this case, we can drop all leaves, but we can't drop all leaves until we call `drop()` for the last leaf if we
+                    //    call `mem::drop_in_place()` on `this.ptr()`. At this time, O(k^2) for a graph with k complete leaves.
+                    //
+                    // To collect objects for which circular references are suspected, we use `PurpleCollector`.
+                    // `PurpleCollector` is a struct that collects objects for which circular references are suspected and marks them as purple.
                     struct PurpleCollector<'a> {
+                        // In the `Object` enum, only `Array` and `Table` are `PmsObject`.
+                        // If you add other `PmsObject` variants in the future, you will need to add them here as well.
                         array: Vec<&'a mut Array>,
                         table: Vec<&'a mut Table>,
                     }
@@ -125,39 +138,82 @@ pub trait PmsObject<I: PmsInner> {
                                 table: Vec::new(),
                             }
                         }
+                        /// Collect purple objects (suspected of circular references) that can be traced from the object pointed to by `ptr`.
+                        /// White objects found during tracing are applied `PmsObject::deallocate_inner()` recursively.
+                        ///
+                        /// Given `ptr` must be `ref_count() == 0`.
                         unsafe fn collect<I: PmsInner + 'a>(&mut self, mut ptr: NonNull<I>) {
-                            unsafe {
-                                assert!(ptr.as_ref().ref_count() == 0);
-                                for next in ptr.as_mut().iter_children_mut() {
-                                    match next {
-                                        Object::Array(array) => {
-                                            array.inner().dec_ref_count();
-                                            if array.inner().ref_count() == 0 {
-                                                array.inner().paint(Color::White);
-                                                self.collect(array.ptr());
-                                                PmsObject::deallocate_inner(array);
-                                            } else {
-                                                if array.inner().color() == Color::Purple {
-                                                    continue;
-                                                }
-                                                array.inner().paint(Color::Purple);
-                                                self.array.push(array);
-                                            }
+                            assert_eq!(ptr.as_ref().ref_count(), 0);
+                            assert_eq!(ptr.as_ref().color(), Color::White);
+
+                            // For each child that can be traced from `ptr`
+                            for next in ptr.as_mut().iter_children_mut() {
+                                match next {
+                                    // If the child is `PmsObject`...
+                                    // (`_check_suspicious()` is just a function to cut out common processes, and I think it is not a good name.)
+                                    Object::Array(array) => {
+                                        if let Some(array) = self._check_suspicious(array) {
+                                            self.array.push(array);
                                         }
-                                        Object::Table(_) => todo!(),
-                                        _ => {}
                                     }
+                                    Object::Table(table) => {
+                                        if let Some(table) = self._check_suspicious(table) {
+                                            self.table.push(table);
+                                        }
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
+                        /// This function must be called only from `collect()`.
+                        unsafe fn _check_suspicious<I: PmsInner + 'a, T: PmsObject<I>>(
+                            &mut self,
+                            item: &'a mut T,
+                        ) -> Option<&'a mut T> {
+                            if cfg!(debug_assertions) {
+                                let color = item.inner().color();
+                                assert!(
+                                    color == Color::Black || color == Color::Purple,
+                                    "Expected black or purple, but got {color:?}",
+                                );
+                            }
+
+                            // From the prerequisites (callee position) of this function, the parent object of `item` is `ref_count() == 0`.
+                            item.inner().dec_ref_count();
+
+                            if item.inner().ref_count() == 0 {
+                                item.inner().paint(Color::White);
+                                self.collect(item.ptr());
+                                PmsObject::deallocate_inner(item);
+                                None
+                            } else {
+                                // To avoid double collection, we need to check whether its color is purple.
+                                if item.inner().color() == Color::Purple {
+                                    return None;
+                                }
+                                item.inner().paint(Color::Purple);
+                                Some(item)
+                            }
+                        }
+                        unsafe fn finish(self) -> (Vec<&'a mut Array>, Vec<&'a mut Table>) {
+                            let Self {
+                                mut array,
+                                mut table,
+                            } = self;
+                            array.retain_mut(|x| x.inner().color() == Color::Purple);
+                            table.retain_mut(|x| x.inner().color() == Color::Purple);
+                            (array, table)
+                        }
                     }
+
+                    // Collect purple objects and apply `mark_and_sweep::run()` for them.
                     let mut purple_collector = PurpleCollector::new();
                     purple_collector.collect(this.ptr());
-                    PmsObject::deallocate_inner(this);
-                    for array in purple_collector.array {
+                    let (purple_array, purple_table) = purple_collector.finish();
+                    for array in purple_array {
                         mark_and_sweep::run(array);
                     }
-                    for table in purple_collector.table {
+                    for table in purple_table {
                         mark_and_sweep::run(table);
                     }
                 }
@@ -208,68 +264,98 @@ mod mark_and_sweep {
         collect_white(item);
     }
 
+    /// Tentatively removing. (試験削除)
+    /// Paint the object (`item`) gray and decrement the reference count recursively.
     unsafe fn paint_gray<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
+        // Infinite recursion prevention.
+        // If `item` is gray, the object that can be traced from `item` has already been tentatively removed, so nothing needs to be done.
         if item.inner().color() == Color::Gray {
             return;
         }
         item.inner().paint(Color::Gray);
+
         for next in item.inner_mut().iter_children_mut() {
             match next {
                 Object::Array(array) => {
                     array.inner().dec_ref_count();
                     paint_gray(array);
                 }
-                Object::Table(_) => todo!(),
+                Object::Table(table) => {
+                    table.inner().dec_ref_count();
+                    paint_gray(table);
+                }
                 _ => {}
             }
         }
     }
 
+    /// Mark white if the object (`item`) is gray and its reference count is zero, and recursively apply `scan_gray()` to its children.
+    /// The object that is marked gray but its reference count is not zero is passed to `paint_black()`.
     unsafe fn scan_gray<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
+        // We want to scan only gray objects.
         if item.inner().color() != Color::Gray {
             return;
         }
-        let ref_count = item.inner().ref_count();
-        if ref_count == 0 {
+
+        if item.inner().ref_count() == 0 {
+            // To prevent infinite recursion, we need to paint the object white before calling `scan_gray()` for its children.
             item.inner().paint(Color::White);
+
             for next in item.inner_mut().iter_children_mut() {
                 match next {
                     Object::Array(array) => scan_gray(array),
-                    Object::Table(_) => todo!(),
+                    Object::Table(table) => scan_gray(table),
                     _ => {}
                 }
             }
         } else {
+            // We can't remove this object (`item`) as its reference count is not zero.
+            // Repaint `item` and its children black.
             paint_black(item);
         }
     }
 
+    /// Paint the object (`item`) black and recursively paint its children black.
     unsafe fn paint_black<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
+        // Infinite recursion prevention.
+        // - All PmsObject are initially black.
+        // - From the implimentions of `PmsObject::custom_drop()`, the children of black objects are also black.
+        // So do nothing if `item` is already black.
         if item.inner().color() == Color::Black {
             return;
         }
         item.inner().paint(Color::Black);
+
         for next in item.inner_mut().iter_children_mut() {
+            // In `paint_gray()`, we decremented the reference count for tentatively removing.
+            // So we need to increment the reference count here.
             match next {
                 Object::Array(array) => {
                     array.inner().inc_ref_count();
                     paint_black(array);
                 }
-                Object::Table(_) => todo!(),
+                Object::Table(table) => {
+                    table.inner().inc_ref_count();
+                    paint_black(table);
+                }
                 _ => {}
             }
         }
     }
 
     unsafe fn collect_white<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
+        // We want to collect only white objects.
         if item.inner().color() != Color::White {
             return;
         }
+
+        // TODO: なぜ黒に塗るのか説明する。
+        //       黒: OK、灰: 良さそうだけど、どう？、白: 無限再帰起こすからだめ、紫: mark_and_sweep::run() の繰り返し呼び出しで死ぬ
         item.inner().paint(Color::Black);
         for next in item.inner_mut().iter_children_mut() {
             match next {
                 Object::Array(array) => collect_white(array),
-                Object::Table(_) => todo!(),
+                Object::Table(table) => collect_white(table),
                 _ => {}
             }
         }

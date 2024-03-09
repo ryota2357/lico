@@ -32,7 +32,7 @@ impl<T: TObject> PmsInner for Inner<T> {
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
         self.data.iter_mut().map(|x| x.as_object_mut())
     }
-    unsafe fn into_iter_children(self) -> impl Iterator<Item = Object> {
+    unsafe fn into_children_iter(self) -> impl Iterator<Item = Object> {
         self.data.into_iter().map(|x| x.into_object())
     }
 }

@@ -5,7 +5,7 @@ mod function;
 pub use function::Function;
 
 mod table;
-pub use table::Table;
+pub use table::{Table, TableMethod};
 
 mod uni_string;
 pub use uni_string::UniString;

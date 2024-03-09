@@ -22,7 +22,7 @@ impl<T: TObject> PmsObject<Inner<T>> for Table<T> {
 
 pub struct Inner<T: TObject> {
     data: SwitchMap<Cow<'static, str>, T>,
-    methods: LinerMap<Cow<'static, str>, Method>,
+    methods: LinerMap<Cow<'static, str>, TableMethod>,
     ref_count: Cell<usize>,
     color: Cell<Color>,
 }
@@ -35,18 +35,16 @@ impl<T: TObject> PmsInner for Inner<T> {
     }
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
-        todo!();
-        std::iter::empty()
+        self.data.iter_mut().map(|(_, v)| v.as_object_mut())
     }
 
-    unsafe fn into_iter_children(self) -> impl Iterator<Item = Object> {
-        todo!();
-        std::iter::empty()
+    unsafe fn into_children_iter(self) -> impl Iterator<Item = Object> {
+        self.data.into_iter().map(|(_, v)| v.into_object())
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Method {
+pub enum TableMethod {
     Builtin(fn(Table, &[Object]) -> Result<Object, String>),
     Custom(Function),
     CustomNoSelf(Function),
@@ -143,8 +141,17 @@ mod collections {
         pub fn len(&self) -> usize {
             self.data.len()
         }
-        pub fn iter(&self) -> impl Iterator<Item = &(K, V)> {
+
+        pub fn is_empty(&self) -> bool {
+            self.data.is_empty()
+        }
+
+        pub fn iter(&self) -> core::slice::Iter<(K, V)> {
             self.data.iter()
+        }
+
+        pub fn iter_mut(&mut self) -> core::slice::IterMut<(K, V)> {
+            self.data.iter_mut()
         }
     }
 
@@ -163,9 +170,17 @@ mod collections {
         }
     }
 
+    impl<K: Ord, V> IntoIterator for LinerMap<K, V> {
+        type Item = (K, V);
+        type IntoIter = std::vec::IntoIter<(K, V)>;
+        fn into_iter(self) -> Self::IntoIter {
+            self.data.into_iter()
+        }
+    }
+
     pub struct SwitchMap<K: Hash + Ord, V>(SwitchMapVariant<K, V>);
     const LINEAR_MAP_SIZE_LIMIT: usize = 16;
-    enum SwitchMapVariant<K: Hash + Ord + Eq, V> {
+    enum SwitchMapVariant<K: Hash + Ord, V> {
         Linear(LinerMap<K, V>),
         Hashed(HashMap<K, V>),
     }
@@ -204,6 +219,20 @@ mod collections {
                 SwitchMapVariant::Hashed(map) => map.get(key),
             }
         }
+
+        pub fn iter(&self) -> SwitchMapIter<K, V> {
+            match &self.0 {
+                SwitchMapVariant::Linear(map) => SwitchMapIter::Linear(map.iter()),
+                SwitchMapVariant::Hashed(map) => SwitchMapIter::Hashed(map.iter()),
+            }
+        }
+
+        pub fn iter_mut(&mut self) -> SwitchMapIterMut<K, V> {
+            match &mut self.0 {
+                SwitchMapVariant::Linear(map) => SwitchMapIterMut::Linear(map.iter_mut()),
+                SwitchMapVariant::Hashed(map) => SwitchMapIterMut::Hashed(map.iter_mut()),
+            }
+        }
     }
 
     impl<K: Hash + Ord, V, const N: usize> From<[(K, V); N]> for SwitchMap<K, V> {
@@ -234,6 +263,113 @@ mod collections {
             }
         }
     }
+
+    impl<K: Hash + Ord, V> IntoIterator for SwitchMap<K, V> {
+        type Item = (K, V);
+        type IntoIter = SwitchMapIntoIter<K, V>;
+        fn into_iter(self) -> Self::IntoIter {
+            match self.0 {
+                SwitchMapVariant::Linear(map) => SwitchMapIntoIter::Linear(map.into_iter()),
+                SwitchMapVariant::Hashed(map) => SwitchMapIntoIter::Hashed(map.into_iter()),
+            }
+        }
+    }
+
+    macro_rules! fallback_to_each_variant {
+        ($self:ident, $name:ident($($arg:ident),*) $(vec: $(.$vec_chain:ident($vec_expr:expr))*)? $(map: $(.$map_chain:ident($map_expr:expr))*)?) => {
+            match $self {
+                Self::Linear(iter) => iter.$name($($arg),*) $($(.$vec_chain($vec_expr))*)? ,
+                Self::Hashed(iter) => iter.$name($($arg),*) $($(.$map_chain($map_expr))*)?,
+            }
+        };
+    }
+
+    #[derive(Debug)]
+    pub enum SwitchMapIter<'a, K: Hash + Ord, V> {
+        Linear(core::slice::Iter<'a, (K, V)>),
+        Hashed(hashbrown::hash_map::Iter<'a, K, V>),
+    }
+    impl<'a, K: Hash + Ord, V> Iterator for SwitchMapIter<'a, K, V> {
+        type Item = (&'a K, &'a V);
+        fn next(&mut self) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, next() vec: .map(|(k, v)| (k, v)))
+        }
+        fn count(self) -> usize {
+            fallback_to_each_variant!(self, count())
+        }
+        fn nth(&mut self, n: usize) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, nth(n) vec: .map(|(k, v)| (k, v)))
+        }
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            fallback_to_each_variant!(self, size_hint())
+        }
+    }
+    impl<K: Hash + Ord, V> ExactSizeIterator for SwitchMapIter<'_, K, V> {
+        fn len(&self) -> usize {
+            fallback_to_each_variant!(self, len())
+        }
+    }
+    impl<K: Hash + Ord, V> std::iter::FusedIterator for SwitchMapIter<'_, K, V> {}
+
+    #[derive(Debug)]
+    pub enum SwitchMapIterMut<'a, K: Hash + Ord, V> {
+        Linear(core::slice::IterMut<'a, (K, V)>),
+        Hashed(hashbrown::hash_map::IterMut<'a, K, V>),
+    }
+    impl<'a, K: Hash + Ord, V> Iterator for SwitchMapIterMut<'a, K, V> {
+        type Item = (&'a K, &'a mut V);
+        fn next(&mut self) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, next() vec: .map(|(k, v)| (&*k, v)))
+        }
+        fn count(self) -> usize {
+            fallback_to_each_variant!(self, count())
+        }
+        fn last(self) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, last() vec: .map(|(k, v)| (&*k, v)))
+        }
+        fn nth(&mut self, n: usize) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, nth(n) vec: .map(|(k, v)| (&*k, v)))
+        }
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            fallback_to_each_variant!(self, size_hint())
+        }
+    }
+    impl<K: Hash + Ord, V> ExactSizeIterator for SwitchMapIterMut<'_, K, V> {
+        fn len(&self) -> usize {
+            fallback_to_each_variant!(self, len())
+        }
+    }
+    impl<K: Hash + Ord, V> std::iter::FusedIterator for SwitchMapIterMut<'_, K, V> {}
+
+    #[derive(Debug)]
+    pub enum SwitchMapIntoIter<K: Hash + Ord, V> {
+        Linear(std::vec::IntoIter<(K, V)>),
+        Hashed(hashbrown::hash_map::IntoIter<K, V>),
+    }
+    impl<K: Hash + Ord, V> Iterator for SwitchMapIntoIter<K, V> {
+        type Item = (K, V);
+        fn next(&mut self) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, next() vec: .map(|(k, v)| (k, v)))
+        }
+        fn count(self) -> usize {
+            fallback_to_each_variant!(self, count())
+        }
+        fn last(self) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, last() vec: .map(|(k, v)| (k, v)))
+        }
+        fn nth(&mut self, n: usize) -> Option<Self::Item> {
+            fallback_to_each_variant!(self, nth(n) vec: .map(|(k, v)| (k, v)))
+        }
+        fn size_hint(&self) -> (usize, Option<usize>) {
+            fallback_to_each_variant!(self, size_hint())
+        }
+    }
+    impl<K: Hash + Ord, V> ExactSizeIterator for SwitchMapIntoIter<K, V> {
+        fn len(&self) -> usize {
+            fallback_to_each_variant!(self, len())
+        }
+    }
+    impl<K: Hash + Ord, V> std::iter::FusedIterator for SwitchMapIntoIter<K, V> {}
 }
 
 // #[cfg(test)]
