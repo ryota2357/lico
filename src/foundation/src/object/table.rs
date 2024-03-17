@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use super::{pms::*, private::*, Function, Object};
-use core::{cell::Cell, marker::PhantomData, ptr::NonNull};
+use core::{borrow::Borrow, cell::Cell, hash::Hash, marker::PhantomData, ptr::NonNull};
 use std::borrow::Cow;
 
 use collections::*;
@@ -51,12 +51,30 @@ pub enum TableMethod {
 }
 
 impl<T: TObject> Table<T> {
-    pub fn new() -> Self {
-        Table::from([])
+    fn inner_mut(&mut self) -> &mut Inner<T> {
+        unsafe { PmsObject::inner_mut(self) }
     }
 }
 
-impl<T: TObject> Default for Table<T> {
+impl Table {
+    pub fn new() -> Self {
+        Table::from([])
+    }
+
+    pub fn insert(&mut self, key: Cow<'static, str>, value: Object) -> Option<Object> {
+        self.inner_mut().data.insert(key, value)
+    }
+
+    pub fn get<Q>(&self, key: &Q) -> Option<&Object>
+    where
+        Cow<'static, str>: Borrow<Q>,
+        Q: Hash + Ord + ?Sized,
+    {
+        self.inner().data.get(key)
+    }
+}
+
+impl Default for Table {
     fn default() -> Self {
         Self::new()
     }

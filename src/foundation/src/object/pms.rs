@@ -92,134 +92,134 @@ pub trait PmsObject<I: PmsInner> {
 
     fn custom_drop(this: &mut Self) {
         RecursiveDropGuard::begin_drop();
-        match this.inner().color() {
-            Color::Black => {
-                // First, decrement the reference count.
-                this.inner().dec_ref_count();
 
-                // If the reference count is not zero, we can't drop this object.
-                // But there is a possibility that this object is a part of a cycle, so we need to do `mark_and_sweep` from this object.
-                if this.inner().ref_count() > 0 {
-                    unsafe {
-                        this.inner().paint(Color::Purple); // Mark as suspicious of cycle reference
-                        mark_and_sweep::run(this);
+        if this.inner().color() != Color::Black {
+            unreachable!("drop() is called during mark and sweep");
+        }
+
+        // First, decrement the reference count.
+        this.inner().dec_ref_count();
+
+        // If the reference count is not zero, we can't drop this object.
+        // But there is a possibility that this object is a part of a cycle, so we need to do `mark_and_sweep` from this object.
+        if this.inner().ref_count() > 0 {
+            unsafe {
+                this.inner().paint(Color::Purple); // Mark as suspicious of cycle reference
+                mark_and_sweep::run(this);
+            }
+            RecursiveDropGuard::end_drop();
+            return;
+        }
+
+        // If the reference count is zero, we can drop this object.
+        unsafe {
+            // Mark this object as white as it is a candidate for collection.
+            this.inner().paint(Color::White);
+
+            // Next, we need to collect objects that can be traced from `this` that are suspected to be circular references.
+            //
+            // Q: Why do not we call `mem::drop_in_place()` on `this.prt()`?
+            // A: It has a performance problems.
+            //    Please imagine the following case:
+            //      - Root node has only k leaves.
+            //      - Each leaf has circular references between leaves.
+            //      - `this` is the root node.
+            //    In this case, we can drop all leaves, but we can't drop all leaves until we call `drop()` for the last leaf if we
+            //    call `mem::drop_in_place()` on `this.ptr()`. At this time, O(k^2) for a graph with k complete leaves.
+            //
+            // To collect objects for which circular references are suspected, we use `PurpleCollector`.
+            // `PurpleCollector` is a struct that collects objects for which circular references are suspected and marks them as purple.
+            struct PurpleCollector<'a> {
+                // In the `Object` enum, only `Array` and `Table` are `PmsObject`.
+                // If you add other `PmsObject` variants in the future, you will need to add them here as well.
+                array: Vec<&'a mut Array>,
+                table: Vec<&'a mut Table>,
+            }
+            impl<'a> PurpleCollector<'a> {
+                fn new() -> Self {
+                    Self {
+                        array: Vec::new(),
+                        table: Vec::new(),
                     }
-                    return;
                 }
+                /// Collect purple objects (suspected of circular references) that can be traced from the object pointed to by `ptr`.
+                /// White objects found during tracing are applied `PmsObject::deallocate_inner()` recursively.
+                ///
+                /// Given `ptr` must be `ref_count() == 0`.
+                unsafe fn collect<I: PmsInner + 'a>(&mut self, mut ptr: NonNull<I>) {
+                    assert_eq!(ptr.as_ref().ref_count(), 0);
+                    assert_eq!(ptr.as_ref().color(), Color::White);
 
-                // If the reference count is zero, we can drop this object.
-                unsafe {
-                    // Mark this object as white as it is a candidate for collection.
-                    this.inner().paint(Color::White);
-
-                    // Next, we need to collect objects that can be traced from `this` that are suspected to be circular references.
-                    //
-                    // Q: Why do not we call `mem::drop_in_place()` on `this.prt()`?
-                    // A: It has a performance problems.
-                    //    Please imagine the following case:
-                    //      - Root node has only k leaves.
-                    //      - Each leaf has circular references between leaves.
-                    //      - `this` is the root node.
-                    //    In this case, we can drop all leaves, but we can't drop all leaves until we call `drop()` for the last leaf if we
-                    //    call `mem::drop_in_place()` on `this.ptr()`. At this time, O(k^2) for a graph with k complete leaves.
-                    //
-                    // To collect objects for which circular references are suspected, we use `PurpleCollector`.
-                    // `PurpleCollector` is a struct that collects objects for which circular references are suspected and marks them as purple.
-                    struct PurpleCollector<'a> {
-                        // In the `Object` enum, only `Array` and `Table` are `PmsObject`.
-                        // If you add other `PmsObject` variants in the future, you will need to add them here as well.
-                        array: Vec<&'a mut Array>,
-                        table: Vec<&'a mut Table>,
-                    }
-                    impl<'a> PurpleCollector<'a> {
-                        fn new() -> Self {
-                            Self {
-                                array: Vec::new(),
-                                table: Vec::new(),
-                            }
-                        }
-                        /// Collect purple objects (suspected of circular references) that can be traced from the object pointed to by `ptr`.
-                        /// White objects found during tracing are applied `PmsObject::deallocate_inner()` recursively.
-                        ///
-                        /// Given `ptr` must be `ref_count() == 0`.
-                        unsafe fn collect<I: PmsInner + 'a>(&mut self, mut ptr: NonNull<I>) {
-                            assert_eq!(ptr.as_ref().ref_count(), 0);
-                            assert_eq!(ptr.as_ref().color(), Color::White);
-
-                            // For each child that can be traced from `ptr`
-                            for next in ptr.as_mut().iter_children_mut() {
-                                match next {
-                                    // If the child is `PmsObject`...
-                                    // (`_check_suspicious()` is just a function to cut out common processes, and I think it is not a good name.)
-                                    Object::Array(array) => {
-                                        if let Some(array) = self._check_suspicious(array) {
-                                            self.array.push(array);
-                                        }
-                                    }
-                                    Object::Table(table) => {
-                                        if let Some(table) = self._check_suspicious(table) {
-                                            self.table.push(table);
-                                        }
-                                    }
-                                    _ => {}
+                    // For each child that can be traced from `ptr`
+                    for next in ptr.as_mut().iter_children_mut() {
+                        match next {
+                            // If the child is `PmsObject`...
+                            // (`_check_suspicious()` is just a function to cut out common processes, and I think it is not a good name.)
+                            Object::Array(array) => {
+                                if let Some(array) = self._check_suspicious(array) {
+                                    self.array.push(array);
                                 }
                             }
-                        }
-                        /// This function must be called only from `collect()`.
-                        unsafe fn _check_suspicious<I: PmsInner + 'a, T: PmsObject<I>>(
-                            &mut self,
-                            item: &'a mut T,
-                        ) -> Option<&'a mut T> {
-                            if cfg!(debug_assertions) {
-                                let color = item.inner().color();
-                                assert!(
-                                    color == Color::Black || color == Color::Purple,
-                                    "Expected black or purple, but got {color:?}",
-                                );
-                            }
-
-                            // From the prerequisites (callee position) of this function, the parent object of `item` is `ref_count() == 0`.
-                            item.inner().dec_ref_count();
-
-                            if item.inner().ref_count() == 0 {
-                                item.inner().paint(Color::White);
-                                self.collect(item.ptr());
-                                PmsObject::deallocate_inner(item);
-                                None
-                            } else {
-                                // To avoid double collection, we need to check whether its color is purple.
-                                if item.inner().color() == Color::Purple {
-                                    return None;
+                            Object::Table(table) => {
+                                if let Some(table) = self._check_suspicious(table) {
+                                    self.table.push(table);
                                 }
-                                item.inner().paint(Color::Purple);
-                                Some(item)
                             }
+                            _ => {}
                         }
-                        unsafe fn finish(self) -> (Vec<&'a mut Array>, Vec<&'a mut Table>) {
-                            let Self {
-                                mut array,
-                                mut table,
-                            } = self;
-                            array.retain_mut(|x| x.inner().color() == Color::Purple);
-                            table.retain_mut(|x| x.inner().color() == Color::Purple);
-                            (array, table)
-                        }
+                    }
+                }
+                /// This function must be called only from `collect()`.
+                unsafe fn _check_suspicious<I: PmsInner + 'a, T: PmsObject<I>>(
+                    &mut self,
+                    item: &'a mut T,
+                ) -> Option<&'a mut T> {
+                    if cfg!(debug_assertions) {
+                        let color = item.inner().color();
+                        assert!(
+                            color == Color::Black || color == Color::Purple,
+                            "Expected black or purple, but got {color:?}",
+                        );
                     }
 
-                    // Collect purple objects and apply `mark_and_sweep::run()` for them.
-                    let mut purple_collector = PurpleCollector::new();
-                    purple_collector.collect(this.ptr());
-                    let (purple_array, purple_table) = purple_collector.finish();
-                    for array in purple_array {
-                        mark_and_sweep::run(array);
+                    // From the prerequisites (callee position) of this function, the parent object of `item` is `ref_count() == 0`.
+                    item.inner().dec_ref_count();
+
+                    if item.inner().ref_count() == 0 {
+                        item.inner().paint(Color::White);
+                        self.collect(item.ptr());
+                        PmsObject::deallocate_inner(item);
+                        None
+                    } else {
+                        // To avoid double collection, we need to check whether its color is purple.
+                        if item.inner().color() == Color::Purple {
+                            return None;
+                        }
+                        item.inner().paint(Color::Purple);
+                        Some(item)
                     }
-                    for table in purple_table {
-                        mark_and_sweep::run(table);
-                    }
+                }
+                unsafe fn finish(self) -> (Vec<&'a mut Array>, Vec<&'a mut Table>) {
+                    let Self {
+                        mut array,
+                        mut table,
+                    } = self;
+                    array.retain_mut(|x| x.inner().color() == Color::Purple);
+                    table.retain_mut(|x| x.inner().color() == Color::Purple);
+                    (array, table)
                 }
             }
-            Color::Purple | Color::Gray | Color::White => {
-                unreachable!("drop() is called during mark and sweep")
+
+            // Collect purple objects and apply `mark_and_sweep::run()` for them.
+            let mut purple_collector = PurpleCollector::new();
+            purple_collector.collect(this.ptr());
+            PmsObject::deallocate_inner(this);
+            let (purple_array, purple_table) = purple_collector.finish();
+            for array in purple_array {
+                mark_and_sweep::run(array);
+            }
+            for table in purple_table {
+                mark_and_sweep::run(table);
             }
         }
         RecursiveDropGuard::end_drop();

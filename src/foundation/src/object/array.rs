@@ -38,10 +38,6 @@ impl<T: TObject> PmsInner for Inner<T> {
 }
 
 impl<T: TObject> Array<T> {
-    pub fn new() -> Self {
-        Array::from(Vec::new())
-    }
-
     fn inner_mut(&mut self) -> &mut Inner<T> {
         unsafe {
             let inner = PmsObject::inner_mut(self);
@@ -52,6 +48,10 @@ impl<T: TObject> Array<T> {
 }
 
 impl Array {
+    pub fn new() -> Self {
+        Array::from(Vec::new())
+    }
+
     pub fn len(&self) -> usize {
         self.inner().data.len()
     }
@@ -63,8 +63,8 @@ impl Array {
         self.inner().version
     }
 
-    pub fn get(&self, index: usize) -> Option<Object> {
-        self.inner().data.get(index).cloned()
+    pub fn get(&self, index: usize) -> Option<&Object> {
+        self.inner().data.get(index)
     }
     pub fn set(&mut self, index: usize, value: Object) {
         self.inner_mut().data[index] = value;
@@ -92,7 +92,7 @@ impl Array {
     }
 }
 
-impl<T: TObject> Default for Array<T> {
+impl Default for Array {
     fn default() -> Self {
         Self::new()
     }
