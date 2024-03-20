@@ -54,6 +54,7 @@ impl Array {
     pub fn len(&self) -> usize {
         self.inner().data.len()
     }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
@@ -65,6 +66,7 @@ impl Array {
     pub fn get(&self, index: usize) -> Option<&Object> {
         self.inner().data.get(index)
     }
+
     pub fn set(&mut self, index: usize, value: Object) {
         self.inner_mut().data[index] = value;
     }
@@ -72,18 +74,21 @@ impl Array {
     pub fn push(&mut self, value: Object) {
         self.inner_mut().data.push(value);
     }
+
     pub fn pop(&mut self) -> Option<Object> {
         self.inner_mut().data.pop()
     }
+
     pub fn insert(&mut self, index: usize, element: Object) {
         self.inner_mut().data.insert(index, element);
     }
+
     pub fn remove(&mut self, index: usize) -> Object {
         self.inner_mut().data.remove(index)
     }
+
     pub fn clear(&mut self) {
-        todo!("Pms cared clear() call");
-        // self.inner_mut().data.clear();
+        self.inner_mut().data.clear();
     }
 
     pub fn contains(&self, value: &Object) -> bool {

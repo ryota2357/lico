@@ -317,7 +317,7 @@ mod mark_and_sweep {
     unsafe fn paint_black<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
         // Infinite recursion prevention.
         // - All PmsObject are initially black.
-        // - From the implimentions of `PmsObject::custom_drop()`, the children of black objects are also black.
+        // - From the implementations of `PmsObject::custom_drop()`, the children of black objects are also black.
         // So do nothing if `item` is already black.
         if item.inner().color() == Color::Black {
             return;
