@@ -12,6 +12,13 @@ impl<T: TObject> PmsObject<Inner<T>> for Array<T> {
     fn ptr_mut(&mut self) -> &mut NonNull<Inner<T>> {
         &mut self.ptr
     }
+
+    unsafe fn from_inner(ptr: NonNull<Inner<T>>) -> Self {
+        Array {
+            ptr,
+            phantom: PhantomData,
+        }
+    }
 }
 
 pub struct Inner<T: TObject> {

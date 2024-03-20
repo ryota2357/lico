@@ -169,7 +169,7 @@ fn complex_case1() {
         d: [c, b],
         e: [f],
         f: [g],
-    };
+    }
     macro_rules! drop_multi {
         ($($name:ident),*) => {
             $( drop($name); )*

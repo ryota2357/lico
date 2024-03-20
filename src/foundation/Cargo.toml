@@ -10,4 +10,5 @@ ecow = { workspace = true }
 hashbrown = { workspace = true }
 
 [dev-dependencies]
-mockalloc = "0.1.2"
+# mockalloc = "0.1.2"
+mockalloc = { git = "https://github.com/Diggsey/mockalloc" }

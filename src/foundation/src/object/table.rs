@@ -17,6 +17,13 @@ impl<T: TObject> PmsObject<Inner<T>> for Table<T> {
     fn ptr_mut(&mut self) -> &mut NonNull<Inner<T>> {
         &mut self.ptr
     }
+
+    unsafe fn from_inner(ptr: NonNull<Inner<T>>) -> Self {
+        Table {
+            ptr,
+            phantom: PhantomData,
+        }
+    }
 }
 
 pub struct Inner<T: TObject> {

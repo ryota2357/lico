@@ -1,4 +1,4 @@
-use super::{Array, Object, Table};
+use super::{array::Inner as ArrayInner, table::Inner as TableInner, Array, Object, Table};
 use core::{
     alloc::{Allocator, Layout},
     cell::Cell,
@@ -49,6 +49,8 @@ pub trait PmsInner {
 pub trait PmsObject<I: PmsInner> {
     fn ptr(&self) -> NonNull<I>;
     fn ptr_mut(&mut self) -> &mut NonNull<I>;
+
+    unsafe fn from_inner(ptr: NonNull<I>) -> Self;
 
     fn inner(&self) -> &I {
         assert!(!is_freed_ptr(self.ptr()));
@@ -130,13 +132,13 @@ pub trait PmsObject<I: PmsInner> {
             //
             // To collect objects for which circular references are suspected, we use `PurpleCollector`.
             // `PurpleCollector` is a struct that collects objects for which circular references are suspected and marks them as purple.
-            struct PurpleCollector<'a> {
+            struct PurpleCollector {
                 // In the `Object` enum, only `Array` and `Table` are `PmsObject`.
                 // If you add other `PmsObject` variants in the future, you will need to add them here as well.
-                array: Vec<&'a mut Array>,
-                table: Vec<&'a mut Table>,
+                array: Vec<NonNull<ArrayInner<Object>>>,
+                table: Vec<NonNull<TableInner<Object>>>,
             }
-            impl<'a> PurpleCollector<'a> {
+            impl PurpleCollector {
                 fn new() -> Self {
                     Self {
                         array: Vec::new(),
@@ -147,7 +149,7 @@ pub trait PmsObject<I: PmsInner> {
                 /// White objects found during tracing are applied `PmsObject::deallocate_inner()` recursively.
                 ///
                 /// Given `ptr` must be `ref_count() == 0`.
-                unsafe fn collect<I: PmsInner + 'a>(&mut self, mut ptr: NonNull<I>) {
+                unsafe fn collect<I: PmsInner>(&mut self, mut ptr: NonNull<I>) {
                     assert_eq!(ptr.as_ref().ref_count(), 0);
                     assert_eq!(ptr.as_ref().color(), Color::White);
 
@@ -158,12 +160,12 @@ pub trait PmsObject<I: PmsInner> {
                             // (`_check_suspicious()` is just a function to cut out common processes, and I think it is not a good name.)
                             Object::Array(array) => {
                                 if let Some(array) = self._check_suspicious(array) {
-                                    self.array.push(array);
+                                    self.array.push(array.ptr());
                                 }
                             }
                             Object::Table(table) => {
                                 if let Some(table) = self._check_suspicious(table) {
-                                    self.table.push(table);
+                                    self.table.push(table.ptr());
                                 }
                             }
                             _ => {}
@@ -171,7 +173,7 @@ pub trait PmsObject<I: PmsInner> {
                     }
                 }
                 /// This function must be called only from `collect()`.
-                unsafe fn _check_suspicious<I: PmsInner + 'a, T: PmsObject<I>>(
+                unsafe fn _check_suspicious<'a, I: PmsInner + 'a, T: PmsObject<I>>(
                     &mut self,
                     item: &'a mut T,
                 ) -> Option<&'a mut T> {
@@ -200,13 +202,18 @@ pub trait PmsObject<I: PmsInner> {
                         Some(item)
                     }
                 }
-                unsafe fn finish(self) -> (Vec<&'a mut Array>, Vec<&'a mut Table>) {
+                unsafe fn finish(
+                    self,
+                ) -> (
+                    Vec<NonNull<ArrayInner<Object>>>,
+                    Vec<NonNull<TableInner<Object>>>,
+                ) {
                     let Self {
                         mut array,
                         mut table,
                     } = self;
-                    array.retain_mut(|x| x.inner().color() == Color::Purple);
-                    table.retain_mut(|x| x.inner().color() == Color::Purple);
+                    array.retain_mut(|x| x.as_ref().color() == Color::Purple);
+                    table.retain_mut(|x| x.as_ref().color() == Color::Purple);
                     (array, table)
                 }
             }
@@ -214,13 +221,15 @@ pub trait PmsObject<I: PmsInner> {
             // Collect purple objects and apply `mark_and_sweep::run()` for them.
             let mut purple_collector = PurpleCollector::new();
             purple_collector.collect(this.ptr());
+            let (purple_array_ptrs, purple_table_ptrs) = purple_collector.finish();
+
             PmsObject::deallocate_inner(this);
-            let (purple_array, purple_table) = purple_collector.finish();
-            for array in purple_array {
-                mark_and_sweep::run(array);
+
+            for array_ptr in purple_array_ptrs {
+                mark_and_sweep::run_with_inner_ptr::<_, Array>(array_ptr);
             }
-            for table in purple_table {
-                mark_and_sweep::run(table);
+            for table_ptr in purple_table_ptrs {
+                mark_and_sweep::run_with_inner_ptr::<_, Table>(table_ptr);
             }
         }
         RecursiveDropGuard::end_drop();
@@ -253,6 +262,12 @@ fn is_freed_ptr<T: ?Sized>(ptr: NonNull<T>) -> bool {
 
 mod mark_and_sweep {
     use super::*;
+
+    pub unsafe fn run_with_inner_ptr<I: PmsInner, T: PmsObject<I>>(ptr: NonNull<I>) {
+        let mut object: T = PmsObject::from_inner(ptr);
+        run(&mut object);
+        mem::forget(object);
+    }
 
     pub unsafe fn run<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
         if item.inner().color() != Color::Purple {
