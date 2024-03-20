@@ -233,9 +233,7 @@ struct RecursiveDropGuard;
 impl RecursiveDropGuard {
     pub fn begin_drop() {
         REC_DROP_GUARD.with(|guard| {
-            if guard.get() {
-                panic!("Recursive call to drop");
-            }
+            assert!(!guard.get(), "Recursive call to drop");
             guard.set(true);
         });
     }

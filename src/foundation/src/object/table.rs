@@ -1,12 +1,11 @@
 #![allow(dead_code)]
 
 use super::{pms::*, private::*, Function, Object};
-use core::{borrow::Borrow, cell::Cell, hash::Hash, marker::PhantomData, ptr::NonNull};
+use core::{borrow::Borrow, cell::Cell, fmt::Debug, hash::Hash, marker::PhantomData, ptr::NonNull};
 use std::borrow::Cow;
 
 use collections::*;
 
-#[derive(Debug)]
 pub struct Table<T: TObject = Object> {
     ptr: NonNull<Inner<T>>,
     phantom: PhantomData<Inner<T>>,
@@ -111,6 +110,26 @@ impl<T: TObject> Clone for Table<T> {
     }
 }
 
+impl<T: TObject> Debug for Table<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut dbg = f.debug_map();
+        for (key, value) in self.inner().data.iter() {
+            dbg.key(key).value(match value.as_object() {
+                Object::Int(x) => x,
+                Object::Float(x) => x,
+                Object::String(x) => x,
+                Object::Bool(x) => x,
+                Object::Nil => &"nil",
+                Object::Function(_x) => todo!(),
+                Object::Array(_x) => &"Array", // TODO: なんかいい感じにする
+                Object::Table(_x) => &"Table",
+                Object::RustFunction(x) => x,
+            });
+        }
+        dbg.finish()
+    }
+}
+
 impl<T: TObject> Drop for Table<T> {
     fn drop(&mut self) {
         Table::custom_drop(self);
@@ -118,7 +137,7 @@ impl<T: TObject> Drop for Table<T> {
 }
 
 mod collections {
-    use core::{borrow::Borrow, hash::Hash, mem};
+    use core::{borrow::Borrow, fmt::Debug, hash::Hash, mem};
     type HashMap<K, T> = hashbrown::HashMap<K, T, ahash::RandomState>;
 
     pub struct LinerMap<K: Ord, V> {
@@ -193,6 +212,14 @@ mod collections {
         type IntoIter = std::vec::IntoIter<(K, V)>;
         fn into_iter(self) -> Self::IntoIter {
             self.data.into_iter()
+        }
+    }
+
+    impl<K: Ord + Debug, V: Debug> Debug for LinerMap<K, V> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_map()
+                .entries(self.iter().map(|&(ref k, ref v)| (k, v)))
+                .finish()
         }
     }
 
@@ -290,6 +317,12 @@ mod collections {
                 SwitchMapVariant::Linear(map) => SwitchMapIntoIter::Linear(map.into_iter()),
                 SwitchMapVariant::Hashed(map) => SwitchMapIntoIter::Hashed(map.into_iter()),
             }
+        }
+    }
+
+    impl<K: Hash + Ord + Debug, V: Debug> Debug for SwitchMap<K, V> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.debug_map().entries(self.iter()).finish()
         }
     }
 

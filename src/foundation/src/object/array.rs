@@ -1,7 +1,6 @@
 use super::{pms::*, private::TObject, Object};
-use core::{cell::Cell, marker::PhantomData, ptr::NonNull};
+use core::{cell::Cell, fmt::Debug, marker::PhantomData, ptr::NonNull};
 
-#[derive(Debug)]
 pub struct Array<T: TObject = Object> {
     ptr: NonNull<Inner<T>>,
     phantom: PhantomData<Inner<T>>,
@@ -128,6 +127,26 @@ impl<T: TObject> PartialEq for Array<T> {
         // We can't use pointer for `eq` since the `Object` is `PartialEq` and not `Eq`.
         // Even if pointers are same, `false` must be returned when they contain (point) data for which the reflection rule does not hold.
         self.inner().data.eq(&other.inner().data)
+    }
+}
+
+impl<T: TObject> Debug for Array<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut dbg = f.debug_list();
+        for item in self.inner().data.iter() {
+            dbg.entry(match item.as_object() {
+                Object::Int(x) => x,
+                Object::Float(x) => x,
+                Object::String(x) => x,
+                Object::Bool(x) => x,
+                Object::Nil => &"nil",
+                Object::Function(_x) => todo!(),
+                Object::Array(_x) => &"Array", // TODO: なんかいい感じにする
+                Object::Table(_x) => &"Table",
+                Object::RustFunction(x) => x,
+            });
+        }
+        dbg.finish()
     }
 }
 
