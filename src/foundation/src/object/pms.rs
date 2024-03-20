@@ -3,8 +3,7 @@ use core::{
     alloc::{Allocator, Layout},
     cell::Cell,
     fmt::Debug,
-    mem::forget,
-    ptr,
+    mem, ptr,
     ptr::NonNull,
 };
 use std::alloc::Global;
@@ -22,7 +21,7 @@ pub trait PmsInner {
     fn color_ref(&self) -> &Cell<Color>;
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object>;
-    unsafe fn into_children_iter(self) -> impl Iterator<Item = Object>;
+    unsafe fn drain_children(&mut self) -> impl Iterator<Item = Object>;
 
     fn color(&self) -> Color {
         self.color_ref().get()
@@ -64,8 +63,10 @@ pub trait PmsObject<I: PmsInner> {
         assert_eq!(this.inner().ref_count(), 0);
         assert!(!is_freed_ptr(this.ptr()));
 
-        let inner = ptr::read(this.ptr().as_ptr());
-        for next in inner.into_children_iter() {
+        let ptr = mem::replace(this.ptr_mut(), NonNull::new_unchecked(usize::MAX as *mut _));
+
+        let mut inner = ptr::read(ptr.as_ptr());
+        for next in inner.drain_children() {
             match next {
                 Object::Int(_) => {}          // No need to drop for `i64`  (Copy type)
                 Object::Float(_) => {}        // No need to drop for `f64`  (Copy type)
@@ -79,15 +80,15 @@ pub trait PmsObject<I: PmsInner> {
                     drop(next);
                 }
                 Object::Array(next) => {
-                    forget(next);
+                    mem::forget(next);
                 }
                 Object::Table(table) => {
-                    forget(table);
+                    mem::forget(table);
                 }
             }
         }
-        Global.deallocate(this.ptr().cast(), Layout::for_value(this.ptr().as_ref()));
-        *this.ptr_mut() = NonNull::new_unchecked(usize::MAX as *mut _);
+        drop(inner);
+        Global.deallocate(ptr.cast(), Layout::for_value(ptr.as_ref()));
     }
 
     fn custom_drop(this: &mut Self) {

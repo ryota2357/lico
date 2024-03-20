@@ -37,8 +37,8 @@ impl<T: TObject> PmsInner for Inner<T> {
         self.data.iter_mut().map(|(_, v)| v.as_object_mut())
     }
 
-    unsafe fn into_children_iter(self) -> impl Iterator<Item = Object> {
-        self.data.into_iter().map(|(_, v)| v.into_object())
+    unsafe fn drain_children(&mut self) -> impl Iterator<Item = Object> {
+        self.data.drain().map(|(_, v)| v.into_object())
     }
 }
 
