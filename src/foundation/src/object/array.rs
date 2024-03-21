@@ -1,16 +1,13 @@
-use super::{pms::*, private::TObject, Object};
+use super::{private::*, Object};
 use core::{cell::Cell, fmt::Debug, marker::PhantomData, ptr::NonNull};
 
 pub struct Array<T: TObject = Object> {
     ptr: NonNull<Inner<T>>,
     phantom: PhantomData<Inner<T>>,
 }
-impl<T: TObject> PmsObject<Inner<T>> for Array<T> {
+unsafe impl<T: TObject> PmsObject<Inner<T>> for Array<T> {
     fn ptr(&self) -> NonNull<Inner<T>> {
         self.ptr
-    }
-    fn ptr_mut(&mut self) -> &mut NonNull<Inner<T>> {
-        &mut self.ptr
     }
 
     unsafe fn from_inner(ptr: NonNull<Inner<T>>) -> Self {
@@ -27,7 +24,7 @@ pub struct Inner<T: TObject> {
     ref_count: Cell<usize>,
     color: Cell<Color>,
 }
-impl<T: TObject> PmsInner for Inner<T> {
+unsafe impl<T: TObject> PmsInner for Inner<T> {
     fn ref_count_ref(&self) -> &Cell<usize> {
         &self.ref_count
     }
@@ -79,16 +76,16 @@ impl Array {
         self.inner_mut().data[index] = value;
     }
 
-    pub fn push(&mut self, value: Object) {
-        self.inner_mut().data.push(value);
+    pub fn push<T: Into<Object>>(&mut self, value: T) {
+        self.inner_mut().data.push(value.into());
     }
 
     pub fn pop(&mut self) -> Option<Object> {
         self.inner_mut().data.pop()
     }
 
-    pub fn insert(&mut self, index: usize, element: Object) {
-        self.inner_mut().data.insert(index, element);
+    pub fn insert<T: Into<Object>>(&mut self, index: usize, element: T) {
+        self.inner_mut().data.insert(index, element.into());
     }
 
     pub fn remove(&mut self, index: usize) -> Object {

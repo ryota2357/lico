@@ -10,40 +10,39 @@ pub use table::{Table, TableMethod};
 mod uni_string;
 pub use uni_string::UniString;
 
-mod pms;
+pub mod collections;
+
+mod private;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object {
     Int(i64),
     Float(f64),
-    String(UniString),
     Bool(bool),
     Nil,
-    Function(Function),
+    String(UniString),
     Array(Array),
     Table(Table),
+    Function(Function),
     RustFunction(fn(&[Object]) -> Result<Object, String>),
 }
 
-mod private {
-    use super::*;
-    use core::fmt::Debug;
-
-    pub trait TObject: Clone + Debug + PartialEq {
-        fn into_object(self) -> Object;
-        fn as_object(&self) -> &Object;
-        fn as_object_mut(&mut self) -> &mut Object;
-    }
-
-    impl TObject for Object {
-        fn into_object(self) -> Object {
-            self
-        }
-        fn as_object(&self) -> &Object {
-            self
-        }
-        fn as_object_mut(&mut self) -> &mut Object {
-            self
-        }
-    }
+macro_rules! into_object {
+    ($($type:ty :-> $variant:ident),* $(,)?) => {
+        $(
+            impl From<$type> for Object {
+                fn from(value: $type) -> Self {
+                    Object::$variant(value)
+                }
+            }
+        )*
+    };
+}
+into_object! {
+    i64 :-> Int,
+    f64 :-> Float,
+    bool :-> Bool,
+    UniString :-> String,
+    Array :-> Array,
+    Table :-> Table,
 }

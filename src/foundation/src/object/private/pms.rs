@@ -16,7 +16,16 @@ pub enum Color {
     White,  // Candidates for collection (deallocate)
 }
 
-pub trait PmsInner {
+macro_rules! debug_assert_ptr_is_not_freed {
+    ($ptr:expr) => {
+        debug_assert!({
+            let address = $ptr.as_ptr() as *mut () as usize;
+            address != usize::MAX
+        });
+    };
+}
+
+pub unsafe trait PmsInner {
     fn ref_count_ref(&self) -> &Cell<usize>;
     fn color_ref(&self) -> &Cell<Color>;
 
@@ -46,27 +55,32 @@ pub trait PmsInner {
     }
 }
 
-pub trait PmsObject<I: PmsInner> {
+pub unsafe trait PmsObject<I: PmsInner> {
     fn ptr(&self) -> NonNull<I>;
-    fn ptr_mut(&mut self) -> &mut NonNull<I>;
 
     unsafe fn from_inner(ptr: NonNull<I>) -> Self;
 
     fn inner(&self) -> &I {
-        assert!(!is_freed_ptr(self.ptr()));
+        debug_assert_ptr_is_not_freed!(self.ptr());
         unsafe { self.ptr().as_ref() }
     }
     unsafe fn inner_mut(&mut self) -> &mut I {
-        assert!(!is_freed_ptr(self.ptr()));
+        debug_assert_ptr_is_not_freed!(self.ptr());
         self.ptr().as_mut()
     }
 
     unsafe fn deallocate_inner(this: &mut Self) {
-        assert_eq!(this.inner().ref_count(), 0);
-        assert!(!is_freed_ptr(this.ptr()));
+        debug_assert_ptr_is_not_freed!(this.ptr());
+        debug_assert_eq!(this.inner().ref_count(), 0);
 
-        let ptr = mem::replace(this.ptr_mut(), NonNull::new_unchecked(usize::MAX as *mut _));
-
+        let ptr = if cfg!(debug_assertions) {
+            mem::replace(
+                &mut this.ptr(),
+                NonNull::new_unchecked(usize::MAX as *mut _),
+            )
+        } else {
+            this.ptr()
+        };
         let mut inner = ptr::read(ptr.as_ptr());
         for next in inner.drain_children() {
             match next {
@@ -150,8 +164,8 @@ pub trait PmsObject<I: PmsInner> {
                 ///
                 /// Given `ptr` must be `ref_count() == 0`.
                 unsafe fn collect<I: PmsInner>(&mut self, mut ptr: NonNull<I>) {
-                    assert_eq!(ptr.as_ref().ref_count(), 0);
-                    assert_eq!(ptr.as_ref().color(), Color::White);
+                    debug_assert_eq!(ptr.as_ref().ref_count(), 0);
+                    debug_assert_eq!(ptr.as_ref().color(), Color::White);
 
                     // For each child that can be traced from `ptr`
                     for next in ptr.as_mut().iter_children_mut() {
@@ -253,11 +267,6 @@ impl RecursiveDropGuard {
             guard.set(false);
         });
     }
-}
-
-fn is_freed_ptr<T: ?Sized>(ptr: NonNull<T>) -> bool {
-    let address = ptr.as_ptr() as *mut () as usize;
-    address == usize::MAX
 }
 
 mod mark_and_sweep {

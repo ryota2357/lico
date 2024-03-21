@@ -170,14 +170,18 @@ fn complex_case1() {
         e: [f],
         f: [g],
     }
-    macro_rules! drop_multi {
-        ($($name:ident),*) => {
-            $( drop($name); )*
-        };
-    }
-    drop_multi!(b, c, d, f, g);
 
+    // drop except a and e
+    drop(b);
+    drop(c);
+    drop(d);
+    drop(f);
+    drop(g);
+
+    // then drop a
     drop(a);
+
+    // check f and g are alive
     assert_eq!(
         match e.get("f").unwrap() {
             Object::Table(f) => {
@@ -192,4 +196,24 @@ fn complex_case1() {
         },
         (&Object::String("f".into()), &Object::String("g".into()))
     );
+}
+
+#[mockalloc::test]
+fn complex_case2() {
+    let mut a = Array::new();
+    let mut b = Array::new();
+    let mut c = Array::new();
+    a.push(b.clone());
+    a.push(c.clone());
+    b.push(a.clone());
+    b.push(c.clone());
+    c.push(a.clone());
+    c.push(b.clone());
+
+    let mut root = Array::new();
+    root.push(a);
+    root.push(b);
+    root.push(c);
+
+    drop(root);
 }
