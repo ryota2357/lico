@@ -1,22 +1,47 @@
-use super::{liner_map, liner_map::LinerMap};
+use super::{linear_map, linear_map::LinearMap};
 use core::{borrow::Borrow, fmt::Debug, hash::Hash};
 
 type HashMap<K, T> = hashbrown::HashMap<K, T, ahash::RandomState>;
 
 const LINEAR_MAP_SIZE_LIMIT: usize = 16;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub struct SwitchMap<K: Hash + Ord, V>(Variant<K, V>);
 
 #[derive(Clone, PartialEq)]
 enum Variant<K: Hash + Ord, V> {
-    Linear(LinerMap<K, V>),
+    Linear(LinearMap<K, V>),
     Hashed(HashMap<K, V>),
 }
 
 impl<K: Hash + Ord, V> SwitchMap<K, V> {
     pub const fn new() -> Self {
-        Self(Variant::Linear(LinerMap::new()))
+        Self(Variant::Linear(LinearMap::new()))
+    }
+
+    pub fn len(&self) -> usize {
+        match &self.0 {
+            Variant::Linear(map) => map.len(),
+            Variant::Hashed(map) => map.len(),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        match &self.0 {
+            Variant::Linear(map) => map.is_empty(),
+            Variant::Hashed(map) => map.is_empty(),
+        }
+    }
+
+    pub fn get<Q>(&self, key: &Q) -> Option<&V>
+    where
+        K: Borrow<Q>,
+        Q: Hash + Ord + ?Sized,
+    {
+        match &self.0 {
+            Variant::Linear(map) => map.get(key),
+            Variant::Hashed(map) => map.get(key),
+        }
     }
 
     pub fn insert(&mut self, key: K, value: V) -> Option<V> {
@@ -38,14 +63,14 @@ impl<K: Hash + Ord, V> SwitchMap<K, V> {
         }
     }
 
-    pub fn get<Q>(&self, key: &Q) -> Option<&V>
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<V>
     where
         K: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
-        match &self.0 {
-            Variant::Linear(map) => map.get(key),
-            Variant::Hashed(map) => map.get(key),
+        match &mut self.0 {
+            Variant::Linear(map) => map.remove(key),
+            Variant::Hashed(map) => map.remove(key),
         }
     }
 
@@ -53,6 +78,17 @@ impl<K: Hash + Ord, V> SwitchMap<K, V> {
         match &mut self.0 {
             Variant::Linear(map) => map.clear(),
             Variant::Hashed(map) => map.clear(),
+        }
+    }
+
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
+    where
+        K: Borrow<Q>,
+        Q: Hash + Ord + ?Sized,
+    {
+        match &self.0 {
+            Variant::Linear(map) => map.contains_key(key),
+            Variant::Hashed(map) => map.contains_key(key),
         }
     }
 
@@ -78,10 +114,16 @@ impl<K: Hash + Ord, V> SwitchMap<K, V> {
     }
 }
 
+impl<K: Hash + Ord, V> Default for SwitchMap<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<K: Hash + Ord, V, const N: usize> From<[(K, V); N]> for SwitchMap<K, V> {
     fn from(value: [(K, V); N]) -> Self {
         if N <= LINEAR_MAP_SIZE_LIMIT {
-            let map = LinerMap::from(value);
+            let map = LinearMap::from(value);
             SwitchMap(Variant::Linear(map))
         } else {
             let mut map = HashMap::default();
@@ -96,7 +138,7 @@ impl<K: Hash + Ord, V, const N: usize> From<[(K, V); N]> for SwitchMap<K, V> {
 impl<K: Hash + Ord, V> From<Vec<(K, V)>> for SwitchMap<K, V> {
     fn from(value: Vec<(K, V)>) -> Self {
         if value.len() <= LINEAR_MAP_SIZE_LIMIT {
-            let map = LinerMap::from(value);
+            let map = LinearMap::from(value);
             SwitchMap(Variant::Linear(map))
         } else {
             let mut map = HashMap::default();
@@ -118,6 +160,29 @@ impl<K: Hash + Ord, V> IntoIterator for SwitchMap<K, V> {
         }
     }
 }
+
+impl<K: Hash + Ord, V: PartialEq> PartialEq for SwitchMap<K, V> {
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.0, &other.0) {
+            (Variant::Linear(a), Variant::Linear(b)) => a.eq(b),
+            (Variant::Hashed(a), Variant::Hashed(b)) => a.eq(b),
+            (Variant::Linear(linear), Variant::Hashed(hashed))
+            | (Variant::Hashed(hashed), Variant::Linear(linear)) => {
+                if linear.len() != hashed.len() {
+                    return false;
+                }
+                for (k, v) in hashed.iter() {
+                    if linear.get(k) != Some(v) {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    }
+}
+
+impl<K: Hash + Ord, V: Eq> Eq for SwitchMap<K, V> {}
 
 impl<K: Hash + Ord + Debug, V: Debug> Debug for SwitchMap<K, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -168,7 +233,7 @@ macro_rules! impl_iterator {
 
 #[derive(Debug, Clone)]
 pub enum Iter<'a, K: Hash + Ord, V> {
-    Linear(liner_map::Iter<'a, K, V>),
+    Linear(linear_map::Iter<'a, K, V>),
     Hashed(hashbrown::hash_map::Iter<'a, K, V>),
 }
 impl_iterator!(for Iter<'a, K, V> {
@@ -178,7 +243,7 @@ impl_iterator!(for Iter<'a, K, V> {
 
 #[derive(Debug)]
 pub enum IterMut<'a, K: Hash + Ord, V> {
-    Linear(liner_map::IterMut<'a, K, V>),
+    Linear(linear_map::IterMut<'a, K, V>),
     Hashed(hashbrown::hash_map::IterMut<'a, K, V>),
 }
 impl_iterator!(for IterMut<'a, K, V> {
@@ -188,7 +253,7 @@ impl_iterator!(for IterMut<'a, K, V> {
 
 #[derive(Debug)]
 pub enum IntoIter<K: Hash + Ord, V> {
-    Linear(liner_map::IntoIter<K, V>),
+    Linear(linear_map::IntoIter<K, V>),
     Hashed(hashbrown::hash_map::IntoIter<K, V>),
 }
 impl_iterator!(for IntoIter<K, V> {
@@ -198,7 +263,7 @@ impl_iterator!(for IntoIter<K, V> {
 
 #[derive(Debug)]
 pub enum Drain<'a, K: Hash + Ord, V> {
-    Linear(liner_map::Drain<'a, K, V>),
+    Linear(linear_map::Drain<'a, K, V>),
     Hashed(hashbrown::hash_map::Drain<'a, K, V>),
 }
 impl_iterator!(for Drain<'a, K, V> {

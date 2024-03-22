@@ -27,7 +27,7 @@ pub enum Object {
     RustFunction(fn(&[Object]) -> Result<Object, String>),
 }
 
-macro_rules! into_object {
+macro_rules! into_object_variant {
     ($($type:ty :-> $variant:ident),* $(,)?) => {
         $(
             impl From<$type> for Object {
@@ -38,11 +38,16 @@ macro_rules! into_object {
         )*
     };
 }
-into_object! {
+into_object_variant! {
     i64 :-> Int,
     f64 :-> Float,
     bool :-> Bool,
     UniString :-> String,
     Array :-> Array,
     Table :-> Table,
+}
+impl From<&str> for Object {
+    fn from(value: &str) -> Self {
+        Object::String(value.into())
+    }
 }

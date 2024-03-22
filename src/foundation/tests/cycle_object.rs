@@ -5,16 +5,6 @@ use mockalloc::Mockalloc;
 #[global_allocator]
 static ALLOCATOR: Mockalloc<std::alloc::System> = Mockalloc(std::alloc::System);
 
-/*
- * Get more information:
- * ```rust
- * let alloc_info = mockalloc::record_allocs(|| {
- *     // Some code which uses the allocator
- * });
- * dbg!(alloc_info);
- * ```
- */
-
 #[mockalloc::test]
 fn no_cycle() {
     let mut array = Array::new();

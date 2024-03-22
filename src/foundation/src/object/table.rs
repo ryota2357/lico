@@ -21,7 +21,7 @@ unsafe impl<T: TObject> PmsObject<Inner<T>> for Table<T> {
 
 pub struct Inner<T: TObject> {
     data: SwitchMap<Cow<'static, str>, T>,
-    methods: LinerMap<Cow<'static, str>, TableMethod>,
+    methods: LinearMap<Cow<'static, str>, TableMethod>,
     ref_count: Cell<usize>,
     color: Cell<Color>,
 }
@@ -29,6 +29,7 @@ unsafe impl<T: TObject> PmsInner for Inner<T> {
     fn ref_count_ref(&self) -> &Cell<usize> {
         &self.ref_count
     }
+
     fn color_ref(&self) -> &Cell<Color> {
         &self.color
     }
@@ -49,19 +50,17 @@ pub enum TableMethod {
     CustomNoSelf(Function),
 }
 
-impl<T: TObject> Table<T> {
-    fn inner_mut(&mut self) -> &mut Inner<T> {
-        unsafe { PmsObject::inner_mut(self) }
-    }
-}
-
 impl Table {
     pub fn new() -> Self {
         Table::from([])
     }
 
-    pub fn insert(&mut self, key: Cow<'static, str>, value: Object) -> Option<Object> {
-        self.inner_mut().data.insert(key, value)
+    pub fn len(&self) -> usize {
+        self.inner().data.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.inner().data.is_empty()
     }
 
     pub fn get<Q>(&self, key: &Q) -> Option<&Object>
@@ -71,6 +70,36 @@ impl Table {
     {
         self.inner().data.get(key)
     }
+
+    pub fn insert<T: Into<Object>>(&mut self, key: Cow<'static, str>, value: T) -> Option<Object> {
+        unsafe { self.inner_mut().data.insert(key, value.into()) }
+    }
+
+    pub fn remove<Q>(&mut self, key: &Q) -> Option<Object>
+    where
+        Cow<'static, str>: Borrow<Q>,
+        Q: Hash + Ord + ?Sized,
+    {
+        unsafe { self.inner_mut().data.remove(key) }
+    }
+
+    pub fn clear(&mut self) {
+        unsafe {
+            self.inner_mut().data.clear();
+        }
+    }
+
+    pub fn contains_key<Q>(&self, key: &Q) -> bool
+    where
+        Cow<'static, str>: Borrow<Q>,
+        Q: Hash + Ord + ?Sized,
+    {
+        self.inner().data.contains_key(key)
+    }
+
+    pub unsafe fn iter(&self) -> switch_map::Iter<Cow<'static, str>, Object> {
+        self.inner().data.iter()
+    }
 }
 
 impl Default for Table {
@@ -79,11 +108,11 @@ impl Default for Table {
     }
 }
 
-impl<T: TObject, const N: usize> From<[(Cow<'static, str>, T); N]> for Table<T> {
-    fn from(value: [(Cow<'static, str>, T); N]) -> Self {
+impl<const N: usize> From<[(Cow<'static, str>, Object); N]> for Table {
+    fn from(value: [(Cow<'static, str>, Object); N]) -> Self {
         let ptr = Box::leak(Box::new(Inner {
             data: SwitchMap::from(value),
-            methods: LinerMap::new(),
+            methods: LinearMap::new(),
             ref_count: Cell::new(1),
             color: Cell::new(Color::Black),
         }));
@@ -95,8 +124,10 @@ impl<T: TObject, const N: usize> From<[(Cow<'static, str>, T); N]> for Table<T> 
 }
 
 impl<T: TObject> PartialEq for Table<T> {
-    fn eq(&self, _other: &Self) -> bool {
-        todo!()
+    fn eq(&self, other: &Self) -> bool {
+        let inner = self.inner();
+        let other = other.inner();
+        inner.data.eq(&other.data) && inner.methods.eq(&other.methods)
     }
 }
 

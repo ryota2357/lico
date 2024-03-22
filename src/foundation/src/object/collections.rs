@@ -1,5 +1,5 @@
-mod liner_map;
-pub use liner_map::LinerMap;
+pub mod linear_map;
+pub use linear_map::LinearMap;
 
-mod switch_map;
+pub mod switch_map;
 pub use switch_map::SwitchMap;

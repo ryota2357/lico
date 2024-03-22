@@ -28,6 +28,7 @@ unsafe impl<T: TObject> PmsInner for Inner<T> {
     fn ref_count_ref(&self) -> &Cell<usize> {
         &self.ref_count
     }
+
     fn color_ref(&self) -> &Cell<Color> {
         &self.color
     }
@@ -38,16 +39,6 @@ unsafe impl<T: TObject> PmsInner for Inner<T> {
 
     unsafe fn drain_children(&mut self) -> impl Iterator<Item = Object> {
         self.data.drain(..).map(|x| x.into_object())
-    }
-}
-
-impl<T: TObject> Array<T> {
-    fn inner_mut(&mut self) -> &mut Inner<T> {
-        unsafe {
-            let inner = PmsObject::inner_mut(self);
-            inner.version += 1;
-            inner
-        }
     }
 }
 
@@ -72,32 +63,42 @@ impl Array {
         self.inner().data.get(index)
     }
 
-    pub fn set(&mut self, index: usize, value: Object) {
-        self.inner_mut().data[index] = value;
+    pub fn set<T: Into<Object>>(&mut self, index: usize, value: T) {
+        self.inner_data_mut()[index] = value.into();
     }
 
     pub fn push<T: Into<Object>>(&mut self, value: T) {
-        self.inner_mut().data.push(value.into());
+        self.inner_data_mut().push(value.into());
     }
 
     pub fn pop(&mut self) -> Option<Object> {
-        self.inner_mut().data.pop()
+        self.inner_data_mut().pop()
     }
 
     pub fn insert<T: Into<Object>>(&mut self, index: usize, element: T) {
-        self.inner_mut().data.insert(index, element.into());
+        self.inner_data_mut().insert(index, element.into());
     }
 
     pub fn remove(&mut self, index: usize) -> Object {
-        self.inner_mut().data.remove(index)
+        self.inner_data_mut().remove(index)
     }
 
     pub fn clear(&mut self) {
-        self.inner_mut().data.clear();
+        self.inner_data_mut().clear();
     }
 
     pub fn contains(&self, value: &Object) -> bool {
         self.inner().data.contains(value)
+    }
+
+    pub unsafe fn iter(&self) -> core::slice::Iter<'_, Object> {
+        self.inner().data.iter()
+    }
+
+    fn inner_data_mut(&mut self) -> &mut Vec<Object> {
+        let inner_mut = unsafe { self.inner_mut() };
+        inner_mut.version += 1;
+        &mut inner_mut.data
     }
 }
 
@@ -107,10 +108,17 @@ impl Default for Array {
     }
 }
 
-impl<T: TObject> From<Vec<T>> for Array<T> {
-    fn from(array: Vec<T>) -> Self {
+impl<const N: usize> From<[Object; N]> for Array {
+    fn from(value: [Object; N]) -> Self {
+        let boxed: Box<[Object]> = Box::new(value);
+        Array::from(boxed.into_vec())
+    }
+}
+
+impl From<Vec<Object>> for Array {
+    fn from(value: Vec<Object>) -> Self {
         let ptr = Box::leak(Box::new(Inner {
-            data: array,
+            data: value,
             version: 0,
             ref_count: Cell::new(1),
             color: Cell::new(Color::Black),
@@ -134,8 +142,6 @@ impl<T: TObject> Clone for Array<T> {
 
 impl<T: TObject> PartialEq for Array<T> {
     fn eq(&self, other: &Self) -> bool {
-        // We can't use pointer for `eq` since the `Object` is `PartialEq` and not `Eq`.
-        // Even if pointers are same, `false` must be returned when they contain (point) data for which the reflection rule does not hold.
         self.inner().data.eq(&other.inner().data)
     }
 }
