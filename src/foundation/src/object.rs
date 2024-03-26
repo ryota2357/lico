@@ -10,6 +10,9 @@ pub use table::{Table, TableMethod};
 mod function;
 pub use function::Function;
 
+mod rust_function;
+pub use rust_function::RustFunction;
+
 pub mod collections;
 
 mod private;
@@ -24,7 +27,7 @@ pub enum Object {
     Array(Array),
     Table(Table),
     Function(Function),
-    RustFunction(fn(&[Object]) -> Result<Object, String>),
+    RustFunction(RustFunction),
 }
 
 macro_rules! into_object_variant {
