@@ -1,14 +1,14 @@
+mod ustring;
+pub use ustring::UString;
+
 mod array;
 pub use array::Array;
-
-mod function;
-pub use function::Function;
 
 mod table;
 pub use table::{Table, TableMethod};
 
-mod uni_string;
-pub use uni_string::UniString;
+mod function;
+pub use function::Function;
 
 pub mod collections;
 
@@ -20,7 +20,7 @@ pub enum Object {
     Float(f64),
     Bool(bool),
     Nil,
-    String(UniString),
+    String(UString),
     Array(Array),
     Table(Table),
     Function(Function),
@@ -42,12 +42,12 @@ into_object_variant! {
     i64 :-> Int,
     f64 :-> Float,
     bool :-> Bool,
-    UniString :-> String,
+    UString :-> String,
     Array :-> Array,
     Table :-> Table,
 }
 impl From<&str> for Object {
     fn from(value: &str) -> Self {
-        Object::String(value.into())
+        Object::String(UString::from(value))
     }
 }

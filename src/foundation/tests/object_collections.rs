@@ -278,5 +278,6 @@ fn switch_map_debug() {
     map.clear();
     map.insert("foo".to_string(), 3);
     map.insert("key".to_string(), 1);
-    assert_eq!(format!("{:?}", map), r#"{"foo": 3, "key": 1}"#);
+    let debug = format!("{:?}", map);
+    assert!(debug == r#"{"foo": 3, "key": 1}"# || debug == r#"{"key": 1, "foo": 3}"#);
 }

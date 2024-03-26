@@ -8,6 +8,7 @@ edition.workspace = true
 ahash = { workspace = true }
 ecow = { workspace = true }
 hashbrown = { workspace = true }
+compact_str = { workspace = true }
 
 [dev-dependencies]
 # mockalloc = "0.1.2"

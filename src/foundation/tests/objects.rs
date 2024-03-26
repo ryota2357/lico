@@ -1,6 +1,174 @@
 use foundation::object::*;
 
 #[test]
+fn object_size() {
+    use core::mem::size_of;
+    assert_eq!(size_of::<Object>(), 16);
+    assert_eq!(size_of::<UString>(), 8);
+    assert_eq!(size_of::<Array>(), 8);
+    assert_eq!(size_of::<Table>(), 8);
+    assert_eq!(size_of::<Function>(), 16);
+}
+
+#[test]
+fn u_string_construct_empty() {
+    let empty = UString::new();
+    assert_eq!(empty.len(), 0);
+    assert_eq!(empty.is_empty(), true);
+    assert_eq!(empty.is_ascii(), true);
+    assert_eq!(empty.as_str(), "");
+    assert_eq!(empty.get(0), None);
+    assert_eq!(empty.sub_string(0, 0), None);
+    assert_eq!(empty, UString::default());
+    assert_eq!(empty, UString::from(""));
+    assert_eq!("", empty);
+}
+
+#[test]
+fn u_string_construct_with_ascii() {
+    let ascii = UString::from("ryota2357");
+    assert_eq!(ascii.len(), 9);
+    assert_eq!(ascii.is_empty(), false);
+    assert_eq!(ascii.is_ascii(), true);
+    assert_eq!(ascii.as_str(), "ryota2357");
+    assert_eq!("ryota2357", ascii);
+}
+
+#[test]
+fn u_string_construct_with_unicode() {
+    let unicode = UString::from("こんにちは");
+    assert_eq!(unicode.len(), 5);
+    assert_eq!(unicode.is_empty(), false);
+    assert_eq!(unicode.is_ascii(), false);
+    assert_eq!(unicode.as_str(), "こんにちは");
+    assert_eq!("こんにちは", unicode);
+}
+
+#[test]
+fn u_stirng_get() {
+    let ascii = UString::from("abc");
+    assert_eq!(ascii.get(0), Some('a'));
+    assert_eq!(ascii.get(1), Some('b'));
+    assert_eq!(ascii.get(2), Some('c'));
+    assert_eq!(ascii.get(3), None);
+
+    let u_char = UString::from("");
+    assert_eq!(u_char.get(0), Some(''));
+    assert_eq!(u_char.get(1), None);
+
+    //                             0 1 2 345678901
+    let non_ascii = UString::from("やあ、ryota2357");
+    assert_eq!(non_ascii.get(0), Some('や'));
+    assert_eq!(non_ascii.get(2), Some('、'));
+    assert_eq!(non_ascii.get(6), Some('t'));
+    assert_eq!(non_ascii.get(11), Some('7'));
+    assert_eq!(non_ascii.get(12), None);
+}
+
+#[test]
+fn u_string_sub_string() {
+    let ascii = UString::from("abc");
+    assert_eq!(ascii.sub_string(0, 3), Some(UString::from("abc")));
+    assert_eq!(ascii.sub_string(1, 2), Some(UString::from("b")));
+    assert_eq!(ascii.sub_string(1, 3), Some(UString::from("bc")));
+    assert_eq!(ascii.sub_string(3, 3), Some(UString::from("")));
+    assert_eq!(ascii.sub_string(2, 4), None);
+
+    let u_char = UString::from("👍");
+    assert_eq!(u_char.sub_string(0, 1), Some(UString::from("👍")));
+    assert_eq!(u_char.sub_string(0, 0), Some(UString::from("")));
+    assert_eq!(u_char.sub_string(1, 2), None);
+
+    let non_ascii = UString::from("あaいbうcえdおe");
+    assert_eq!(
+        non_ascii.sub_string(0, 10),
+        Some(UString::from("あaいbうcえdおe"))
+    );
+    assert_eq!(non_ascii.sub_string(1, 1), Some(UString::from("")));
+    assert_eq!(non_ascii.sub_string(1, 2), Some(UString::from("a")));
+    assert_eq!(non_ascii.sub_string(1, 5), Some(UString::from("aいbう")));
+    assert_eq!(non_ascii.sub_string(5, 11), None);
+}
+
+#[test]
+fn u_string_add_with_empty() {
+    let empty = UString::new();
+
+    let empty2 = empty.clone() + "";
+    assert_eq!(empty2.len(), 0);
+    assert_eq!(empty2.is_empty(), true);
+    assert_eq!(empty2.is_ascii(), true);
+    assert_eq!(empty2, "");
+
+    let ascii = empty.clone() + "abc";
+    assert_eq!(ascii.len(), 3);
+    assert_eq!(ascii.is_empty(), false);
+    assert_eq!(ascii.is_ascii(), true);
+    assert_eq!(ascii, "abc");
+
+    let none_ascii = empty + "你好世界";
+    assert_eq!(none_ascii.len(), 4);
+    assert_eq!(none_ascii.is_empty(), false);
+    assert_eq!(none_ascii.is_ascii(), false);
+    assert_eq!(none_ascii, "你好世界");
+}
+
+#[test]
+fn u_string_add_with_ascii() {
+    let ascii = UString::from("abc");
+
+    let empty = "" + ascii.clone();
+    assert_eq!(empty.len(), 3);
+    assert_eq!(empty.is_empty(), false);
+    assert_eq!(empty.is_ascii(), true);
+    assert_eq!(empty, "abc");
+
+    let ascii2 = ascii.clone() + "def";
+    assert_eq!(ascii2.len(), 6);
+    assert_eq!(ascii2.is_empty(), false);
+    assert_eq!(ascii2.is_ascii(), true);
+    assert_eq!(ascii2, "abcdef");
+
+    let none_ascii = ascii + " 👀";
+    assert_eq!(none_ascii.len(), 5);
+    assert_eq!(none_ascii.is_empty(), false);
+    assert_eq!(none_ascii.is_ascii(), false);
+    assert_eq!(none_ascii, "abc 👀");
+}
+
+#[test]
+fn u_string_add_with_non_ascii() {
+    let none_ascii = UString::from("Hello 世界");
+
+    let empty = none_ascii.clone() + "";
+    assert_eq!(empty.len(), 8);
+    assert_eq!(empty.is_empty(), false);
+    assert_eq!(empty.is_ascii(), false);
+    assert_eq!(empty, "Hello 世界");
+
+    let ascii = none_ascii.clone() + "!!";
+    assert_eq!(ascii.len(), 10);
+    assert_eq!(ascii.is_empty(), false);
+    assert_eq!(ascii.is_ascii(), false);
+    assert_eq!(ascii, "Hello 世界!!");
+
+    let none_ascii2 = none_ascii + "。🫚🫚";
+    assert_eq!(none_ascii2.len(), 11);
+    assert_eq!(none_ascii2.is_empty(), false);
+    assert_eq!(none_ascii2.is_ascii(), false);
+    assert_eq!(none_ascii2, "Hello 世界。🫚🫚");
+}
+
+#[test]
+fn u_string_clone_no_sync() {
+    let mut s1 = UString::from("abc");
+    let s2 = s1.clone();
+    s1 += "def";
+    assert_eq!(s2, "abc");
+    assert_eq!(s1, "abcdef");
+}
+
+#[test]
 fn array_construct_empty() {
     let array = Array::new();
     assert_eq!(array.version(), 0);
