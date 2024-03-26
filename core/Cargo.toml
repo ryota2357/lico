@@ -11,6 +11,9 @@ edition = "2021"
 
 [workspace.dependencies]
 foundation.path = "./foundation/"
+compact_str = "0.7.1"
+ahash = "0.8.11"
+hashbrown = "0.14.3"
 
 [package]
 name = "lico_core"
