@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "foundation",
 ]
 
 [workspace.package]
@@ -9,6 +10,7 @@ authors = ["ryota2357"]
 edition = "2021"
 
 [workspace.dependencies]
+foundation.path = "./foundation/"
 
 [package]
 name = "lico_core"
@@ -20,3 +22,4 @@ edition.workspace = true
 path = "lib.rs"
 
 [dependencies]
+foundation.workspace = true
