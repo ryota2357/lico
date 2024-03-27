@@ -7,6 +7,7 @@ fn object_size() {
     assert_eq!(size_of::<UString>(), 8);
     assert_eq!(size_of::<Array>(), 8);
     assert_eq!(size_of::<Table>(), 8);
+    assert_eq!(size_of::<Function>(), 8);
 }
 
 #[test]
