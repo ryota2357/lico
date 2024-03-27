@@ -32,6 +32,7 @@ jobs:
         run: |
           cargo test --manifest-path ./src/Cargo.toml --workspace
           cargo test --manifest-path ./cli/Cargo.toml --workspace
+          cargo test --manifest-path ./core/Cargo.toml --workspace
 
       - name: Test
         run: cd ./tests/ && deno task test debug
@@ -47,6 +48,7 @@ jobs:
         run: |
           cargo test --manifest-path ./src/Cargo.toml --workspace --release
           cargo test --manifest-path ./cli/Cargo.toml --workspace --release
+          cargo test --manifest-path ./core/Cargo.toml --workspace --release
 
       - name: Test
         run: cd ./tests/ && deno task test release

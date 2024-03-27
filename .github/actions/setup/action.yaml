@@ -4,10 +4,10 @@ description: Setup Rust and Deno environment.
 runs:
   using: composite
   steps:
-    - name: Setup Rust toolchain
+    - name: Setup Rust toolchain (nightly)
       shell: bash
       run: |
-        rustup toolchain install stable --profile minimal
+        rustup toolchain install nightly --profile minimal
         rustup component add clippy rustfmt
     - uses: denoland/setup-deno@v1
       with:
