@@ -9,6 +9,7 @@ runs:
       run: |
         rustup toolchain install nightly --profile minimal
         rustup component add clippy rustfmt
+        rustup default nightly
     - uses: denoland/setup-deno@v1
       with:
         deno-version: v1.x
