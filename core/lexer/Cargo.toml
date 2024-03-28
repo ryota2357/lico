@@ -1,0 +1,8 @@
+[package]
+name = "lexer"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+foundation.workspace = true

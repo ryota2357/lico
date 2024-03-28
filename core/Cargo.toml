@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "foundation",
+    "lexer"
 ]
 
 [workspace.package]
@@ -11,8 +12,9 @@ edition = "2021"
 
 [workspace.dependencies]
 foundation.path = "./foundation/"
-compact_str = "0.7.1"
+lexer.path = "./lexer/"
 ahash = "0.8.11"
+compact_str = "0.7.1"
 hashbrown = "0.14.3"
 
 [package]
@@ -26,3 +28,4 @@ path = "lib.rs"
 
 [dependencies]
 foundation.workspace = true
+lexer.workspace = true
