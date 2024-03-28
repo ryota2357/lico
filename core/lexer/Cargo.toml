@@ -6,3 +6,8 @@ edition.workspace = true
 
 [dependencies]
 foundation.workspace = true
+unicode-ident = { workspace = true }
+unicode-properties = { workspace = true, features = ["emoji"] }
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"

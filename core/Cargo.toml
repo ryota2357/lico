@@ -16,6 +16,8 @@ lexer.path = "./lexer/"
 ahash = "0.8.11"
 compact_str = "0.7.1"
 hashbrown = "0.14.3"
+unicode-ident = "1.0.12"
+unicode-properties = { version =  "0.1.1", default-features = false }
 
 [package]
 name = "lico_core"
