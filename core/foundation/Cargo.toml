@@ -5,9 +5,10 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
-compact_str = { workspace = true }
 ahash = { workspace = true }
+compact_str = { workspace = true }
 hashbrown = { workspace = true }
+rowan = { workspace = true }
 
 [dev-dependencies]
 # mockalloc = "0.1.2"
