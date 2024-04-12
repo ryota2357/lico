@@ -1,10 +1,10 @@
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Token {
     pub kind: TokenKind,
     pub len: u32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     /// "# comment"
     LineComment,
@@ -141,7 +141,7 @@ pub enum TokenKind {
     Unknown,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum NumBase {
     /// Binary integer literal that starts with "0b".
     Binary = 2,
@@ -153,7 +153,7 @@ pub enum NumBase {
     Hexadecimal = 16,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum QuoteKind {
     /// Single quote string literal.
     Single,
