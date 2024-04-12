@@ -2,7 +2,7 @@ use unicode_ident::{is_xid_continue, is_xid_start};
 use unicode_properties::UnicodeEmoji;
 
 /// From rustc_lexer (https://github.com/rust-lang/rust/)
-pub fn is_whitespace_char(c: char) -> bool {
+pub(crate) fn is_whitespace_char(c: char) -> bool {
     // This is Pattern_White_Space.
     //
     // Note that this set is stable (ie, it doesn't change with different
@@ -31,14 +31,14 @@ pub fn is_whitespace_char(c: char) -> bool {
     )
 }
 
-pub fn is_ident_start_char(c: char) -> bool {
+pub(crate) fn is_ident_start_char(c: char) -> bool {
     c == '_' || is_xid_start(c)
 }
 
-pub fn is_ident_continue_char(c: char) -> bool {
+pub(crate) fn is_ident_continue_char(c: char) -> bool {
     is_xid_continue(c)
 }
 
-pub fn is_emoji_char(c: char) -> bool {
+pub(crate) fn is_emoji_char(c: char) -> bool {
     !c.is_ascii() && c.is_emoji_char()
 }

@@ -4,8 +4,7 @@ use cursor::Cursor;
 mod is_x_char;
 use is_x_char::*;
 
-use foundation::syntax::token::*;
-use TokenKind::*;
+use foundation::syntax::token::{TokenKind::*, *};
 
 pub fn tokenize(source: &str) -> impl Iterator<Item = Token> + '_ {
     let mut cursor = Cursor::new(source);
