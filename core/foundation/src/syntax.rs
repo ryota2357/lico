@@ -182,4 +182,7 @@ impl SyntaxKind {
     pub fn is_punct(self) -> bool {
         self.is_between(SyntaxKind::START_PUNCT, SyntaxKind::END_PUNCT)
     }
+    pub fn is_trivia(self) -> bool {
+        matches!(self, SyntaxKind::WHITESPACE | SyntaxKind::COMMENT)
+    }
 }
