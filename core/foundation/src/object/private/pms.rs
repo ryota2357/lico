@@ -9,7 +9,7 @@ use core::{
 use std::alloc::Global;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Color {
+pub(crate) enum Color {
     Black,  // Active
     Purple, // Suspicious of circular references
     Gray,   // Checking for circular references
@@ -27,7 +27,7 @@ macro_rules! debug_assert_ptr_is_not_freed {
 
 /// # Safety
 /// TODO
-pub unsafe trait PmsInner {
+pub(crate) unsafe trait PmsInner {
     fn ref_count_ref(&self) -> &Cell<usize>;
     fn color_ref(&self) -> &Cell<Color>;
 
@@ -59,7 +59,7 @@ pub unsafe trait PmsInner {
 
 /// # Safety
 /// TODO
-pub unsafe trait PmsObject<I: PmsInner> {
+pub(crate) unsafe trait PmsObject<I: PmsInner> {
     fn ptr(&self) -> NonNull<I>;
 
     unsafe fn from_inner(ptr: NonNull<I>) -> Self;
@@ -277,13 +277,13 @@ impl RecursiveDropGuard {
 mod mark_and_sweep {
     use super::*;
 
-    pub unsafe fn run_with_inner_ptr<I: PmsInner, T: PmsObject<I>>(ptr: NonNull<I>) {
+    pub(super) unsafe fn run_with_inner_ptr<I: PmsInner, T: PmsObject<I>>(ptr: NonNull<I>) {
         let mut object: T = PmsObject::from_inner(ptr);
         run(&mut object);
         mem::forget(object);
     }
 
-    pub unsafe fn run<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
+    pub(super) unsafe fn run<I: PmsInner, T: PmsObject<I> + ?Sized>(item: &mut T) {
         if item.inner().color() != Color::Purple {
             return;
         }

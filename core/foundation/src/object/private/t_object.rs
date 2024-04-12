@@ -1,7 +1,7 @@
 use super::Object;
 use core::fmt::Debug;
 
-pub trait TObject: Clone + Debug + PartialEq {
+pub(crate) trait TObject: Clone + Debug + PartialEq {
     fn into_object(self) -> Object;
     fn as_object(&self) -> &Object;
     fn as_object_mut(&mut self) -> &mut Object;

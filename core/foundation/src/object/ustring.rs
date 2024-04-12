@@ -221,7 +221,7 @@ mod internal {
     use compact_str::CompactString;
 
     #[derive(Clone)]
-    pub struct UnicodeBasedString(Variant);
+    pub(super) struct UnicodeBasedString(Variant);
 
     #[derive(Clone)]
     enum Variant {
@@ -231,18 +231,18 @@ mod internal {
     use Variant::*;
 
     impl UnicodeBasedString {
-        pub fn len(&self) -> usize {
+        pub(super) fn len(&self) -> usize {
             match &self.0 {
                 Ascii(s) => s.len(),
                 NonAscii(_, v) => v.len() - 1,
             }
         }
 
-        pub fn is_empty(&self) -> bool {
+        pub(super) fn is_empty(&self) -> bool {
             self.len() == 0
         }
 
-        pub fn is_ascii(&self) -> bool {
+        pub(super) fn is_ascii(&self) -> bool {
             debug_assert!(match &self.0 {
                 Ascii(x) => x.is_ascii(),
                 NonAscii(x, _) => !x.is_ascii(),
@@ -250,14 +250,14 @@ mod internal {
             matches!(&self.0, Ascii(_))
         }
 
-        pub fn as_str(&self) -> &str {
+        pub(super) fn as_str(&self) -> &str {
             match &self.0 {
                 Ascii(s) => s.as_str(),
                 NonAscii(s, _) => s.as_str(),
             }
         }
 
-        pub fn get(&self, index: usize) -> Option<char> {
+        pub(super) fn get(&self, index: usize) -> Option<char> {
             match &self.0 {
                 Ascii(s) => s.as_bytes().get(index).map(|b| *b as char),
                 NonAscii(s, pos) => {
@@ -272,7 +272,7 @@ mod internal {
             }
         }
 
-        pub fn sub_string(&self, start: usize, end: usize) -> Option<Self> {
+        pub(super) fn sub_string(&self, start: usize, end: usize) -> Option<Self> {
             match &self.0 {
                 Ascii(s) => {
                     let str = s.get(start..end)?;
@@ -287,7 +287,7 @@ mod internal {
             }
         }
 
-        pub fn push_str(&mut self, string: &str) {
+        pub(super) fn push_str(&mut self, string: &str) {
             match (&mut self.0, string.is_ascii()) {
                 (Ascii(s), true) => {
                     s.push_str(string);
