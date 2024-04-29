@@ -1,9 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
+    "compiler",
     "foundation",
     "lexer",
-    "parser"
+    "parser",
 ]
 
 [workspace.package]
@@ -33,3 +34,4 @@ path = "lib.rs"
 foundation.workspace = true
 lexer.path = "./lexer/"
 parser.path = "./parser/"
+compiler.path = "./compiler/"
