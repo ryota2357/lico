@@ -78,6 +78,26 @@ fn string() {
 }
 
 #[test]
+fn string_escaped() {
+    assert_token!(
+        r#""hoge\"fuga""#,
+        [String {
+            12,
+            terminated: true,
+            quote_kind: QuoteKind::Double,
+        }]
+    );
+    assert_token!(
+        r#"'bar\'baz'"#,
+        [String {
+            10,
+            terminated: true,
+            quote_kind: QuoteKind::Single,
+        }]
+    );
+}
+
+#[test]
 fn bool() {
     assert_token!("true", [True { 4 }]);
     assert_token!("false", [False { 5 }]);
@@ -146,8 +166,10 @@ fn symbol() {
 
 #[test]
 fn ident() {
+    assert_token!("x", [Ident { 1 }]);
     assert_token!("foo", [Ident { 3 }]);
     assert_token!("varl", [Ident { 4 }]);
+    assert_token!("va", [Ident { 2 }]);
 }
 
 #[test]

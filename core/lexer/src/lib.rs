@@ -58,58 +58,104 @@ fn ident_or_keyword(cursor: &mut Cursor, first_char: char) -> TokenKind {
     debug_assert!(is_ident_start_char(cursor.prev()));
 
     fn keyword_trie_tree(cursor: &mut Cursor, first_char: char) -> Option<TokenKind> {
-        fn next_is_x<const N: usize>(
-            cursor: &mut Cursor,
-            x: [char; N],
-            kind: TokenKind,
-        ) -> Option<TokenKind> {
-            for c in x {
-                let next = cursor.next()?;
-                if next != c {
+        fn next_if_s(cursor: &mut Cursor, s: &[char], kind: TokenKind) -> Option<TokenKind> {
+            for c in s {
+                if cursor.peek()? == *c {
+                    cursor.next();
+                } else {
                     return None;
                 }
             }
             Some(kind)
         }
+
+        fn next_if_c(cursor: &mut Cursor, c: char, kind: TokenKind) -> Option<TokenKind> {
+            if cursor.peek()? == c {
+                cursor.next();
+                Some(kind)
+            } else {
+                None
+            }
+        }
+
         let pre_match = match first_char {
-            'a' => next_is_x(cursor, ['n', 'd'], And),
-            'b' => next_is_x(cursor, ['r', 'e', 'a', 'k'], Break),
-            'c' => next_is_x(cursor, ['o', 'n', 't', 'i', 'n', 'u', 'e'], Continue),
-            'd' => next_is_x(cursor, ['o'], Do),
-            'e' => match cursor.next()? {
-                'l' => match cursor.next()? {
-                    'i' => next_is_x(cursor, ['f'], Elif),
-                    's' => next_is_x(cursor, ['e'], Else),
-                    _ => None,
-                },
-                'n' => next_is_x(cursor, ['d'], End),
+            'a' => next_if_s(cursor, &['n', 'd'], And),
+            'b' => next_if_s(cursor, &['r', 'e', 'a', 'k'], Break),
+            'c' => next_if_s(cursor, &['o', 'n', 't', 'i', 'n', 'u', 'e'], Continue),
+            'd' => next_if_c(cursor, 'o', Do),
+            'e' => match cursor.peek()? {
+                'l' => {
+                    cursor.next();
+                    match cursor.peek()? {
+                        'i' => {
+                            cursor.next();
+                            next_if_c(cursor, 'f', Elif)
+                        }
+                        's' => {
+                            cursor.next();
+                            next_if_c(cursor, 'e', Else)
+                        }
+                        _ => None,
+                    }
+                }
+                'n' => {
+                    cursor.next();
+                    next_if_c(cursor, 'd', End)
+                }
                 _ => None,
             },
-            'f' => match cursor.next()? {
-                'a' => next_is_x(cursor, ['l', 's', 'e'], False),
-                'o' => next_is_x(cursor, ['r'], For),
-                'u' => next_is_x(cursor, ['n', 'c'], Func),
+            'f' => match cursor.peek()? {
+                'a' => {
+                    cursor.next();
+                    next_if_s(cursor, &['l', 's', 'e'], False)
+                }
+                'o' => {
+                    cursor.next();
+                    next_if_c(cursor, 'r', For)
+                }
+                'u' => {
+                    cursor.next();
+                    next_if_s(cursor, &['n', 'c'], Func)
+                }
                 _ => None,
             },
-            'i' => match cursor.next()? {
-                'f' => Some(If),
-                'n' => Some(In),
+            'i' => match cursor.peek()? {
+                'f' => {
+                    cursor.next();
+                    Some(If)
+                }
+                'n' => {
+                    cursor.next();
+                    Some(In)
+                }
                 _ => None,
             },
-            'n' => match cursor.next()? {
-                'i' => next_is_x(cursor, ['l'], Nil),
-                'o' => next_is_x(cursor, ['t'], Not),
+            'n' => match cursor.peek()? {
+                'i' => {
+                    cursor.next();
+                    next_if_c(cursor, 'l', Nil)
+                }
+                'o' => {
+                    cursor.next();
+                    next_if_c(cursor, 't', Not)
+                }
                 _ => None,
             },
-            'o' => next_is_x(cursor, ['r'], Or),
-            'r' => next_is_x(cursor, ['e', 't', 'u', 'r', 'n'], Return),
-            't' => match cursor.next()? {
-                'h' => next_is_x(cursor, ['e', 'n'], Then),
-                'r' => next_is_x(cursor, ['u', 'e'], True),
+            'o' => next_if_c(cursor, 'r', Or),
+            'r' => next_if_s(cursor, &['e', 't', 'u', 'r', 'n'], Return),
+            't' => match cursor.peek()? {
+                'h' => {
+                    cursor.next();
+                    next_if_s(cursor, &['e', 'n'], Then)
+                }
+                'r' => {
+                    cursor.next();
+                    next_if_s(cursor, &['u', 'e'], True)
+                }
                 _ => None,
             },
-            'v' => next_is_x(cursor, ['a', 'r'], Var),
-            'w' => next_is_x(cursor, ['h', 'i', 'l', 'e'], While),
+            'v' => next_if_s(cursor, &['a', 'r'], Var),
+            'w' => next_if_s(cursor, &['h', 'i', 'l', 'e'], While),
             _ => None,
         };
         if pre_match.is_some() {
