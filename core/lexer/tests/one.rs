@@ -1,20 +1,5 @@
-use foundation::syntax::token::*;
-
-macro_rules! assert_token {
-    ($src:literal, [$( $kind:ident { $len:literal $(, $($field_name:ident: $field_expr:expr),* $(,)? )?} ),*]) => {
-        let tokens = lexer::tokenize($src).collect::<Vec<_>>();
-        let mut i = 0;
-        #[allow(unused_assignments)]
-        {$(
-            let token = &tokens[i];
-            pretty_assertions::assert_eq!(token, &Token {
-                len: $len,
-                kind: TokenKind::$kind $({ $($field_name: $field_expr),* })?
-            });
-            i += 1;
-        )*}
-    };
-}
+mod common;
+use common::*;
 
 #[test]
 fn line_comment() {
@@ -24,6 +9,28 @@ fn line_comment() {
 #[test]
 fn whitespace() {
     assert_token!(" \t\n", [Whitespace { 3 }]);
+}
+
+#[test]
+fn whitespace2() {
+    // ref: https://ufcpp.net/blog/2022/12/rawstringwhitespace/
+    let ws = [
+        0x0009, 0x000B, 0x000C, 0x20, 0xA0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005,
+        0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x3000,
+    ]
+    .iter()
+    .map(|x| char::from_u32(*x).unwrap().to_string());
+    for c in ws {
+        let len = c.len() as u32;
+        let lexed = lexer::tokenize(&c).collect::<Vec<_>>();
+        pretty_assertions::assert_eq!(
+            lexed,
+            vec![Token {
+                len,
+                kind: TokenKind::Whitespace
+            }]
+        );
+    }
 }
 
 #[test]
