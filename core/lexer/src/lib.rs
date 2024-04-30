@@ -251,10 +251,11 @@ fn number(cursor: &mut Cursor, first_digit: char) -> TokenKind {
             }
             Some('.' | 'e' | 'E') => {}
             _ => {
+                // "0"
                 return Int {
                     base,
-                    empty_int: true,
-                }
+                    empty_int: false,
+                };
             }
         }
     } else {

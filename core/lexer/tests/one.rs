@@ -36,6 +36,14 @@ fn whitespace2() {
 #[test]
 fn int() {
     assert_token!(
+        "0",
+        [Int {
+            1,
+            base: NumBase::Decimal,
+            empty_int: false,
+        }]
+    );
+    assert_token!(
         "42",
         [Int {
             2,
@@ -47,6 +55,14 @@ fn int() {
 
 #[test]
 fn float() {
+    assert_token!(
+        "0.0",
+        [Float {
+            3,
+            base: NumBase::Decimal,
+            empty_exponent: false,
+        }]
+    );
     assert_token!(
         "3.14",
         [Float {
