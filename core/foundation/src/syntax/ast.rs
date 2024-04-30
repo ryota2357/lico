@@ -105,12 +105,14 @@ ast_node!(struct VarStmt for VAR_STMT {
     initializer: child[Expr],
 });
 
-// 'func' NamePath ParamList
+// 'func' NamePath ('->' Name)? ParamList
 //   Program
 // 'end'
 ast_node!(struct FuncStmt for FUNC_STMT {
     func_token: token[func],
-    name: child[NamePath],
+    path: child[NamePath],
+    arrow_token: token[->],
+    method_name: child[Name],
     param_list: child[ParamList],
     body: child[Program],
     end_token: token[end],
@@ -176,6 +178,7 @@ ast_node!(enum Expr for {
     Index(IndexExpr),
     Field(FieldExpr),
     MethodCall(MethodCallExpr),
+    Paren(ParenExpr),
     LocalVar(LocalVar),
     Literal(Literal),
     ArrayConst(ArrayConst),
@@ -292,6 +295,7 @@ impl PrefixExpr {
                     T![+]   => PrefixOp::Plus,
                     T![-]   => PrefixOp::Minus,
                     T![not] => PrefixOp::Not,
+                    T![~]   => PrefixOp::BitNot,
                     _ => return None,
                 };
                 Some((token, op))
@@ -308,6 +312,7 @@ pub enum PrefixOp {
     Plus,
     Minus,
     Not,
+    BitNot,
 }
 
 // Expr '[' Expr ']'
@@ -331,6 +336,13 @@ ast_node!(struct MethodCallExpr for METHOD_CALL_EXPR {
     arrow_token: token[->],
     method: child[Name],
     arg_list: child[ArgList],
+});
+
+// '(' Expr ')'
+ast_node!(struct ParenExpr for PAREN_EXPR {
+    l_paren_token: token['('],
+    expr: child[Expr],
+    r_paren_token: token[')'],
 });
 
 // ident

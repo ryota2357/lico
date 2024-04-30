@@ -150,6 +150,7 @@ syntax_kind! {
     INDEX_EXPR,
     FIELD_EXPR,
     METHOD_CALL_EXPR,
+    PAREN_EXPR,
 
     LOCAL_VAR,
     LITERAL,
