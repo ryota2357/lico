@@ -5,3 +5,9 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+foundation.workspace = true
+rowan = { workspace = true }
+
+[dev-dependencies]
+lexer = { path = "../lexer" }
+parser = { path = "../parser" }
