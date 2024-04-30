@@ -1,0 +1,33 @@
+---
+source: parser/tests/ok.rs
+expression: "{\n    let source = std::include_str!(\"../test_data/ok/010_assing_stmt.lico\");\n    let (green, err) = parser::parse(source, lexer::tokenize(source));\n    assert!(err.is_empty(), \"{:?}\", err);\n    format!(\"{:#?}\", SyntaxNode :: new_root(green))\n}"
+---
+PROGRAM@0..23
+  EXPR_STMT@0..9
+    BINARY_EXPR@0..9
+      LOCAL_VAR@0..3
+        IDENT@0..3 "foo"
+      WHITESPACE@3..4 " "
+      EQ@4..5 "="
+      WHITESPACE@5..6 " "
+      LITERAL@6..8
+        INT@6..8 "10"
+      WHITESPACE@8..9 "\n"
+  EXPR_STMT@9..23
+    BINARY_EXPR@9..23
+      FIELD_EXPR@9..14
+        FIELD_EXPR@9..12
+          LOCAL_VAR@9..10
+            IDENT@9..10 "a"
+          DOT@10..11 "."
+          NAME@11..12
+            IDENT@11..12 "b"
+        DOT@12..13 "."
+        NAME@13..14
+          IDENT@13..14 "c"
+      WHITESPACE@14..15 " "
+      EQ@15..16 "="
+      WHITESPACE@16..17 " "
+      LITERAL@17..22
+        STRING@17..22 "\"abc\""
+      WHITESPACE@22..23 "\n"

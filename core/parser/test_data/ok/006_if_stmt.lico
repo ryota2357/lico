@@ -1,0 +1,12 @@
+if cond then
+end
+
+if cond0 then
+else
+end
+
+if cond1 then
+elif cond2 then
+elif cond3 then
+else
+end

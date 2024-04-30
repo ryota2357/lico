@@ -1,0 +1,16 @@
+---
+source: parser/tests/ok.rs
+expression: "{\n    let source = std::include_str!(\"../test_data/ok/005_while_stmt.lico\");\n    let (green, err) = parser::parse(source, lexer::tokenize(source));\n    assert!(err.is_empty());\n    format!(\"{:#?}\", SyntaxNode :: new_root(green))\n}"
+---
+PROGRAM@0..18
+  WHILE_STMT@0..17
+    WHILE_KW@0..5 "while"
+    WHITESPACE@5..6 " "
+    LOCAL_VAR@6..10
+      IDENT@6..10 "cond"
+    WHITESPACE@10..11 " "
+    DO_KW@11..13 "do"
+    PROGRAM@13..14
+      WHITESPACE@13..14 "\n"
+    END_KW@14..17 "end"
+  WHITESPACE@17..18 "\n"

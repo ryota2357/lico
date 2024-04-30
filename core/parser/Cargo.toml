@@ -9,5 +9,9 @@ foundation.workspace = true
 rowan = { workspace = true }
 
 [dev-dependencies]
+insta = "1.38.0"
 lexer = { path = "../lexer" }
 parser = { path = "../parser" }
+
+[profile.dev.package]
+insta.opt-level = 3

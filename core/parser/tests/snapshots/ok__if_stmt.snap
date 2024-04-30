@@ -1,0 +1,67 @@
+---
+source: parser/tests/ok.rs
+expression: "{\n    let source = std::include_str!(\"../test_data/ok/006_if_stmt.lico\");\n    let (green, err) = parser::parse(source, lexer::tokenize(source));\n    assert!(err.is_empty(), \"{:?}\", err);\n    format!(\"{:#?}\", SyntaxNode :: new_root(green))\n}"
+---
+PROGRAM@0..97
+  EXPR_STMT@0..18
+    IF_EXPR@0..16
+      IF_KW@0..2 "if"
+      WHITESPACE@2..3 " "
+      LOCAL_VAR@3..7
+        IDENT@3..7 "cond"
+      WHITESPACE@7..8 " "
+      THEN_KW@8..12 "then"
+      PROGRAM@12..13
+        WHITESPACE@12..13 "\n"
+      END_KW@13..16 "end"
+    WHITESPACE@16..18 "\n\n"
+  EXPR_STMT@18..42
+    IF_EXPR@18..40
+      IF_KW@18..20 "if"
+      WHITESPACE@20..21 " "
+      LOCAL_VAR@21..26
+        IDENT@21..26 "cond0"
+      WHITESPACE@26..27 " "
+      THEN_KW@27..31 "then"
+      PROGRAM@31..32
+        WHITESPACE@31..32 "\n"
+      ELSE_BRANCH@32..37
+        ELSE_KW@32..36 "else"
+        PROGRAM@36..37
+          WHITESPACE@36..37 "\n"
+      END_KW@37..40 "end"
+    WHITESPACE@40..42 "\n\n"
+  EXPR_STMT@42..97
+    IF_EXPR@42..96
+      IF_KW@42..44 "if"
+      WHITESPACE@44..45 " "
+      LOCAL_VAR@45..50
+        IDENT@45..50 "cond1"
+      WHITESPACE@50..51 " "
+      THEN_KW@51..55 "then"
+      PROGRAM@55..56
+        WHITESPACE@55..56 "\n"
+      ELIF_BRANCH@56..72
+        ELIF_KW@56..60 "elif"
+        WHITESPACE@60..61 " "
+        LOCAL_VAR@61..66
+          IDENT@61..66 "cond2"
+        WHITESPACE@66..67 " "
+        THEN_KW@67..71 "then"
+        PROGRAM@71..72
+          WHITESPACE@71..72 "\n"
+      ELIF_BRANCH@72..88
+        ELIF_KW@72..76 "elif"
+        WHITESPACE@76..77 " "
+        LOCAL_VAR@77..82
+          IDENT@77..82 "cond3"
+        WHITESPACE@82..83 " "
+        THEN_KW@83..87 "then"
+        PROGRAM@87..88
+          WHITESPACE@87..88 "\n"
+      ELSE_BRANCH@88..93
+        ELSE_KW@88..92 "else"
+        PROGRAM@92..93
+          WHITESPACE@92..93 "\n"
+      END_KW@93..96 "end"
+    WHITESPACE@96..97 "\n"

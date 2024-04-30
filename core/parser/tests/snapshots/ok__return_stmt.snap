@@ -1,0 +1,17 @@
+---
+source: parser/tests/ok.rs
+expression: "{\n    let source = std::include_str!(\"../test_data/ok/008_return_stmt.lico\");\n    let (green, err) = parser::parse(source, lexer::tokenize(source));\n    assert!(err.is_empty());\n    format!(\"{:#?}\", SyntaxNode :: new_root(green))\n}"
+---
+PROGRAM@0..23
+  RETURN_STMT@0..7
+    RETURN_KW@0..6 "return"
+    WHITESPACE@6..7 "\n"
+  RETURN_STMT@7..16
+    RETURN_KW@7..13 "return"
+    WHITESPACE@13..14 " "
+    LITERAL@14..15
+      INT@14..15 "1"
+    WHITESPACE@15..16 "\n"
+  RETURN_STMT@16..23
+    RETURN_KW@16..22 "return"
+    WHITESPACE@22..23 "\n"

@@ -1,0 +1,27 @@
+---
+source: parser/tests/ok.rs
+expression: "{\n    let source = std::include_str!(\"../test_data/ok/002_var_stmt.lico\");\n    let (green, err) = parser::parse(source, lexer::tokenize(source));\n    assert!(err.is_empty());\n    format!(\"{:#?}\", SyntaxNode :: new_root(green))\n}"
+---
+PROGRAM@0..32
+  VAR_STMT@0..13
+    VAR_KW@0..3 "var"
+    WHITESPACE@3..4 " "
+    NAME@4..7
+      IDENT@4..7 "num"
+    WHITESPACE@7..8 " "
+    EQ@8..9 "="
+    WHITESPACE@9..10 " "
+    LITERAL@10..12
+      INT@10..12 "10"
+    WHITESPACE@12..13 "\n"
+  VAR_STMT@13..32
+    VAR_KW@13..16 "var"
+    WHITESPACE@16..17 " "
+    NAME@17..20
+      IDENT@17..20 "str"
+    WHITESPACE@20..21 " "
+    EQ@21..22 "="
+    WHITESPACE@22..23 " "
+    LITERAL@23..31
+      STRING@23..31 "\"string\""
+    WHITESPACE@31..32 "\n"

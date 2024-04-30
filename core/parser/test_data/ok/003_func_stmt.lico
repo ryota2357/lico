@@ -1,0 +1,5 @@
+func empty_fn()
+end
+func main(argc, argv)
+  return 0
+end
