@@ -333,9 +333,9 @@ ast_node!(struct MethodCallExpr for METHOD_CALL_EXPR {
     arg_list: child[ArgList],
 });
 
-// Name
+// ident
 ast_node!(struct LocalVar for LOCAL_VAR {
-    name: child[Name],
+    ident_token: token[ident],
 });
 
 // int | float | string | 'true' | 'false' | nil
@@ -444,9 +444,9 @@ ast_node!(struct TableField for TABLE_FIELD {
     initializer: child[Expr],
 });
 
-// Name | TableFieldNameExpr
+// TableFieldNameIdent | TableFieldNameExpr
 ast_node!(enum TableFieldName for {
-    Name(Name),
+    Ident(TableFieldNameIdent),
     Expr(TableFieldNameExpr),
 });
 
@@ -455,4 +455,9 @@ ast_node!(struct TableFieldNameExpr for TABLE_FIELD_NAME_EXPR {
     l_bracket_token: token['['],
     expr: child[Expr],
     r_bracket_token: token[']'],
+});
+
+// ident
+ast_node!(struct TableFieldNameIdent for TABLE_FIELD_NAME_IDENT {
+    ident_token: token[ident],
 });

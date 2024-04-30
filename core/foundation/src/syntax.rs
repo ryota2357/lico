@@ -166,6 +166,7 @@ syntax_kind! {
     NAME,
     NAME_PATH,
     TABLE_FIELD,
+    TABLE_FIELD_NAME_IDENT,
     TABLE_FIELD_NAME_EXPR,
 }
 
