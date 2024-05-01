@@ -2,10 +2,11 @@ mod ustring;
 pub use ustring::UString;
 
 mod array;
-pub use array::Array;
+pub type Array = array::Array<Object>;
 
 mod table;
-pub use table::{Table, TableMethod};
+pub use table::TableMethod;
+pub type Table = table::Table<Object>;
 
 mod function;
 pub use function::Function;

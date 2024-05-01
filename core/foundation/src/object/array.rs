@@ -1,6 +1,7 @@
 use super::{private::*, Object};
 use core::{cell::Cell, fmt::Debug, marker::PhantomData, ptr::NonNull};
 
+#[allow(private_bounds)]
 pub struct Array<T: TObject = Object> {
     ptr: NonNull<Inner<T>>,
     phantom: PhantomData<Inner<T>>,

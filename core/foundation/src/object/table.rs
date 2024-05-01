@@ -3,6 +3,7 @@ use crate::collections::*;
 use core::{borrow::Borrow, cell::Cell, fmt::Debug, hash::Hash, marker::PhantomData, ptr::NonNull};
 use std::borrow::Cow;
 
+#[allow(private_bounds)]
 pub struct Table<T: TObject = Object> {
     ptr: NonNull<Inner<T>>,
     phantom: PhantomData<Inner<T>>,
