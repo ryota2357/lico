@@ -29,6 +29,18 @@ pub enum Object {
     RustFunction(RustFunction),
 }
 
+const fn _static_assert_size() {
+    use std::mem::size_of;
+    const {
+        assert!(size_of::<Object>() == 16);
+        assert!(size_of::<UString>() == 8);
+        assert!(size_of::<Array>() == 8);
+        assert!(size_of::<Table>() == 8);
+        assert!(size_of::<Function>() == 8);
+        assert!(size_of::<RustFunction>() == 8);
+    }
+}
+
 macro_rules! into_object_variant {
     ($($type:ty :-> $variant:ident),* $(,)?) => {
         $(

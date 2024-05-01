@@ -1,16 +1,6 @@
 use foundation::object::*;
 
 #[test]
-fn object_size() {
-    use core::mem::size_of;
-    assert_eq!(size_of::<Object>(), 16);
-    assert_eq!(size_of::<UString>(), 8);
-    assert_eq!(size_of::<Array>(), 8);
-    assert_eq!(size_of::<Table>(), 8);
-    assert_eq!(size_of::<Function>(), 8);
-}
-
-#[test]
 fn u_string_construct_empty() {
     let empty = UString::new();
     assert_eq!(empty.len(), 0);

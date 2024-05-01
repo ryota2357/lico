@@ -171,6 +171,10 @@ syntax_kind! {
     TABLE_FIELD_NAME_EXPR,
 }
 
+const fn _static_assert_size() {
+    const { assert!(core::mem::size_of::<SyntaxKind>() == 1) }
+}
+
 impl SyntaxKind {
     fn is_between(self, start: SyntaxKind, end: SyntaxKind) -> bool {
         (start as u8..=end as u8).contains(&(self as u8))

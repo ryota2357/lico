@@ -4,6 +4,10 @@ pub struct Token {
     pub len: u32,
 }
 
+const fn _static_assert_size() {
+    const { assert!(core::mem::size_of::<Token>() == 8) }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum TokenKind {
     /// "# comment"
