@@ -129,9 +129,18 @@ impl<const N: usize> From<[(Cow<'static, str>, Object); N]> for Table {
 
 impl<T: TObject> PartialEq for Table<T> {
     fn eq(&self, other: &Self) -> bool {
-        let inner = self.inner();
-        let other = other.inner();
-        inner.data.eq(&other.data) && inner.methods.eq(&other.methods)
+        if self.ptr.eq(&other.ptr) {
+            let has_nan = self
+                .inner()
+                .data
+                .iter()
+                .any(|(_, x)| matches!(x.as_object(), Object::Float(x) if x.is_nan()));
+            !has_nan
+        } else {
+            let inner = self.inner();
+            let other = other.inner();
+            inner.data.eq(&other.data) && inner.methods.eq(&other.methods)
+        }
     }
 }
 

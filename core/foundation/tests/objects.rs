@@ -282,6 +282,13 @@ fn array_unsafe_iter() {
 }
 
 #[test]
+fn array_equal() {
+    let array1 = Array::from([1.into(), true.into(), Array::new().into()]);
+    let array2 = Array::from([1.into(), true.into(), Array::new().into()]);
+    assert_eq!(array1, array2);
+}
+
+#[test]
 fn array_equal_for_nan() {
     let array1 = Array::from([f64::NAN.into()]);
     let array2 = array1.clone();
@@ -349,6 +356,13 @@ fn table_unsafe_iter() {
     assert_eq!(nexts[0], (&"bar".into(), &1.23.into()));
     assert_eq!(nexts[1], (&"foo".into(), &true.into()));
     assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn table_equal() {
+    let table1 = Table::from([("1".into(), 1.into()), ("tbl".into(), Table::new().into())]);
+    let table2 = Table::from([("1".into(), 1.into()), ("tbl".into(), Table::new().into())]);
+    assert_eq!(table1, table2);
 }
 
 #[test]

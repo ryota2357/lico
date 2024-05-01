@@ -128,6 +128,30 @@ fn access_check() {
 }
 
 #[mockalloc::test]
+fn cycle_eq() {
+    {
+        let mut a = Array::from([1.0.into()]);
+        let mut b = Array::from([1.0.into()]);
+        a.push(a.clone());
+        b.push(a.clone());
+        assert_eq!(a, b);
+        a.push(f64::NAN);
+        b.push(f64::NAN);
+        assert_ne!(a, b);
+    }
+    {
+        let mut a = Table::from([("key".into(), 1.0.into())]);
+        let mut b = Table::from([("key".into(), 1.0.into())]);
+        a.insert("a".into(), Object::Table(a.clone()));
+        b.insert("a".into(), Object::Table(a.clone()));
+        assert_eq!(a, b);
+        a.insert("nan".into(), Object::Float(f64::NAN));
+        b.insert("nan".into(), Object::Float(f64::NAN));
+        assert_ne!(a, b);
+    }
+}
+
+#[mockalloc::test]
 fn complex_case1() {
     /*
      * A     E

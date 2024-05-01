@@ -145,7 +145,16 @@ impl<T: TObject> Clone for Array<T> {
 
 impl<T: TObject> PartialEq for Array<T> {
     fn eq(&self, other: &Self) -> bool {
-        self.inner().data.eq(&other.inner().data)
+        if self.ptr.eq(&other.ptr) {
+            let has_nan = self
+                .inner()
+                .data
+                .iter()
+                .any(|x| matches!(x.as_object(), Object::Float(x) if x.is_nan()));
+            !has_nan
+        } else {
+            self.inner().data.eq(&other.inner().data)
+        }
     }
 }
 
