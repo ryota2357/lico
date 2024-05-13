@@ -1,3 +1,6 @@
+pub mod arena;
+pub use arena::Arena;
+
 pub mod sorted_linear_map;
 pub use sorted_linear_map::SortedLinearMap;
 

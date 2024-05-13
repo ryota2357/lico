@@ -1,6 +1,52 @@
 use foundation::collections::*;
 
 #[test]
+fn arena_construct() {
+    let mut arena = Arena::<String>::new();
+    assert_eq!(arena.len(), 0);
+    assert!(arena.is_empty());
+    arena.alloc("foo".to_string());
+    assert_eq!(arena.len(), 1);
+    assert!(!arena.is_empty());
+}
+
+#[test]
+fn arena_alloc_get_iter() {
+    #[derive(PartialEq)]
+    struct T(u32);
+    let mut arena = Arena::new();
+    let idx1 = arena.alloc(T(42));
+    assert_eq!(format!("{:?}", idx1), "Index::<T>(1)");
+    let idx2 = arena.alloc(T(17));
+    assert_eq!(format!("{:?}", idx2), "Index::<T>(2)");
+    let idx3 = arena.alloc(T(17));
+    assert_eq!(format!("{:?}", idx3), "Index::<T>(3)");
+    assert_eq!(arena.get(idx1).0, 42);
+    assert_eq!(arena.get(idx2).0, 17);
+    assert_eq!(arena.get(idx3).0, 17);
+    arena.get_mut(idx2).0 = 18;
+    let mut iter = arena.iter();
+    assert!(iter.next() == Some((idx1, &T(42))));
+    assert!(iter.next() == Some((idx2, &T(18))));
+    assert!(iter.next() == Some((idx3, &T(17))));
+    assert!(iter.next().is_none());
+}
+
+#[test]
+fn arena_alloc_many() {
+    let mut arena = Arena::new();
+    let slice = arena.alloc_many([10, 20, 30]);
+    assert_eq!(format!("{:?}", slice), "Slice::<i32>(1..4)");
+    assert_eq!(arena.get_slice(slice), &[10, 20, 30]);
+    arena.get_slice_mut(slice)[1] = 21;
+    let mut iter = arena.iter();
+    assert_eq!(iter.next(), Some((unsafe { arena::Index::new(1) }, &10)));
+    assert_eq!(iter.next(), Some((unsafe { arena::Index::new(2) }, &21)));
+    assert_eq!(iter.next(), Some((unsafe { arena::Index::new(3) }, &30)));
+    assert_eq!(iter.next(), None);
+}
+
+#[test]
 fn sorted_linear_map_construct() {
     const _: SortedLinearMap<i32, i32> = SortedLinearMap::new();
     let map = SortedLinearMap::<&str, &str>::new();
