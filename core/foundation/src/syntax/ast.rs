@@ -102,7 +102,7 @@ ast_node!(struct VarStmt for VAR_STMT {
     var_token: token[var],
     name: child[Name],
     eq_token: token[=],
-    initializer: child[Expr],
+    initializer: child[Expression],
 });
 
 // 'func' NamePath ('->' Name)? ParamList
@@ -125,7 +125,7 @@ ast_node!(struct ForStmt for FOR_STMT {
     for_token: token[for],
     name: child[Name],
     in_token: token[in],
-    iterable: child[Expr],
+    iterable: child[Expression],
     do_token: token[do],
     body: child[Program],
     end_token: token[end],
@@ -136,7 +136,7 @@ ast_node!(struct ForStmt for FOR_STMT {
 // 'end'
 ast_node!(struct WhileStmt for WHILE_STMT {
     while_token: token[while],
-    condition: child[Expr],
+    condition: child[Expression],
     do_token: token[do],
     body: child[Program],
     end_token: token[end],
@@ -145,7 +145,7 @@ ast_node!(struct WhileStmt for WHILE_STMT {
 // 'return' Expr?
 ast_node!(struct ReturnStmt for RETURN_STMT {
     return_token: token[return],
-    expr: child[Expr],
+    expr: child[Expression],
 });
 
 // 'break'
@@ -160,7 +160,7 @@ ast_node!(struct ContinueStmt for CONTINUE_STMT {
 
 // Expr
 ast_node!(struct ExprStmt for EXPR_STMT {
-    expr: child[Expr],
+    expr: child[Expression],
 });
 
 // '@' Name
@@ -169,7 +169,7 @@ ast_node!(struct AttrStmt for ATTR_STMT {
     name: child[Name],
 });
 
-ast_node!(enum Expr for {
+ast_node!(enum Expression for {
     If(IfExpr),
     Do(DoExpr),
     Call(CallExpr),
@@ -193,7 +193,7 @@ ast_node!(enum Expr for {
 // 'end'
 ast_node!(struct IfExpr for IF_EXPR {
     if_token: token[if],
-    condition: child[Expr],
+    condition: child[Expression],
     then_token: token[then],
     elif_branches: children[ElifBranch],
     else_branch: child[ElseBranch],
@@ -211,14 +211,14 @@ ast_node!(struct DoExpr for DO_EXPR {
 
 // Expr ArgList
 ast_node!(struct CallExpr for CALL_EXPR {
-    expr: child[Expr],
+    expr: child[Expression],
     arg_list: child[ArgList],
 });
 
 // Expr 'BinaryOp' Expr
 ast_node!(struct BinaryExpr for BINARY_EXPR {
-    lhs: child[Expr],
-    rhs: child[Expr],
+    lhs: child[Expression],
+    rhs: child[Expression],
 });
 impl BinaryExpr {
     pub fn op(&self) -> Option<(SyntaxToken, BinaryOp)> {
@@ -282,7 +282,7 @@ pub enum BinaryOp {
 }
 
 ast_node!(struct PrefixExpr for PREFIX_EXPR {
-    expr: child[Expr],
+    expr: child[Expression],
 });
 impl PrefixExpr {
     pub fn op(&self) -> Option<(SyntaxToken, PrefixOp)> {
@@ -317,22 +317,22 @@ pub enum PrefixOp {
 
 // Expr '[' Expr ']'
 ast_node!(struct IndexExpr for INDEX_EXPR {
-    expr: child[Expr, 0],
+    expr: child[Expression, 0],
     l_bracket_token: token['['],
-    index: child[Expr, 1],
+    index: child[Expression, 1],
     r_bracket_token: token[']'],
 });
 
 // Expr '.' Name
 ast_node!(struct FieldExpr for FIELD_EXPR {
-    expr: child[Expr],
+    expr: child[Expression],
     dot_token: token[.],
     field: child[Name],
 });
 
 // Expr '->' Name ArgList
 ast_node!(struct MethodCallExpr for METHOD_CALL_EXPR {
-    expr: child[Expr],
+    expr: child[Expression],
     arrow_token: token[->],
     method: child[Name],
     arg_list: child[ArgList],
@@ -341,7 +341,7 @@ ast_node!(struct MethodCallExpr for METHOD_CALL_EXPR {
 // '(' Expr ')'
 ast_node!(struct ParenExpr for PAREN_EXPR {
     l_paren_token: token['('],
-    expr: child[Expr],
+    expr: child[Expression],
     r_paren_token: token[')'],
 });
 
@@ -385,7 +385,7 @@ pub enum LiteralKind {
 // '[' ( Expr (',' Expr)* ','? )? ']'
 ast_node!(struct ArrayConst for ARRAY_CONST {
     l_bracket_token: token['['],
-    elements: children[Expr],
+    elements: children[Expression],
     r_bracket_token: token[']'],
 });
 
@@ -417,7 +417,7 @@ ast_node!(struct ElseBranch for ELSE_BRANCH {
 //   Program
 ast_node!(struct ElifBranch for ELIF_BRANCH {
     elif_token: token[elif],
-    condition: child[Expr],
+    condition: child[Expression],
     then_token: token[then],
     body: child[Program],
 });
@@ -432,7 +432,7 @@ ast_node!(struct ParamList for PARAM_LIST {
 // '(' Expr* ')'
 ast_node!(struct ArgList for ARG_LIST {
     l_paren_token: token['('],
-    args: children[Expr],
+    args: children[Expression],
     r_paren_token: token[')'],
 });
 
@@ -453,7 +453,7 @@ ast_node!(struct TableField for TABLE_FIELD {
     func_token: token[func],
     field_name: child[TableFieldName],
     eq_token: token[=],
-    initializer: child[Expr],
+    initializer: child[Expression],
 });
 
 // TableFieldNameIdent | TableFieldNameExpr
@@ -465,7 +465,7 @@ ast_node!(enum TableFieldName for {
 // '[' Expr ']'
 ast_node!(struct TableFieldNameExpr for TABLE_FIELD_NAME_EXPR {
     l_bracket_token: token['['],
-    expr: child[Expr],
+    expr: child[Expression],
     r_bracket_token: token[']'],
 });
 
