@@ -247,6 +247,7 @@ impl BinaryExpr {
                     T![&]   => BinaryOp::BitAnd,
                     T![|]   => BinaryOp::BitOr,
                     T![^]   => BinaryOp::BitXor,
+                    T![=]   => BinaryOp::Assign,
                     _ => return None,
                 };
                 Some((token, op))
@@ -259,6 +260,7 @@ impl BinaryExpr {
         self.op().map(|(_, kind)| kind)
     }
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum BinaryOp {
     Add,
     Sub,
@@ -279,6 +281,7 @@ pub enum BinaryOp {
     BitAnd,
     BitOr,
     BitXor,
+    Assign,
 }
 
 ast_node!(struct PrefixExpr for PREFIX_EXPR {
@@ -308,6 +311,7 @@ impl PrefixExpr {
         self.op().map(|(_, kind)| kind)
     }
 }
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum PrefixOp {
     Plus,
     Minus,
