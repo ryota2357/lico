@@ -334,7 +334,7 @@ ast_node!(struct FieldExpr for FIELD_EXPR {
 ast_node!(struct MethodCallExpr for METHOD_CALL_EXPR {
     expr: child[Expression],
     arrow_token: token[->],
-    method: child[Name],
+    method_name: child[Name],
     arg_list: child[ArgList],
 });
 
