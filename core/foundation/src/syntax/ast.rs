@@ -195,6 +195,7 @@ ast_node!(struct IfExpr for IF_EXPR {
     if_token: token[if],
     condition: child[Expression],
     then_token: token[then],
+    body: child[Program],
     elif_branches: children[ElifBranch],
     else_branch: child[ElseBranch],
     end_token: token[end],
