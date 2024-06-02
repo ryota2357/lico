@@ -1,6 +1,5 @@
 ---
 source: parser/tests/ok.rs
-assertion_line: 31
 description: ok_009_break_stmt
 ---
 PROGRAM@0..6

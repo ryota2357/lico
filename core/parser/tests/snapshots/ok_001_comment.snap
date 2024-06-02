@@ -1,6 +1,5 @@
 ---
 source: parser/tests/ok.rs
-assertion_line: 23
 description: ok_001_comment
 ---
 PROGRAM@0..42

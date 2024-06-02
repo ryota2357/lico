@@ -1,6 +1,5 @@
 ---
 source: parser/tests/ok.rs
-assertion_line: 28
 description: ok_006_if_stmt
 ---
 PROGRAM@0..97

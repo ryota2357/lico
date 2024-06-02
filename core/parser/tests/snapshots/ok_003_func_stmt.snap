@@ -1,6 +1,5 @@
 ---
 source: parser/tests/ok.rs
-assertion_line: 25
 description: ok_003_func_stmt
 ---
 PROGRAM@0..95

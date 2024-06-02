@@ -1,6 +1,5 @@
 ---
 source: parser/tests/ok.rs
-assertion_line: 33
 description: ok_011_call_stmt
 ---
 PROGRAM@0..30

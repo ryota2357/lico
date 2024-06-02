@@ -1,6 +1,5 @@
 ---
 source: parser/tests/ok.rs
-assertion_line: 24
 description: ok_002_var_stmt
 ---
 PROGRAM@0..32

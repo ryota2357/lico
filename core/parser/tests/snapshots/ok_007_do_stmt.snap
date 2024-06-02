@@ -1,6 +1,5 @@
 ---
 source: parser/tests/ok.rs
-assertion_line: 29
 description: ok_007_do_stmt
 ---
 PROGRAM@0..7
