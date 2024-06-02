@@ -3,3 +3,7 @@ end
 func main(argc, argv)
   return 0
 end
+func a.b.c()
+end
+func tbl->name()
+end

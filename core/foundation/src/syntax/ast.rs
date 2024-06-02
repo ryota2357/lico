@@ -446,11 +446,11 @@ ast_node!(struct Name for NAME {
     ident_token: token[ident],
 });
 
-// (NamePath '.')? Name
+// Name (. NamePath)?
 ast_node!(struct NamePath for NAME_PATH {
-    parent: child[NamePath],
-    dot_token: token[.],
     name: child[Name],
+    dot_token: token[.],
+    child: child[NamePath],
 });
 
 // 'func'? TableFieldName = Expr

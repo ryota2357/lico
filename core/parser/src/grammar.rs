@@ -30,17 +30,19 @@ fn name(p: &mut Parser) -> CompletedMarker {
 
 /// Precondition: `assert!(p.at(IDENT))`
 fn name_path(p: &mut Parser) -> Result<(), EndWith<'.'>> {
-    let mut cm = name(p);
-    while p.eat(T![.]) {
+    let m = p.start();
+    name(p);
+    let result = if p.eat(T![.]) {
         if p.at(IDENT) {
-            let m = cm.precede(p);
-            name(p);
-            cm = m.complete(p, NAME_PATH);
+            name_path(p)
         } else {
-            return Err(EndWith::<'.'>);
+            Err(EndWith::<'.'>)
         }
-    }
-    Ok(())
+    } else {
+        Ok(())
+    };
+    m.complete(p, NAME_PATH);
+    result
 }
 
 /// Precondition: `assert!(p.at(T!['(']))`
