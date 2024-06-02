@@ -110,7 +110,7 @@ ast_node!(struct VarStmt for VAR_STMT {
 // 'end'
 ast_node!(struct FuncStmt for FUNC_STMT {
     func_token: token[func],
-    path: child[NamePath],
+    name_path: child[NamePath],
     arrow_token: token[->],
     method_name: child[Name],
     param_list: child[ParamList],
