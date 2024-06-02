@@ -1,0 +1,6 @@
+---
+source: parser/tests/ok.rs
+assertion_line: 22
+description: ok_000_empty_file
+---
+PROGRAM@0..0

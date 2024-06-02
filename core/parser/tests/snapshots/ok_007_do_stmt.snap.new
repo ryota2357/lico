@@ -1,0 +1,13 @@
+---
+source: parser/tests/ok.rs
+assertion_line: 29
+description: ok_007_do_stmt
+---
+PROGRAM@0..7
+  EXPR_STMT@0..7
+    DO_EXPR@0..6
+      DO_KW@0..2 "do"
+      PROGRAM@2..3
+        WHITESPACE@2..3 "\n"
+      END_KW@3..6 "end"
+    WHITESPACE@6..7 "\n"

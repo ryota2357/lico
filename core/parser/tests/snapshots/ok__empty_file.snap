@@ -1,5 +1,0 @@
----
-source: parser/tests/ok.rs
-expression: "{\n    let source = std::include_str!(\"../test_data/ok/000_empty_file.lico\");\n    let (green, err) = parser::parse(source, lexer::tokenize(source));\n    assert!(err.is_empty(), \"{:?}\", err);\n    format!(\"{:#?}\", SyntaxNode :: new_root(green))\n}"
----
-PROGRAM@0..0

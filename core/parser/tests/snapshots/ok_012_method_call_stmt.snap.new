@@ -1,6 +1,7 @@
 ---
 source: parser/tests/ok.rs
-expression: "{\n    let source =\n        std::include_str!(\"../test_data/ok/012_method_call_stmt.lico\");\n    let (green, err) = parser::parse(source, lexer::tokenize(source));\n    assert!(err.is_empty(), \"{:?}\", err);\n    format!(\"{:#?}\", SyntaxNode :: new_root(green))\n}"
+assertion_line: 34
+description: ok_012_method_call_stmt
 ---
 PROGRAM@0..23
   EXPR_STMT@0..11
