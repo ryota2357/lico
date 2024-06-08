@@ -163,7 +163,12 @@ fn atom_expr(p: &mut Parser) -> CompletedMarker {
             let m = p.start();
             p.bump(T!['(']);
             p.eat_trivia();
-            expr(p);
+            if p.at_ts(EXPR_FIRST) {
+                expr(p);
+                p.eat_trivia();
+            } else {
+                p.error("Expected <expr>, or use `nil` for unit literal");
+            }
             if !p.eat(T![')']) {
                 p.error("Missing closing ')'");
             }
