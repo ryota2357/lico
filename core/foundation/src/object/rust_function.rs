@@ -4,7 +4,7 @@ use super::Object;
 pub struct RustFunction(fn(&[Object]) -> Result<Object, String>);
 
 impl RustFunction {
-    pub fn new(f: fn(&[Object]) -> Result<Object, String>) -> Self {
+    pub const fn new(f: fn(&[Object]) -> Result<Object, String>) -> Self {
         RustFunction(f)
     }
 

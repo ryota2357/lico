@@ -284,6 +284,32 @@ pub enum BinaryOp {
     BitXor,
     Assign,
 }
+impl BinaryOp {
+    pub fn sign_text(&self) -> &'static str {
+        match self {
+            BinaryOp::Add => "+",
+            BinaryOp::Sub => "-",
+            BinaryOp::Mul => "*",
+            BinaryOp::Div => "/",
+            BinaryOp::Mod => "%",
+            BinaryOp::Shl => "<<",
+            BinaryOp::Shr => ">>",
+            BinaryOp::Concat => "..",
+            BinaryOp::Eq => "==",
+            BinaryOp::Ne => "!=",
+            BinaryOp::Lt => "<",
+            BinaryOp::Le => "<=",
+            BinaryOp::Gt => ">",
+            BinaryOp::Ge => ">=",
+            BinaryOp::And => "and",
+            BinaryOp::Or => "or",
+            BinaryOp::BitAnd => "&",
+            BinaryOp::BitOr => "|",
+            BinaryOp::BitXor => "^",
+            BinaryOp::Assign => "=",
+        }
+    }
+}
 
 ast_node!(struct PrefixExpr for PREFIX_EXPR {
     expr: child[Expression],
@@ -318,6 +344,16 @@ pub enum PrefixOp {
     Minus,
     Not,
     BitNot,
+}
+impl PrefixOp {
+    pub fn sign_text(&self) -> &'static str {
+        match self {
+            PrefixOp::Plus => "+",
+            PrefixOp::Minus => "-",
+            PrefixOp::Not => "not",
+            PrefixOp::BitNot => "~",
+        }
+    }
 }
 
 // Expr '[' Expr ']'

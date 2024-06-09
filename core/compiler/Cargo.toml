@@ -5,3 +5,11 @@ authors.workspace = true
 edition.workspace = true
 
 [dependencies]
+foundation.workspace = true
+compact_str = { workspace = true }
+rowan = { workspace = true }
+rustc-hash = { workspace = true }
+smallvec = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
