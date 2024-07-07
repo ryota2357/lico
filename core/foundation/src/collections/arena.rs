@@ -20,6 +20,10 @@ impl<T> Index<T> {
             phantom: PhantomData,
         }
     }
+
+    pub fn as_u32(&self) -> u32 {
+        self.raw.get()
+    }
 }
 
 const fn _static_assert_index_size() {
@@ -104,6 +108,10 @@ impl<T> Slice<T> {
 
     pub fn is_empty(&self) -> bool {
         self.start == self.end
+    }
+
+    pub fn as_u64(&self) -> u64 {
+        (self.start.get() as u64) << 32 | self.end.get() as u64
     }
 }
 
