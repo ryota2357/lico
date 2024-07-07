@@ -12,8 +12,8 @@ pub struct Index<T> {
 
 impl<T> Index<T> {
     /// # Safety
-    /// `raw` must be not zero, and it must be a valid index for the arena.
-    pub unsafe fn new(raw: u32) -> Self {
+    /// `raw` must not be zero, and it must be a valid index for the arena.
+    pub const unsafe fn new(raw: u32) -> Self {
         debug_assert!(raw != 0, "Index::new(0) is invalid");
         Self {
             raw: NonZero::new_unchecked(raw),
@@ -26,8 +26,7 @@ impl<T> Index<T> {
     }
 }
 
-const fn _static_assert_index_size() {
-    use core::mem::size_of;
+fn _static_assert_index_size() {
     const {
         assert!(size_of::<Index<u128>>() == 4);
         assert!(size_of::<Index<u128>>() == size_of::<Option<Index<u128>>>());
@@ -86,14 +85,14 @@ pub struct Slice<T> {
 
 impl<T> Slice<T> {
     /// # Safety
-    /// `start` and `end` must be not zero and `start` must be less than `end`.
+    /// `start` and `end` must not be zero and `start` must be less than `end`.
     /// Additionally, `start` and `end` must be valid indices for the arena.
-    pub unsafe fn new(start: u32, end: u32) -> Self {
+    pub const unsafe fn new(start: u32, end: u32) -> Self {
         debug_assert!(start != 0, "Slice::new(0, _) is invalid");
         debug_assert!(end != 0, "Slice::new(_, 0) is invalid");
         debug_assert!(
             start <= end,
-            "Slice::new(start, end) where start > end is invalid. start: {start}, end: {end}",
+            "Slice::new(start, end) where start > end is invalid"
         );
         Self {
             start: NonZero::new_unchecked(start),
@@ -115,8 +114,7 @@ impl<T> Slice<T> {
     }
 }
 
-const fn _static_assert_range_index_size() {
-    use core::mem::size_of;
+fn _static_assert_slice_size() {
     const {
         assert!(size_of::<Slice<u128>>() == 8);
         assert!(size_of::<Slice<u128>>() == size_of::<Option<Slice<u128>>>());
@@ -184,11 +182,8 @@ impl<T> Arena<T> {
         self.data.push(value);
         let next_index = self.data.len();
         assert!(next_index <= u32::MAX as usize, "Arena is full");
-        Index {
-            // SAFETY: As above `self.data.push(value)`, `self.data.len()` is always greater than 0.
-            raw: unsafe { NonZero::new_unchecked(next_index as u32) },
-            phantom: PhantomData,
-        }
+        // SAFETY: As above `self.data.push(value)`, `self.data.len()` is always greater than 0.
+        unsafe { Index::new(next_index as u32) }
     }
 
     pub fn alloc_many(&mut self, iter: impl IntoIterator<Item = T>) -> Slice<T> {
@@ -196,12 +191,8 @@ impl<T> Arena<T> {
         self.data.extend(iter);
         let end = self.data.len() + 1;
         assert!(end <= u32::MAX as usize, "Arena is full");
-        Slice {
-            // SAFETY: `self.data.len()` is unsigned integer, so `self.data.len() + 1` is always greater than 0.
-            start: unsafe { NonZero::new_unchecked(start as u32) },
-            end: unsafe { NonZero::new_unchecked(end as u32) },
-            phantom: PhantomData,
-        }
+        // SAFETY: `self.data.len()` is unsigned integer, so `self.data.len() + 1` is always greater than 0.
+        unsafe { Slice::new(start as u32, end as u32) }
     }
 
     pub fn len(&self) -> usize {
@@ -237,7 +228,10 @@ impl<T> Arena<T> {
     pub fn iter(&self) -> impl ExactSizeIterator<Item = (Index<T>, &T)> + DoubleEndedIterator {
         self.data.iter().enumerate().map(|(i, v)| {
             let index = Index {
-                // SAFETY: `i` is unsigned integer, so `i + 1` is always greater than 0.
+                // SAFETY:
+                //  - `i` is unsigned integer, so `i + 1` is always greater than 0.
+                //  - `i + 1` does not overflow `u32::MAX` because `i` is ensured to be less than
+                //    `u32::MAX` by alloc/alloc_many methods implementation.
                 raw: unsafe { NonZero::new_unchecked((i + 1) as u32) },
                 phantom: PhantomData,
             };
