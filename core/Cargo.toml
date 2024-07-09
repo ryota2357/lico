@@ -15,7 +15,7 @@ edition = "2021"
 [workspace.dependencies]
 foundation.path = "./foundation/"
 ahash = "0.8.11"
-compact_str = "0.7.1"
+compact_str = "0.8.0"
 hashbrown = "0.14.3"
 rowan = "0.15.15"
 unicode-ident = "1.0.12"
