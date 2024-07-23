@@ -1,5 +1,5 @@
-mod code;
-pub use code::Code;
+mod icode;
+pub use icode::ICode;
 
 mod unit;
 pub use unit::*;
@@ -7,11 +7,11 @@ pub use unit::*;
 #[derive(Debug)]
 pub struct Executable {
     start_addr: Address,
-    code: Vec<Code>,
+    code: Vec<ICode>,
 }
 
 impl Executable {
-    pub fn new(start_addr: Address, code: Vec<Code>) -> Self {
+    pub fn new(start_addr: Address, code: Vec<ICode>) -> Self {
         if code.len() > u32::MAX as usize {
             panic!("code size is too large");
         }
@@ -22,7 +22,7 @@ impl Executable {
         self.start_addr
     }
 
-    pub fn fetch(&self, addr: LocalAddress) -> &Code {
+    pub fn fetch(&self, addr: LocalAddress) -> &ICode {
         self.code.get(addr.as_usize()).expect("invalid address")
     }
 }
