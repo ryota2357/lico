@@ -2,11 +2,11 @@
 pub struct LocalId(usize);
 
 impl LocalId {
-    pub fn new(id: usize) -> Self {
+    pub const fn new(id: usize) -> Self {
         LocalId(id)
     }
 
-    pub fn as_usize(&self) -> usize {
+    pub const fn as_usize(&self) -> usize {
         self.0
     }
 }
@@ -15,15 +15,15 @@ impl LocalId {
 pub struct LocalAddress(u32);
 
 impl LocalAddress {
-    pub fn new(start: u32) -> Self {
+    pub const fn new(start: u32) -> Self {
         LocalAddress(start)
     }
 
-    pub fn as_u32(&self) -> u32 {
+    pub const fn as_u32(&self) -> u32 {
         self.0
     }
 
-    pub fn as_usize(&self) -> usize {
+    pub const fn as_usize(&self) -> usize {
         self.0 as usize
     }
 
@@ -54,7 +54,7 @@ impl LocalAddress {
 pub struct Address(usize);
 
 impl Address {
-    pub fn new(id: u32, local: LocalAddress) -> Self {
+    pub const fn new(id: u32, local: LocalAddress) -> Self {
         Address((id as usize) << 31 | local.as_usize())
     }
 }
