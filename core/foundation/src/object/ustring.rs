@@ -90,6 +90,17 @@ impl From<&str> for UString {
     }
 }
 
+impl From<compact_str::CompactString> for UString {
+    fn from(value: compact_str::CompactString) -> Self {
+        if value.is_empty() {
+            UString(Variant::Empty)
+        } else {
+            let s = internal::UnicodeBasedString::from(value);
+            UString(Variant::Occupied(Rc::new(s)))
+        }
+    }
+}
+
 impl AddAssign for UString {
     fn add_assign(&mut self, rhs: Self) {
         match (&mut self.0, &rhs.0) {
@@ -322,9 +333,8 @@ mod internal {
         }
     }
 
-    impl<T: AsRef<str>> From<T> for UnicodeBasedString {
-        fn from(value: T) -> Self {
-            let str = value.as_ref();
+    impl From<&str> for UnicodeBasedString {
+        fn from(str: &str) -> Self {
             let string = CompactString::from(str);
             if str.is_ascii() {
                 UnicodeBasedString(Ascii(string))
@@ -333,6 +343,21 @@ mod internal {
                     .char_indices()
                     .map(|(i, _)| i)
                     .chain(core::iter::once(str.len()))
+                    .collect();
+                UnicodeBasedString(NonAscii(string, pos))
+            }
+        }
+    }
+
+    impl From<CompactString> for UnicodeBasedString {
+        fn from(string: CompactString) -> Self {
+            if string.is_ascii() {
+                UnicodeBasedString(Ascii(string))
+            } else {
+                let pos = string
+                    .char_indices()
+                    .map(|(i, _)| i)
+                    .chain(core::iter::once(string.len()))
                     .collect();
                 UnicodeBasedString(NonAscii(string, pos))
             }
