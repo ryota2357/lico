@@ -1,9 +1,6 @@
 use foundation::syntax::*;
 use rowan::{GreenNode, GreenNodeBuilder, TextRange};
 
-mod syntax_error;
-pub use syntax_error::SyntaxError;
-
 mod grammar;
 mod parser;
 mod token_set;

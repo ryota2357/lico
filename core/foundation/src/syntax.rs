@@ -1,3 +1,6 @@
+use core::fmt;
+use std::{borrow::Cow, error::Error};
+
 pub mod ast;
 pub mod token;
 
@@ -19,7 +22,36 @@ pub type SyntaxToken = rowan::SyntaxToken<LicoLanguage>;
 pub type SyntaxElement = rowan::SyntaxElement<LicoLanguage>;
 pub type SyntaxNodeChildren = rowan::SyntaxNodeChildren<LicoLanguage>;
 pub type SyntaxElementChildren = rowan::SyntaxElementChildren<LicoLanguage>;
+pub type Preorder = rowan::api::Preorder<LicoLanguage>;
 pub type PreorderWithTokens = rowan::api::PreorderWithTokens<LicoLanguage>;
+pub type SyntaxNodePtr = rowan::ast::SyntaxNodePtr<LicoLanguage>;
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct SyntaxError {
+    message: Cow<'static, str>,
+    range: rowan::TextRange,
+}
+
+impl SyntaxError {
+    pub fn new(message: Cow<'static, str>, range: rowan::TextRange) -> Self {
+        Self { message, range }
+    }
+
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+    pub fn range(&self) -> rowan::TextRange {
+        self.range
+    }
+}
+
+impl fmt::Display for SyntaxError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl Error for SyntaxError {}
 
 macro_rules! syntax_kind {
     ($($variant:ident $(= [$($tt:tt)*])? $(@ $anchor:ident)?),* $(,)?) => {
