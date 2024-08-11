@@ -230,6 +230,7 @@ impl Debug for UString {
 
 mod internal {
     use compact_str::CompactString;
+    use core::iter;
 
     #[derive(Clone)]
     pub(super) struct UnicodeBasedString(Variant);
@@ -342,7 +343,7 @@ mod internal {
                 let pos = str
                     .char_indices()
                     .map(|(i, _)| i)
-                    .chain(core::iter::once(str.len()))
+                    .chain(iter::once(str.len()))
                     .collect();
                 UnicodeBasedString(NonAscii(string, pos))
             }
@@ -357,7 +358,7 @@ mod internal {
                 let pos = string
                     .char_indices()
                     .map(|(i, _)| i)
-                    .chain(core::iter::once(string.len()))
+                    .chain(iter::once(string.len()))
                     .collect();
                 UnicodeBasedString(NonAscii(string, pos))
             }

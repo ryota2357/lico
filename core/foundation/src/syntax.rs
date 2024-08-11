@@ -1,5 +1,5 @@
-use core::fmt;
-use std::{borrow::Cow, error::Error};
+use core::{error::Error, fmt};
+use std::borrow::Cow;
 
 pub mod ast;
 pub mod token;
