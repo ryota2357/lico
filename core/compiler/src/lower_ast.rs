@@ -1,9 +1,8 @@
 use compact_str::CompactString;
 use foundation::{
     ir,
-    syntax::{ast, SyntaxError, SyntaxNode, SyntaxToken},
+    syntax::{ast, ast::AstNode, SyntaxError, SyntaxNode, SyntaxToken},
 };
-use rowan::ast::AstNode;
 
 mod effect;
 use effect::effect;

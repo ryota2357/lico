@@ -1,6 +1,8 @@
 use super::*;
-use foundation::object::{RustFunction, UString};
-use rowan::TextRange;
+use foundation::{
+    object::{RustFunction, UString},
+    syntax::TextRange,
+};
 
 fn _size_check() {
     const {

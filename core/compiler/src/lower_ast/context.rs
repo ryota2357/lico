@@ -1,9 +1,8 @@
 use core::mem::forget;
 use foundation::{
     ir::{ModuleBuilder, ScopeIndex},
-    syntax::SyntaxError,
+    syntax::{SyntaxError, TextRange},
 };
-use rowan::TextRange;
 use std::borrow::Cow;
 
 pub(super) struct Context {

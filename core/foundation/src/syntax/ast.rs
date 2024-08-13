@@ -1,5 +1,7 @@
 use super::{LicoLanguage, SyntaxKind, SyntaxNode, SyntaxToken, T};
-use rowan::ast::{support, AstChildren, AstNode};
+use rowan::ast::{support, AstChildren};
+
+pub use rowan::ast::AstNode;
 
 macro_rules! __node_method {
     (child, $name:ident, $type:ty) => {
