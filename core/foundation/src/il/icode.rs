@@ -10,7 +10,7 @@ fn _size_check() {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ICode {
     /// Pushes a constant integer value as an object to the stack.
     LoadIntObject(i64),
