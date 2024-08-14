@@ -5,6 +5,7 @@ members = [
     "foundation",
     "lexer",
     "parser",
+    "vm",
 ]
 
 [workspace.package]
@@ -23,7 +24,7 @@ rowan = "0.15.15"
 rustc-hash = "2.0.0"
 smallvec = "2.0.0-alpha.7"
 unicode-ident = "1.0.12"
-unicode-properties = { version =  "0.1.1", default-features = false }
+unicode-properties = { version = "0.1.1", default-features = false }
 
 [package]
 name = "lico_core"
@@ -39,3 +40,4 @@ foundation.workspace = true
 lexer.path = "./lexer/"
 parser.path = "./parser/"
 compiler.path = "./compiler/"
+vm.path = "./vm/"

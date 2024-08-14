@@ -1,0 +1,8 @@
+[package]
+name = "vm"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[dependencies]
+foundation.workspace = true
