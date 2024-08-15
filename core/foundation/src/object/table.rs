@@ -1,6 +1,6 @@
-use super::{private::*, Function, Object};
+use super::*;
 use crate::collections::*;
-use core::{borrow::Borrow, cell::Cell, fmt::Debug, hash::Hash, marker::PhantomData, ptr::NonNull};
+use core::{borrow::Borrow, cell::Cell, fmt, hash::Hash, ptr::NonNull};
 use std::borrow::Cow;
 
 pub struct Table {
@@ -147,8 +147,8 @@ impl Clone for Table {
     }
 }
 
-impl Debug for Table {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for Table {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut dbg = f.debug_map();
         for (key, value) in self.inner().data.iter() {
             dbg.key(key).value(match value {
@@ -169,6 +169,6 @@ impl Debug for Table {
 
 impl Drop for Table {
     fn drop(&mut self) {
-        Table::custom_drop(self);
+        PmsObject::custom_drop(self);
     }
 }

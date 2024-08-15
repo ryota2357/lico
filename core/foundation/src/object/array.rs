@@ -1,5 +1,5 @@
-use super::{private::*, Object};
-use core::{cell::Cell, fmt::Debug, ptr::NonNull};
+use super::*;
+use core::{cell::Cell, fmt, ptr::NonNull};
 
 pub struct Array {
     ptr: NonNull<Inner>,
@@ -15,7 +15,7 @@ unsafe impl PmsObject<Inner> for Array {
     }
 }
 
-pub struct Inner {
+pub(crate) struct Inner {
     data: Vec<Object>,
     version: u64,
     ref_count: Cell<usize>,
@@ -151,8 +151,8 @@ impl PartialEq for Array {
     }
 }
 
-impl Debug for Array {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for Array {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut dbg = f.debug_list();
         for item in self.inner().data.iter() {
             dbg.entry(match item {
@@ -173,6 +173,6 @@ impl Debug for Array {
 
 impl Drop for Array {
     fn drop(&mut self) {
-        Array::custom_drop(self);
+        PmsObject::custom_drop(self);
     }
 }

@@ -1,7 +1,6 @@
 use core::{
     borrow::Borrow,
     cmp, fmt,
-    fmt::{Debug, Display},
     hash::{Hash, Hasher},
     ops::{Add, AddAssign},
 };
@@ -213,13 +212,13 @@ impl Hash for UString {
     }
 }
 
-impl Display for UString {
+impl fmt::Display for UString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(self.as_str())
     }
 }
 
-impl Debug for UString {
+impl fmt::Debug for UString {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             Variant::Empty => f.write_str(""),

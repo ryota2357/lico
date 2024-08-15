@@ -248,13 +248,13 @@ thread_local! {
 }
 struct RecursiveDropGuard;
 impl RecursiveDropGuard {
-    pub fn begin_drop() {
+    fn begin_drop() {
         REC_DROP_GUARD.with(|guard| {
             assert!(!guard.get(), "Recursive call to drop");
             guard.set(true);
         });
     }
-    pub fn end_drop() {
+    fn end_drop() {
         REC_DROP_GUARD.with(|guard| {
             assert!(guard.get(), "End drop without begin drop");
             guard.set(false);

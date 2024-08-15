@@ -1,3 +1,6 @@
+mod pms_gc;
+use pms_gc::*;
+
 mod ustring;
 pub use ustring::UString;
 
@@ -12,8 +15,6 @@ pub use function::Function;
 
 mod rust_function;
 pub use rust_function::RustFunction;
-
-mod private;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Object {
