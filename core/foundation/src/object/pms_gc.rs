@@ -40,14 +40,20 @@ pub(crate) unsafe trait PmsInner {
     }
 
     fn inc_ref_count(&self) {
-        let ref_count = self.ref_count_ref().get();
-        assert_ne!(ref_count, usize::MAX, "Reference count overflow");
-        self.ref_count_ref().set(ref_count + 1);
+        let ref_count = self.ref_count().wrapping_add(1);
+        self.ref_count_ref().set(ref_count);
+        if ref_count == 0 {
+            // Reference count overflow
+            std::process::abort()
+        }
     }
     fn dec_ref_count(&self) {
-        let ref_count = self.ref_count_ref().get();
-        assert_ne!(ref_count, 0, "Reference count underflow");
-        self.ref_count_ref().set(ref_count - 1);
+        let ref_count = self.ref_count().wrapping_sub(1);
+        self.ref_count_ref().set(ref_count);
+        if ref_count == usize::MAX {
+            // Reference count underflow
+            std::process::abort()
+        }
     }
 }
 

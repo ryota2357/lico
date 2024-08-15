@@ -97,7 +97,7 @@ impl Array {
 
     fn inner_data_mut(&mut self) -> &mut Vec<Object> {
         let inner_mut = unsafe { self.inner_mut() };
-        inner_mut.version += 1;
+        inner_mut.version = inner_mut.version.wrapping_add(1);
         &mut inner_mut.data
     }
 }
