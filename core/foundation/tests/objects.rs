@@ -1,5 +1,25 @@
 use foundation::object::*;
 
+/// &str -> UString -> Object
+fn s(str: &str) -> Object {
+    UString::from(str).into()
+}
+
+/// i64 -> Object
+fn i(i: i64) -> Object {
+    i.into()
+}
+
+/// f64 -> Object
+fn f(f: f64) -> Object {
+    f.into()
+}
+
+/// bool -> Object
+fn b(b: bool) -> Object {
+    b.into()
+}
+
 #[test]
 fn u_string_construct_empty() {
     let empty = UString::new();
@@ -170,16 +190,16 @@ fn array_construct_empty() {
 
 #[test]
 fn array_set_sync() {
-    let mut array1 = Array::from([1.into(), "tow".into()]);
+    let mut array1 = Array::from([i(1), s("tow")]);
     let v = array1.version();
-    array1.set(0, "one");
+    array1.set(0, UString::from("one"));
     assert_ne!(array1.version(), v);
-    assert_eq!(array1.get(0), Some(&"one".into()));
+    assert_eq!(array1.get(0), Some(&s("one")));
     let mut array2 = array1.clone();
     let v = array1.version();
     array2.set(1, 2);
     assert_ne!(array1.version(), v);
-    assert_eq!(array1.get(1), Some(&2.into()));
+    assert_eq!(array1.get(1), Some(&i(2)));
 }
 
 #[test]
@@ -188,61 +208,58 @@ fn array_push_sync() {
     let v = array1.version();
     array1.push(100);
     assert_ne!(array1.version(), v);
-    assert_eq!(array1.get(0), Some(&100.into()));
+    assert_eq!(array1.get(0), Some(&i(100)));
     let mut array2 = array1.clone();
     let v = array1.version();
-    array2.push("hello");
+    array2.push(UString::from("hello"));
     assert_ne!(array1.version(), v);
-    assert_eq!(array1.get(1), Some(&"hello".into()));
+    assert_eq!(array1.get(1), Some(&s("hello")));
 }
 
 #[test]
 fn array_pop_sync() {
-    let mut array1 = Array::from([true.into(), 1.23.into()]);
+    let mut array1 = Array::from([b(true), f(1.23)]);
     let v = array1.version();
-    assert_eq!(array1.pop(), Some(1.23.into()));
+    assert_eq!(array1.pop(), Some(f(1.23)));
     assert_ne!(array1.version(), v);
     let mut array2 = array1.clone();
     let v = array1.version();
-    assert_eq!(array2.pop(), Some(true.into()));
+    assert_eq!(array2.pop(), Some(b(true)));
     assert_ne!(array1.version(), v);
     assert_eq!(array1.pop(), None);
 }
 
 #[test]
 fn array_insert_sync() {
-    let mut array1 = Array::from([1.into(), "tow".into()]);
+    let mut array1 = Array::from([i(1), s("tow")]);
     let v = array1.version();
-    array1.insert(1, "one");
+    array1.insert(1, UString::from("one"));
     assert_ne!(array1.version(), v);
-    assert_eq!(array1, Array::from([1.into(), "one".into(), "tow".into()]));
+    assert_eq!(array1, Array::from([i(1), s("one"), s("tow")]));
     let mut array2 = array1.clone();
     let v = array1.version();
     array2.insert(0, 0);
     assert_ne!(array1.version(), v);
-    assert_eq!(
-        array1,
-        Array::from([0.into(), 1.into(), "one".into(), "tow".into()])
-    );
+    assert_eq!(array1, Array::from([i(0), i(1), s("one"), s("tow")]));
 }
 
 #[test]
 fn array_remove_sync() {
-    let mut array1 = Array::from([1.into(), "tow".into()]);
+    let mut array1 = Array::from([i(1), s("tow")]);
     let v = array1.version();
-    assert_eq!(array1.remove(0), 1.into());
+    assert_eq!(array1.remove(0), i(1));
     assert_ne!(array1.version(), v);
-    assert_eq!(array1, Array::from(["tow".into()]));
+    assert_eq!(array1, Array::from([s("tow")]));
     let mut array2 = array1.clone();
     let v = array1.version();
-    assert_eq!(array2.remove(0), "tow".into());
+    assert_eq!(array2.remove(0), s("tow"));
     assert_ne!(array1.version(), v);
     assert_eq!(array1, Array::new());
 }
 
 #[test]
 fn array_clear_sync() {
-    let mut array1 = Array::from([1.into(), "tow".into()]);
+    let mut array1 = Array::from([i(1), s("tow")]);
     assert!(!array1.is_empty());
     let array2 = array1.clone();
     let v = array1.version();
@@ -255,32 +272,32 @@ fn array_clear_sync() {
 
 #[test]
 fn array_contains() {
-    let array = Array::from([1.into(), "tow".into()]);
-    assert!(array.contains(&"tow".into()));
+    let array = Array::from([i(1), s("tow")]);
+    assert!(array.contains(&s("tow")));
     let v = array.version();
-    assert!(!array.contains(&3.into()));
+    assert!(!array.contains(&i(3)));
     assert_eq!(array.version(), v);
 }
 
 #[test]
 fn array_unsafe_iter() {
-    let array = Array::from([1.into(), "tow".into()]);
+    let array = Array::from([i(1), s("tow")]);
     let mut iter = unsafe { array.iter() };
-    assert_eq!(iter.next(), Some(&1.into()));
-    assert_eq!(iter.next(), Some(&"tow".into()));
+    assert_eq!(iter.next(), Some(&i(1)));
+    assert_eq!(iter.next(), Some(&s("tow")));
     assert_eq!(iter.next(), None);
 }
 
 #[test]
 fn array_equal() {
-    let array1 = Array::from([1.into(), true.into(), Array::new().into()]);
-    let array2 = Array::from([1.into(), true.into(), Array::new().into()]);
+    let array1 = Array::from([i(1), b(true), Array::new().into()]);
+    let array2 = Array::from([i(1), b(true), Array::new().into()]);
     assert_eq!(array1, array2);
 }
 
 #[test]
 fn array_equal_for_nan() {
-    let array1 = Array::from([f64::NAN.into()]);
+    let array1 = Array::from([f(f64::NAN)]);
     let array2 = array1.clone();
     assert_ne!(array1, array2);
 }
@@ -298,30 +315,30 @@ fn table_construct_empty() {
 fn table_insert_sync() {
     let mut table1 = Table::new();
     table1.insert("key".into(), 100);
-    assert_eq!(table1.get("key"), Some(&100.into()));
+    assert_eq!(table1.get("key"), Some(&i(100)));
     let mut table2 = table1.clone();
-    table2.insert("key".into(), "hello");
-    assert_eq!(table1.get("key"), Some(&"hello".into()));
+    table2.insert("key".into(), UString::from("hello"));
+    assert_eq!(table1.get("key"), Some(&s("hello")));
     table1.insert("foo".into(), true);
     assert_eq!(
         table2,
-        Table::from([("key".into(), "hello".into()), ("foo".into(), true.into())])
+        Table::from([("key".into(), s("hello")), ("foo".into(), b(true))])
     );
 }
 
 #[test]
 fn table_remove_sync() {
-    let mut table1 = Table::from([("key".into(), 1.23.into()), ("foo".into(), true.into())]);
-    assert_eq!(table1.remove("key"), Some(1.23.into()));
-    assert_eq!(table1, Table::from([("foo".into(), true.into())]));
+    let mut table1 = Table::from([("key".into(), f(1.23)), ("foo".into(), b(true))]);
+    assert_eq!(table1.remove("key"), Some(f(1.23)));
+    assert_eq!(table1, Table::from([("foo".into(), b(true))]));
     let mut table2 = table1.clone();
-    assert_eq!(table2.remove("foo"), Some(true.into()));
+    assert_eq!(table2.remove("foo"), Some(b(true)));
     assert_eq!(table1, Table::new());
 }
 
 #[test]
 fn table_clear_sync() {
-    let mut table1 = Table::from([("key".into(), 1.23.into()), ("foo".into(), true.into())]);
+    let mut table1 = Table::from([("key".into(), f(1.23)), ("foo".into(), b(true))]);
     assert!(!table1.is_empty());
     let table2 = table1.clone();
     table1.clear();
@@ -332,26 +349,26 @@ fn table_clear_sync() {
 
 #[test]
 fn table_contains_key() {
-    let table = Table::from([("foo".into(), true.into()), ("bar".into(), 1.23.into())]);
+    let table = Table::from([("foo".into(), b(true)), ("bar".into(), f(1.23))]);
     assert!(table.contains_key("foo"));
     assert!(!table.contains_key("baz"));
 }
 
 #[test]
 fn table_unsafe_iter() {
-    let table = Table::from([("foo".into(), true.into()), ("bar".into(), 1.23.into())]);
+    let table = Table::from([("foo".into(), b(true)), ("bar".into(), f(1.23))]);
     let mut iter = unsafe { table.iter() };
     let mut nexts = [iter.next().unwrap(), iter.next().unwrap()];
     nexts.sort_by_key(|(key, _)| *key);
-    assert_eq!(nexts[0], (&"bar".into(), &1.23.into()));
-    assert_eq!(nexts[1], (&"foo".into(), &true.into()));
+    assert_eq!(nexts[0], (&"bar".into(), &f(1.23)));
+    assert_eq!(nexts[1], (&"foo".into(), &b(true)));
     assert_eq!(iter.next(), None);
 }
 
 #[test]
 fn table_equal() {
-    let table1 = Table::from([("1".into(), 1.into()), ("tbl".into(), Table::new().into())]);
-    let table2 = Table::from([("1".into(), 1.into()), ("tbl".into(), Table::new().into())]);
+    let table1 = Table::from([("1".into(), i(1)), ("tbl".into(), Table::new().into())]);
+    let table2 = Table::from([("1".into(), i(1)), ("tbl".into(), Table::new().into())]);
     assert_eq!(table1, table2);
 }
 
