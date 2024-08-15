@@ -18,7 +18,7 @@ unsafe impl PmsObject<Inner> for Table {
 }
 
 pub struct Inner {
-    data: LazyHashMap<Cow<'static, str>, Object>,
+    map: LazyHashMap<Cow<'static, str>, Object>,
     methods: SortedLinearMap<Cow<'static, str>, TableMethod>,
     ref_count: Cell<usize>,
     color: Cell<Color>,
@@ -34,32 +34,37 @@ unsafe impl PmsInner for Inner {
     }
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
-        self.data.iter_mut().map(|(_, v)| v)
+        self.map.iter_mut().map(|(_, v)| v)
     }
 
     unsafe fn drain_children(&mut self) -> impl Iterator<Item = Object> {
-        self.data.drain().map(|(_, v)| v)
+        self.map.drain().map(|(_, v)| v)
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TableMethod {
-    Builtin(fn(Table, &[Object]) -> Result<Object, String>),
+    Native(RustFunction),
     Custom(Function),
-    CustomNoSelf(Function),
 }
 
 impl Table {
     pub fn new() -> Self {
-        Table::from([])
+        let map = LazyHashMap::new();
+        Table::with_map(map)
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        let map = LazyHashMap::with_capacity(capacity);
+        Table::with_map(map)
     }
 
     pub fn len(&self) -> usize {
-        self.inner().data.len()
+        self.inner().map.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.inner().data.is_empty()
+        self.inner().map.is_empty()
     }
 
     pub fn get<Q>(&self, key: &Q) -> Option<&Object>
@@ -67,11 +72,11 @@ impl Table {
         Cow<'static, str>: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
-        self.inner().data.get(key)
+        self.inner().map.get(key)
     }
 
     pub fn insert<T: Into<Object>>(&mut self, key: Cow<'static, str>, value: T) -> Option<Object> {
-        unsafe { self.inner_mut().data.insert(key, value.into()) }
+        unsafe { self.inner_mut().map.insert(key, value.into()) }
     }
 
     pub fn remove<Q>(&mut self, key: &Q) -> Option<Object>
@@ -79,12 +84,12 @@ impl Table {
         Cow<'static, str>: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
-        unsafe { self.inner_mut().data.remove(key) }
+        unsafe { self.inner_mut().map.remove(key) }
     }
 
     pub fn clear(&mut self) {
         unsafe {
-            self.inner_mut().data.clear();
+            self.inner_mut().map.clear();
         }
     }
 
@@ -93,13 +98,37 @@ impl Table {
         Cow<'static, str>: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
-        self.inner().data.contains_key(key)
+        self.inner().map.contains_key(key)
     }
 
     /// # Safety
     /// TODO
     pub unsafe fn iter(&self) -> lazy_hash_map::Iter<Cow<'static, str>, Object> {
-        self.inner().data.iter()
+        self.inner().map.iter()
+    }
+
+    pub fn get_method<Q>(&self, key: &Q) -> Option<&TableMethod>
+    where
+        Cow<'static, str>: Borrow<Q>,
+        Q: Hash + Ord + ?Sized,
+    {
+        self.inner().methods.get(key)
+    }
+
+    pub fn set_method<T: Into<TableMethod>>(&mut self, key: Cow<'static, str>, value: T) {
+        unsafe { self.inner_mut().methods.insert(key, value.into()) };
+    }
+
+    fn with_map(map: LazyHashMap<Cow<'static, str>, Object>) -> Self {
+        let ptr = Box::leak(Box::new(Inner {
+            map,
+            methods: SortedLinearMap::new(),
+            ref_count: Cell::new(1),
+            color: Cell::new(Color::Black),
+        }));
+        Table {
+            ptr: NonNull::from(ptr),
+        }
     }
 }
 
@@ -111,15 +140,8 @@ impl Default for Table {
 
 impl<const N: usize> From<[(Cow<'static, str>, Object); N]> for Table {
     fn from(value: [(Cow<'static, str>, Object); N]) -> Self {
-        let ptr = Box::leak(Box::new(Inner {
-            data: LazyHashMap::from(value),
-            methods: SortedLinearMap::new(),
-            ref_count: Cell::new(1),
-            color: Cell::new(Color::Black),
-        }));
-        Table {
-            ptr: NonNull::from(ptr),
-        }
+        let data = LazyHashMap::from(value);
+        Table::with_map(data)
     }
 }
 
@@ -128,14 +150,14 @@ impl PartialEq for Table {
         if self.ptr.eq(&other.ptr) {
             let has_nan = self
                 .inner()
-                .data
+                .map
                 .iter()
                 .any(|(_, x)| matches!(x, Object::Float(x) if x.is_nan()));
             !has_nan
         } else {
             let inner = self.inner();
             let other = other.inner();
-            inner.data.eq(&other.data) && inner.methods.eq(&other.methods)
+            inner.map.eq(&other.map) && inner.methods.eq(&other.methods)
         }
     }
 }
@@ -150,7 +172,7 @@ impl Clone for Table {
 impl fmt::Debug for Table {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut dbg = f.debug_map();
-        for (key, value) in self.inner().data.iter() {
+        for (key, value) in self.inner().map.iter() {
             dbg.key(key).value(match value {
                 Object::Int(x) => x,
                 Object::Float(x) => x,

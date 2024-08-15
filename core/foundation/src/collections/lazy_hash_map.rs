@@ -1,7 +1,8 @@
 use super::{sorted_linear_map, sorted_linear_map::SortedLinearMap};
+use ahash::RandomState;
 use core::{borrow::Borrow, fmt::Debug, hash::Hash};
 
-type HashMap<K, T> = hashbrown::HashMap<K, T, ahash::RandomState>;
+type HashMap<K, T> = hashbrown::HashMap<K, T, RandomState>;
 
 const LINEAR_MAP_SIZE_LIMIT: usize = 16;
 
@@ -17,6 +18,17 @@ enum Variant<K: Hash + Ord, V> {
 impl<K: Hash + Ord, V> LazyHashMap<K, V> {
     pub const fn new() -> Self {
         Self(Variant::Linear(SortedLinearMap::new()))
+    }
+
+    pub fn with_capacity(capacity: usize) -> Self {
+        if capacity <= LINEAR_MAP_SIZE_LIMIT {
+            Self(Variant::Linear(SortedLinearMap::with_capacity(capacity)))
+        } else {
+            Self(Variant::Hashed(HashMap::with_capacity_and_hasher(
+                capacity,
+                RandomState::new(),
+            )))
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -126,7 +138,7 @@ impl<K: Hash + Ord, V, const N: usize> From<[(K, V); N]> for LazyHashMap<K, V> {
             let map = SortedLinearMap::from(value);
             LazyHashMap(Variant::Linear(map))
         } else {
-            let mut map = HashMap::default();
+            let mut map = HashMap::with_capacity_and_hasher(N, RandomState::new());
             for (k, v) in value {
                 map.insert(k, v);
             }
@@ -141,7 +153,7 @@ impl<K: Hash + Ord, V> From<Vec<(K, V)>> for LazyHashMap<K, V> {
             let map = SortedLinearMap::from(value);
             LazyHashMap(Variant::Linear(map))
         } else {
-            let mut map = HashMap::default();
+            let mut map = HashMap::with_capacity_and_hasher(value.len(), RandomState::new());
             for (k, v) in value {
                 map.insert(k, v);
             }
@@ -190,8 +202,32 @@ impl<K: Hash + Ord + Debug, V: Debug> Debug for LazyHashMap<K, V> {
     }
 }
 
-macro_rules! impl_iterator {
-    ( for $ty:ty { type Item = ($ty_k:ty, $ty_v:ty); map = $map_fn:expr } ) => {
+#[derive(Debug, Clone)]
+pub enum Iter<'a, K: Hash + Ord, V> {
+    Linear(sorted_linear_map::Iter<'a, K, V>),
+    Hashed(hashbrown::hash_map::Iter<'a, K, V>),
+}
+
+#[derive(Debug)]
+pub enum IterMut<'a, K: Hash + Ord, V> {
+    Linear(sorted_linear_map::IterMut<'a, K, V>),
+    Hashed(hashbrown::hash_map::IterMut<'a, K, V>),
+}
+
+#[derive(Debug)]
+pub enum IntoIter<K: Hash + Ord, V> {
+    Linear(sorted_linear_map::IntoIter<K, V>),
+    Hashed(hashbrown::hash_map::IntoIter<K, V>),
+}
+
+#[derive(Debug)]
+pub enum Drain<'a, K: Hash + Ord, V> {
+    Linear(sorted_linear_map::Drain<'a, K, V>),
+    Hashed(hashbrown::hash_map::Drain<'a, K, V>),
+}
+
+macro_rules! impl_iterator_for {
+    ($( $ty:ty { type Item = ($ty_k:ty, $ty_v:ty); map = $map_fn:expr } )*) => {$(
         impl<'a, K: Hash + Ord, V> Iterator for $ty {
             type Item = ($ty_k, $ty_v);
             fn next(&mut self) -> Option<Self::Item> {
@@ -227,46 +263,24 @@ macro_rules! impl_iterator {
                 }
             }
         }
-        impl<'a, K: Hash + Ord, V> std::iter::FusedIterator for $ty {}
-    };
+        impl<'a, K: Hash + Ord, V> core::iter::FusedIterator for $ty {}
+    )*};
 }
-
-#[derive(Debug, Clone)]
-pub enum Iter<'a, K: Hash + Ord, V> {
-    Linear(sorted_linear_map::Iter<'a, K, V>),
-    Hashed(hashbrown::hash_map::Iter<'a, K, V>),
+impl_iterator_for! {
+    Iter<'a, K, V> {
+        type Item = (&'a K, &'a V);
+        map = |(k, v)| (k, v)
+    }
+    IterMut<'a, K, V> {
+        type Item = (&'a K, &'a mut V);
+        map = |(k, v)| (&*k, v)
+    }
+    IntoIter<K, V> {
+        type Item = (K, V);
+        map = |(k, v)| (k, v)
+    }
+    Drain<'a, K, V> {
+        type Item = (K, V);
+        map = |(k, v)| (k, v)
+    }
 }
-impl_iterator!(for Iter<'a, K, V> {
-    type Item = (&'a K, &'a V);
-    map = |(k, v)| (k, v)
-});
-
-#[derive(Debug)]
-pub enum IterMut<'a, K: Hash + Ord, V> {
-    Linear(sorted_linear_map::IterMut<'a, K, V>),
-    Hashed(hashbrown::hash_map::IterMut<'a, K, V>),
-}
-impl_iterator!(for IterMut<'a, K, V> {
-    type Item = (&'a K, &'a mut V);
-    map = |(k, v)| (&*k, v)
-});
-
-#[derive(Debug)]
-pub enum IntoIter<K: Hash + Ord, V> {
-    Linear(sorted_linear_map::IntoIter<K, V>),
-    Hashed(hashbrown::hash_map::IntoIter<K, V>),
-}
-impl_iterator!(for IntoIter<K, V> {
-    type Item = (K, V);
-    map = |(k, v)| (k, v)
-});
-
-#[derive(Debug)]
-pub enum Drain<'a, K: Hash + Ord, V> {
-    Linear(sorted_linear_map::Drain<'a, K, V>),
-    Hashed(hashbrown::hash_map::Drain<'a, K, V>),
-}
-impl_iterator!(for Drain<'a, K, V> {
-    type Item = (K, V);
-    map = |(k, v)| (k, v)
-});

@@ -15,6 +15,12 @@ impl<K: Ord, V> SortedLinearMap<K, V> {
         Self { data: Vec::new() }
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            data: Vec::with_capacity(capacity),
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.data.len()
     }
@@ -96,8 +102,8 @@ impl<K: Ord, V> Default for SortedLinearMap<K, V> {
 
 impl<K: Ord, V, const N: usize> From<[(K, V); N]> for SortedLinearMap<K, V> {
     fn from(value: [(K, V); N]) -> Self {
-        let boxed: Box<[(K, V)]> = Box::new(value);
-        SortedLinearMap::from(boxed.into_vec())
+        let vec = Vec::from(value);
+        SortedLinearMap::from(vec)
     }
 }
 

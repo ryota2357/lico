@@ -45,6 +45,10 @@ impl Array {
         Array::from(Vec::new())
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        Array::from(Vec::with_capacity(capacity))
+    }
+
     pub fn len(&self) -> usize {
         self.inner().data.len()
     }
