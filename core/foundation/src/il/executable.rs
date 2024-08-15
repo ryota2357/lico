@@ -21,13 +21,13 @@ struct Header {
 }
 
 impl Executable {
-    pub fn new<I>(iter: I) -> Self
+    pub fn new<C>(code_iter: C) -> Self
     where
-        I: IntoIterator<Item = ICode>,
-        I::IntoIter: ExactSizeIterator,
+        C: IntoIterator<Item = ICode>,
+        C::IntoIter: ExactSizeIterator,
     {
-        let iter = iter.into_iter();
-        let len = iter.len();
+        let code_iter = code_iter.into_iter();
+        let len = code_iter.len();
 
         let layout = Self::layout(len);
         let allocation = unsafe {
@@ -46,7 +46,7 @@ impl Executable {
             };
             NonNull::new_unchecked(allocation.add(Self::header_offset())).cast()
         };
-        for (i, icode) in iter.enumerate() {
+        for (i, icode) in code_iter.enumerate() {
             unsafe {
                 // SAFETY: Since `i` is less than `len`, it is in bounds.
                 ptr.add(i).write(icode);
@@ -143,7 +143,7 @@ impl Clone for Executable {
     fn clone(&self) -> Self {
         let header = self.header();
 
-        // see ]Rc::inc_strong
+        // see Rc::inc_strong
         let count = header.count.get();
         unsafe {
             hint::assert_unchecked(count != 0);
@@ -171,7 +171,7 @@ impl Drop for Executable {
 
                 // No `drop_in_place` for the header is needed.
                 // Because none of the fields in the header are references.
-
+                // free
                 let allocation = self.allocation();
                 let layout = Self::layout(len);
                 alloc::dealloc(allocation, layout);

@@ -1,8 +1,5 @@
 use super::*;
-use foundation::{
-    object::{RustFunction, UString},
-    syntax::TextRange,
-};
+use foundation::{object::UString, syntax::TextRange};
 
 fn _size_check() {
     const {
@@ -19,7 +16,6 @@ pub(crate) enum ICodeSource {
     LoadNilObject,
     // LoadArrayObjct(Array),
     // LoadTableObjct(Table),
-    LoadRustFunction(RustFunction),
     LoadLocal(il::LocalId),
 
     Unload,

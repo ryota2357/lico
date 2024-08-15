@@ -6,6 +6,7 @@ edition.workspace = true
 
 [dependencies]
 ahash = { workspace = true }
+anyhow = { workspace = true }
 compact_str = { workspace = true }
 hashbrown = { workspace = true }
 rowan = { workspace = true }

@@ -82,7 +82,7 @@ impl<'s> Context<'s> {
         })
     }
 
-    pub(crate) fn finish_with(self, fragment: Fragment) -> Box<[il::ICode]> {
+    pub(crate) fn finish_with(self, fragment: Fragment) -> (Vec<il::ICode>, ()) {
         let (all_code_source, funcid2index) = {
             let func_list = Rc::try_unwrap(self.func_list)
                 .expect("[BUG] Context::finish_with() should be called in the outermost Context.")
@@ -107,7 +107,6 @@ impl<'s> Context<'s> {
                 Src::LoadStringObject(x)    => LoadStringObject(x),
                 Src::LoadBoolObject(x)      => LoadBoolObject(x),
                 Src::LoadNilObject          => LoadNilObject,
-                Src::LoadRustFunction(x)    => LoadRustFunction(x),
                 Src::LoadLocal(x)           => LoadLocal(x),
                 Src::Unload                 => Unload,
                 Src::StoreLocal(x)          => StoreLocal(x),
@@ -156,7 +155,7 @@ impl<'s> Context<'s> {
             };
             codes.push(code);
         }
-        codes.into_boxed_slice()
+        (codes, ())
     }
 }
 
