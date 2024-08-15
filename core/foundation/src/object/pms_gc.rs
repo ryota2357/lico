@@ -67,44 +67,6 @@ pub(crate) unsafe trait PmsObject<I: PmsInner> {
         self.ptr().as_mut()
     }
 
-    unsafe fn deallocate_inner(this: &mut Self) {
-        debug_assert_ptr_is_not_freed!(this.ptr());
-        debug_assert_eq!(this.inner().ref_count(), 0);
-
-        let ptr = if cfg!(debug_assertions) {
-            mem::replace(
-                &mut this.ptr(),
-                NonNull::new_unchecked(usize::MAX as *mut _),
-            )
-        } else {
-            this.ptr()
-        };
-        let mut inner = ptr::read(ptr.as_ptr());
-        for next in inner.drain_children() {
-            match next {
-                Object::Int(_) => {}          // No need to drop for `i64`  (Copy type)
-                Object::Float(_) => {}        // No need to drop for `f64`  (Copy type)
-                Object::Bool(_) => {}         // No need to drop for `bool` (Copy type)
-                Object::Nil => {}             // No need to drop for `()`   (Nothing to drop)
-                Object::RustFunction(_) => {} // No need to drop for `fn`   (Copy type)
-                Object::String(next) => {
-                    drop(next);
-                }
-                Object::Function(next) => {
-                    drop(next);
-                }
-                Object::Array(next) => {
-                    mem::forget(next);
-                }
-                Object::Table(table) => {
-                    mem::forget(table);
-                }
-            }
-        }
-        drop(inner);
-        alloc::dealloc(ptr.as_ptr().cast(), Layout::for_value(ptr.as_ref()));
-    }
-
     fn custom_drop(this: &mut Self) {
         RecursiveDropGuard::begin_drop();
 
@@ -203,7 +165,7 @@ pub(crate) unsafe trait PmsObject<I: PmsInner> {
                     if item.inner().ref_count() == 0 {
                         item.inner().paint(Color::White);
                         self.collect(item.ptr());
-                        PmsObject::deallocate_inner(item);
+                        deallocate_inner(item);
                         None
                     } else {
                         // To avoid double collection, we need to check whether its color is purple.
@@ -230,7 +192,7 @@ pub(crate) unsafe trait PmsObject<I: PmsInner> {
             purple_collector.collect(this.ptr());
             let (purple_array_ptrs, purple_table_ptrs) = purple_collector.finish();
 
-            PmsObject::deallocate_inner(this);
+            deallocate_inner(this);
 
             for array_ptr in purple_array_ptrs {
                 mark_and_sweep::run_with_inner_ptr::<_, Array>(array_ptr);
@@ -260,6 +222,44 @@ impl RecursiveDropGuard {
             guard.set(false);
         });
     }
+}
+
+unsafe fn deallocate_inner<I: PmsInner, T: PmsObject<I> + ?Sized>(this: &mut T) {
+    debug_assert_ptr_is_not_freed!(this.ptr());
+    debug_assert_eq!(this.inner().ref_count(), 0);
+
+    let ptr = if cfg!(debug_assertions) {
+        mem::replace(
+            &mut this.ptr(),
+            NonNull::new_unchecked(usize::MAX as *mut _),
+        )
+    } else {
+        this.ptr()
+    };
+    let mut inner = ptr::read(ptr.as_ptr());
+    for next in inner.drain_children() {
+        match next {
+            Object::Int(_) => {}          // No need to drop for `i64`  (Copy type)
+            Object::Float(_) => {}        // No need to drop for `f64`  (Copy type)
+            Object::Bool(_) => {}         // No need to drop for `bool` (Copy type)
+            Object::Nil => {}             // No need to drop for `()`   (Nothing to drop)
+            Object::RustFunction(_) => {} // No need to drop for `fn`   (Copy type)
+            Object::String(next) => {
+                drop(next);
+            }
+            Object::Function(next) => {
+                drop(next);
+            }
+            Object::Array(next) => {
+                mem::forget(next);
+            }
+            Object::Table(table) => {
+                mem::forget(table);
+            }
+        }
+    }
+    drop(inner);
+    alloc::dealloc(ptr.as_ptr().cast(), Layout::for_value(ptr.as_ref()));
 }
 
 mod mark_and_sweep {
@@ -375,6 +375,6 @@ mod mark_and_sweep {
                 _ => {}
             }
         }
-        PmsObject::deallocate_inner(item);
+        deallocate_inner(item);
     }
 }
