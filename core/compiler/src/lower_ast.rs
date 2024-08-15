@@ -13,7 +13,7 @@ use value::value;
 mod context;
 use context::{Context, ScopeKind};
 
-pub fn lower(program: ast::Program) -> (ir::Module, Vec<SyntaxError>) {
+pub fn lower_ast(program: ast::Program) -> (ir::Module, Vec<SyntaxError>) {
     let mut ctx = Context::new();
     let effects: Vec<_> = program.into_lowered(&mut ctx);
     let key = ctx.builder.add_effects(effects);
