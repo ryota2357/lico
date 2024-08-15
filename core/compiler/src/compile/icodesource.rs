@@ -19,8 +19,8 @@ pub(crate) enum ICodeSource {
     LoadNilObject,
     // LoadArrayObjct(Array),
     // LoadTableObjct(Table),
-    LoadLocal(il::LocalId),
     LoadRustFunction(RustFunction),
+    LoadLocal(il::LocalId),
 
     Unload,
 

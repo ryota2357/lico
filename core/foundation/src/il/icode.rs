@@ -33,15 +33,15 @@ pub enum ICode {
     /// Pushes a constant table value as an object to the stack.
     LoadTableObject(Table),
 
+    /// Pushes a rust function to the stack.
+    LoadRustFunction(RustFunction),
+
     /// Pushes the stored local object specified by `.0` onto the local variable table.
     ///
     /// # Panic
     ///
     /// Not found the specified local object.
     LoadLocal(LocalId),
-
-    /// Pushes a rust function to the stack.
-    LoadRustFunction(RustFunction),
 
     /// Pushes the top value from the stack.
     ///
