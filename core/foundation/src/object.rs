@@ -2,11 +2,10 @@ mod ustring;
 pub use ustring::UString;
 
 mod array;
-pub type Array = array::Array<Object>;
+pub use array::Array;
 
 mod table;
-pub use table::TableMethod;
-pub type Table = table::Table<Object>;
+pub use table::{Table, TableMethod};
 
 mod function;
 pub use function::Function;
@@ -29,8 +28,7 @@ pub enum Object {
     RustFunction(RustFunction),
 }
 
-const fn _static_assert_size() {
-    use std::mem::size_of;
+const fn _size_check() {
     const {
         assert!(size_of::<Object>() == 16);
         assert!(size_of::<UString>() == 8);

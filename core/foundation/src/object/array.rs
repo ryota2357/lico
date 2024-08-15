@@ -1,31 +1,28 @@
 use super::{private::*, Object};
-use core::{cell::Cell, fmt::Debug, marker::PhantomData, ptr::NonNull};
+use core::{cell::Cell, fmt::Debug, ptr::NonNull};
 
-#[allow(private_bounds)]
-pub struct Array<T: TObject = Object> {
-    ptr: NonNull<Inner<T>>,
-    phantom: PhantomData<Inner<T>>,
+pub struct Array {
+    ptr: NonNull<Inner>,
 }
-unsafe impl<T: TObject> PmsObject<Inner<T>> for Array<T> {
-    fn ptr(&self) -> NonNull<Inner<T>> {
+
+unsafe impl PmsObject<Inner> for Array {
+    fn ptr(&self) -> NonNull<Inner> {
         self.ptr
     }
 
-    unsafe fn from_inner(ptr: NonNull<Inner<T>>) -> Self {
-        Array {
-            ptr,
-            phantom: PhantomData,
-        }
+    unsafe fn from_inner(ptr: NonNull<Inner>) -> Self {
+        Array { ptr }
     }
 }
 
-pub struct Inner<T: TObject> {
-    data: Vec<T>,
+pub struct Inner {
+    data: Vec<Object>,
     version: u64,
     ref_count: Cell<usize>,
     color: Cell<Color>,
 }
-unsafe impl<T: TObject> PmsInner for Inner<T> {
+
+unsafe impl PmsInner for Inner {
     fn ref_count_ref(&self) -> &Cell<usize> {
         &self.ref_count
     }
@@ -35,11 +32,11 @@ unsafe impl<T: TObject> PmsInner for Inner<T> {
     }
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
-        self.data.iter_mut().map(|x| x.as_object_mut())
+        self.data.iter_mut()
     }
 
     unsafe fn drain_children(&mut self) -> impl Iterator<Item = Object> {
-        self.data.drain(..).map(|x| x.into_object())
+        self.data.drain(..)
     }
 }
 
@@ -128,29 +125,25 @@ impl From<Vec<Object>> for Array {
         }));
         Array {
             ptr: NonNull::from(ptr),
-            phantom: PhantomData,
         }
     }
 }
 
-impl<T: TObject> Clone for Array<T> {
+impl Clone for Array {
     fn clone(&self) -> Self {
         self.inner().inc_ref_count();
-        Self {
-            ptr: self.ptr,
-            phantom: PhantomData,
-        }
+        Self { ptr: self.ptr }
     }
 }
 
-impl<T: TObject> PartialEq for Array<T> {
+impl PartialEq for Array {
     fn eq(&self, other: &Self) -> bool {
         if self.ptr.eq(&other.ptr) {
             let has_nan = self
                 .inner()
                 .data
                 .iter()
-                .any(|x| matches!(x.as_object(), Object::Float(x) if x.is_nan()));
+                .any(|x| matches!(x, Object::Float(x) if x.is_nan()));
             !has_nan
         } else {
             self.inner().data.eq(&other.inner().data)
@@ -158,11 +151,11 @@ impl<T: TObject> PartialEq for Array<T> {
     }
 }
 
-impl<T: TObject> Debug for Array<T> {
+impl Debug for Array {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut dbg = f.debug_list();
         for item in self.inner().data.iter() {
-            dbg.entry(match item.as_object() {
+            dbg.entry(match item {
                 Object::Int(x) => x,
                 Object::Float(x) => x,
                 Object::String(x) => x,
@@ -178,7 +171,7 @@ impl<T: TObject> Debug for Array<T> {
     }
 }
 
-unsafe impl<#[may_dangle] T: TObject> Drop for Array<T> {
+impl Drop for Array {
     fn drop(&mut self) {
         Array::custom_drop(self);
     }

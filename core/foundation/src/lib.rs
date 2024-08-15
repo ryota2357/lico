@@ -1,4 +1,4 @@
-#![feature(dropck_eyepatch, allocator_api, impl_trait_in_assoc_type)]
+#![feature(allocator_api, impl_trait_in_assoc_type)]
 
 pub mod collections;
 pub mod il;

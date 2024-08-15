@@ -3,31 +3,28 @@ use crate::collections::*;
 use core::{borrow::Borrow, cell::Cell, fmt::Debug, hash::Hash, marker::PhantomData, ptr::NonNull};
 use std::borrow::Cow;
 
-#[allow(private_bounds)]
-pub struct Table<T: TObject = Object> {
-    ptr: NonNull<Inner<T>>,
-    phantom: PhantomData<Inner<T>>,
+pub struct Table {
+    ptr: NonNull<Inner>,
 }
-unsafe impl<T: TObject> PmsObject<Inner<T>> for Table<T> {
-    fn ptr(&self) -> NonNull<Inner<T>> {
+
+unsafe impl PmsObject<Inner> for Table {
+    fn ptr(&self) -> NonNull<Inner> {
         self.ptr
     }
 
-    unsafe fn from_inner(ptr: NonNull<Inner<T>>) -> Self {
-        Table {
-            ptr,
-            phantom: PhantomData,
-        }
+    unsafe fn from_inner(ptr: NonNull<Inner>) -> Self {
+        Table { ptr }
     }
 }
 
-pub struct Inner<T: TObject> {
-    data: LazyHashMap<Cow<'static, str>, T>,
+pub struct Inner {
+    data: LazyHashMap<Cow<'static, str>, Object>,
     methods: SortedLinearMap<Cow<'static, str>, TableMethod>,
     ref_count: Cell<usize>,
     color: Cell<Color>,
 }
-unsafe impl<T: TObject> PmsInner for Inner<T> {
+
+unsafe impl PmsInner for Inner {
     fn ref_count_ref(&self) -> &Cell<usize> {
         &self.ref_count
     }
@@ -37,11 +34,11 @@ unsafe impl<T: TObject> PmsInner for Inner<T> {
     }
 
     unsafe fn iter_children_mut(&mut self) -> impl Iterator<Item = &mut Object> {
-        self.data.iter_mut().map(|(_, v)| v.as_object_mut())
+        self.data.iter_mut().map(|(_, v)| v)
     }
 
     unsafe fn drain_children(&mut self) -> impl Iterator<Item = Object> {
-        self.data.drain().map(|(_, v)| v.into_object())
+        self.data.drain().map(|(_, v)| v)
     }
 }
 
@@ -122,19 +119,18 @@ impl<const N: usize> From<[(Cow<'static, str>, Object); N]> for Table {
         }));
         Table {
             ptr: NonNull::from(ptr),
-            phantom: PhantomData,
         }
     }
 }
 
-impl<T: TObject> PartialEq for Table<T> {
+impl PartialEq for Table {
     fn eq(&self, other: &Self) -> bool {
         if self.ptr.eq(&other.ptr) {
             let has_nan = self
                 .inner()
                 .data
                 .iter()
-                .any(|(_, x)| matches!(x.as_object(), Object::Float(x) if x.is_nan()));
+                .any(|(_, x)| matches!(x, Object::Float(x) if x.is_nan()));
             !has_nan
         } else {
             let inner = self.inner();
@@ -144,21 +140,18 @@ impl<T: TObject> PartialEq for Table<T> {
     }
 }
 
-impl<T: TObject> Clone for Table<T> {
+impl Clone for Table {
     fn clone(&self) -> Self {
         self.inner().inc_ref_count();
-        Self {
-            ptr: self.ptr,
-            phantom: PhantomData,
-        }
+        Self { ptr: self.ptr }
     }
 }
 
-impl<T: TObject> Debug for Table<T> {
+impl Debug for Table {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut dbg = f.debug_map();
         for (key, value) in self.inner().data.iter() {
-            dbg.key(key).value(match value.as_object() {
+            dbg.key(key).value(match value {
                 Object::Int(x) => x,
                 Object::Float(x) => x,
                 Object::String(x) => x,
@@ -174,7 +167,7 @@ impl<T: TObject> Debug for Table<T> {
     }
 }
 
-impl<T: TObject> Drop for Table<T> {
+impl Drop for Table {
     fn drop(&mut self) {
         Table::custom_drop(self);
     }

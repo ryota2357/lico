@@ -153,8 +153,8 @@ pub(crate) unsafe trait PmsObject<I: PmsInner> {
             struct PurpleCollector {
                 // In the `Object` enum, only `Array` and `Table` are `PmsObject`.
                 // If you add other `PmsObject` variants in the future, you will need to add them here as well.
-                array: Vec<NonNull<ArrayInner<Object>>>,
-                table: Vec<NonNull<TableInner<Object>>>,
+                array: Vec<NonNull<ArrayInner>>,
+                table: Vec<NonNull<TableInner>>,
             }
             impl PurpleCollector {
                 fn new() -> Self {
@@ -220,13 +220,7 @@ pub(crate) unsafe trait PmsObject<I: PmsInner> {
                         Some(item)
                     }
                 }
-                #[allow(clippy::type_complexity)]
-                unsafe fn finish(
-                    self,
-                ) -> (
-                    Vec<NonNull<ArrayInner<Object>>>,
-                    Vec<NonNull<TableInner<Object>>>,
-                ) {
+                unsafe fn finish(self) -> (Vec<NonNull<ArrayInner>>, Vec<NonNull<TableInner>>) {
                     let Self {
                         mut array,
                         mut table,
