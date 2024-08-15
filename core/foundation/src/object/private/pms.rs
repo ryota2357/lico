@@ -1,12 +1,6 @@
 use super::{array::Inner as ArrayInner, table::Inner as TableInner, Array, Object, Table};
-use core::{
-    alloc::{Allocator, Layout},
-    cell::Cell,
-    fmt::Debug,
-    mem, ptr,
-    ptr::NonNull,
-};
-use std::alloc::Global;
+use core::{alloc::Layout, cell::Cell, fmt::Debug, mem, ptr, ptr::NonNull};
+use std::alloc;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Color {
@@ -108,7 +102,7 @@ pub(crate) unsafe trait PmsObject<I: PmsInner> {
             }
         }
         drop(inner);
-        Global.deallocate(ptr.cast(), Layout::for_value(ptr.as_ref()));
+        alloc::dealloc(ptr.as_ptr().cast(), Layout::for_value(ptr.as_ref()));
     }
 
     fn custom_drop(this: &mut Self) {
