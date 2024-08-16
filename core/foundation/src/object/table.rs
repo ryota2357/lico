@@ -1,7 +1,7 @@
 use super::*;
 use crate::collections::*;
 use compact_str::CompactString;
-use core::{borrow::Borrow, cell::Cell, fmt, hash::Hash, ptr::NonNull};
+use core::{borrow::Borrow, cell::Cell, hash::Hash, ptr::NonNull};
 
 pub struct Table {
     ptr: NonNull<Inner>,

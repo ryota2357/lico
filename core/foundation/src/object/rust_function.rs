@@ -1,6 +1,5 @@
 use super::*;
 use anyhow::{anyhow, Result};
-use core::fmt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RustFunction(Inner);

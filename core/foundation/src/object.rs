@@ -1,4 +1,5 @@
 use crate::macros::impl_from_variant;
+use core::fmt;
 
 mod pms_gc;
 use pms_gc::*;

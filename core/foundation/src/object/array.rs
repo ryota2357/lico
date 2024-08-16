@@ -1,5 +1,5 @@
 use super::*;
-use core::{cell::Cell, fmt, ptr::NonNull};
+use core::{cell::Cell, ptr::NonNull};
 
 pub struct Array {
     ptr: NonNull<Inner>,
