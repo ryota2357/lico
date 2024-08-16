@@ -4,7 +4,7 @@ use core::{
     hash::{Hash, Hasher},
     ops::{Add, AddAssign},
 };
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct UString(Variant);
@@ -12,7 +12,15 @@ pub struct UString(Variant);
 #[derive(Clone)]
 enum Variant {
     Empty,
-    Occupied(Rc<internal::UnicodeBasedString>),
+    Occupied(Arc<internal::UnicodeBasedString>),
+}
+
+fn _send_sync() {
+    fn assert_send<T: Send>() {}
+    assert_send::<UString>();
+
+    fn assert_sync<T: Sync>() {}
+    assert_sync::<UString>();
 }
 
 impl UString {
@@ -64,7 +72,7 @@ impl UString {
                 let variant = if sub.is_empty() {
                     Variant::Empty
                 } else {
-                    Variant::Occupied(Rc::new(sub))
+                    Variant::Occupied(Arc::new(sub))
                 };
                 Some(UString(variant))
             }
@@ -84,7 +92,7 @@ impl From<&str> for UString {
             UString(Variant::Empty)
         } else {
             let s = internal::UnicodeBasedString::from(value);
-            UString(Variant::Occupied(Rc::new(s)))
+            UString(Variant::Occupied(Arc::new(s)))
         }
     }
 }
@@ -95,7 +103,7 @@ impl From<compact_str::CompactString> for UString {
             UString(Variant::Empty)
         } else {
             let s = internal::UnicodeBasedString::from(value);
-            UString(Variant::Occupied(Rc::new(s)))
+            UString(Variant::Occupied(Arc::new(s)))
         }
     }
 }
@@ -108,7 +116,7 @@ impl AddAssign for UString {
                 *self = rhs;
             }
             (Variant::Occupied(lhs), Variant::Occupied(rhs)) => {
-                Rc::make_mut(lhs).push_str(rhs.as_str());
+                Arc::make_mut(lhs).push_str(rhs.as_str());
             }
         }
     }
@@ -123,7 +131,7 @@ impl AddAssign<&str> for UString {
                 *self = UString::from(rhs);
             }
             Variant::Occupied(s) => {
-                Rc::make_mut(s).push_str(rhs);
+                Arc::make_mut(s).push_str(rhs);
             }
         }
     }
