@@ -68,24 +68,24 @@ pub enum ICode {
     /// Stack size is less than the specified number.
     MakeArray(usize),
 
-    /// Pops the specified number of values from the stack, makes them into a table, and pushes the
-    /// table to the stack.
+    /// Pops the twice specified number (`.0`) of values from the stack, makes them into a table,
+    /// and pushes the table to the stack.
     ///
-    /// Specified number must be even, which is the number of keys and values in the table.
-    /// The even-numbered popped must be type of string, which is the table key, and the
-    /// odd-numbered one allows any type of object, which is the table value.
+    /// The specified number is the number of key-value pairs in the table.
+    /// Table keys and values are alternately popped from the stack. The first one popped is used
+    /// as a value, and the second one popped is used as a key.
+    /// The type of the key must be a string.
     ///
     /// # Exeption
     ///
-    /// The even-numbered popped is not type of string.
+    /// The type of the key is not a string.
     ///
     /// # Panic
     ///
-    /// - Stack size is less than the specified number.
-    /// - Specified number is odd.
+    /// - Stack size is less than the twice specified number.
     MakeTable(usize),
 
-    /// Removes the last n (specified number, .0) added values from local variable table.
+    /// Removes the last n (specified number, `.0`) added values from local variable table.
     ///
     /// # Panic
     ///
@@ -216,6 +216,7 @@ pub enum ICode {
     ///
     /// - Popped values are not type of Int or Float or Table.
     /// - No `__div` method defined for the popped table type value.
+    /// - Division by zero.
     ///
     /// # Panic
     ///
@@ -228,13 +229,14 @@ pub enum ICode {
     ///
     /// - Popped values are not type of Int or Float or Table.
     /// - No `__mod` method defined for the popped table type value.
+    /// - Division by zero.
     ///
     /// # Panic
     ///
     /// Stack size is less than 2.
     Mod,
 
-    /// Pops the value from the stack, and pushes the unary `-` operation result to the stack.
+    /// Pops the one value from the stack, and pushes the unary `-` operation result to the stack.
     ///
     /// # Exeption
     ///
@@ -246,7 +248,7 @@ pub enum ICode {
     /// Stack is empty.
     Unm,
 
-    /// Pops the value from the stack, and pushes the unary `+` operation result to the stack.
+    /// Pops the one value from the stack, and pushes the unary `+` operation result to the stack.
     ///
     ///
     /// # Exeption
@@ -259,7 +261,11 @@ pub enum ICode {
     /// Stack is empty.
     Unp,
 
-    /// TODO
+    /// Pops the one value from the stack, and pushes the `not` operation result to the stack.
+    ///
+    /// # Panic
+    ///
+    /// Stack is empty.
     Not,
 
     /// Pops the top two values from the stack, and pushes the result of the equivalence comparison

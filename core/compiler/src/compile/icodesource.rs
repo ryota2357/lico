@@ -26,7 +26,7 @@ pub(crate) enum ICodeSource {
     MakeArray(usize),
 
     // Exeption
-    // - The even-numbered popped is not type of string.
+    // - The type of the key is not a string.
     // ---
     // .1: The text range of table keys.
     //     If the key is ensured to be type of string, the text range is None.
@@ -79,6 +79,7 @@ pub(crate) enum ICodeSource {
     // Exeption
     // - Popped values are not type of Int or Float or Table.
     // - No `__***` method defined for the popped table type value.
+    // - Division by zero.
     // ---
     // .0: The operator text range
     Add(TextRange),

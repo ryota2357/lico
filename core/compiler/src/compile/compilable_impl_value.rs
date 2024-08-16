@@ -267,7 +267,7 @@ fn compile<'node, 'src: 'node>(
                 }
                 fragment.append_compile(value, ctx);
             }
-            fragment.append(MakeTable(2 * fields.len(), key_ranges.into_boxed_slice()));
+            fragment.append(MakeTable(fields.len(), key_ranges.into_boxed_slice()));
         }
     }
 }
