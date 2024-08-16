@@ -10,6 +10,8 @@ anyhow = { workspace = true }
 compact_str = { workspace = true }
 hashbrown = { workspace = true }
 rowan = { workspace = true }
+rustc-hash = { workspace = true }
+smallvec = { workspace = true }
 
 [dev-dependencies]
 # mockalloc = "0.1.2"

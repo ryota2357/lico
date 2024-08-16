@@ -65,10 +65,10 @@ pub fn compile(module: &ir::Module) -> il::Module {
         }
     }
     fragment.append_compile(&module.effects, &mut ctx);
-    let (codes, _) = ctx.finish_with(fragment);
+    let (codes, infos) = ctx.finish_with(fragment);
     il::Module::new(
         il::Executable::new(codes),
         default_rfns.into_boxed_slice(),
-        il::SourceInfo {},
+        infos,
     )
 }

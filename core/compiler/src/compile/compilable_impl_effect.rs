@@ -241,7 +241,8 @@ fn compile<'node, 'src: 'node>(
         }
 
         Effect::Call { value, args } => {
-            fragment.append_compile(value, ctx);
+            let (calee_syntax, value) = ctx.strage.get(value).unwrap();
+            fragment.append_compile(&value, ctx);
             assert!(
                 args.len() <= u8::MAX as usize,
                 "Number of arguments greater than u8::MAX is not supported."
@@ -252,27 +253,32 @@ fn compile<'node, 'src: 'node>(
                 args_range.push(syntax.text_range());
             }
             fragment
-                .append(Call(args.len() as u8, args_range.into_boxed_slice()))
+                .append(Call(
+                    args.len() as u8,
+                    calee_syntax.text_range(),
+                    args_range.into_boxed_slice(),
+                ))
                 .append(Unload);
         }
 
         Effect::MethodCall { table, name, args } => {
             fragment.append_compile(table, ctx);
-            let name_string = ctx.strage.get(name).unwrap().1.clone();
+            let mut ranges = Vec::with_capacity(args.len() + 1);
+            let (name_syntax, name_string) = ctx.strage.get(name).unwrap();
+            ranges.push(name_syntax.text_range());
             assert!(
                 args.len() <= u8::MAX as usize,
                 "Number of arguments greater than u8::MAX is not supported."
             );
-            let mut args_range = Vec::with_capacity(args.len());
             for (syntax, arg) in ctx.strage.get(args) {
                 fragment.append_compile(&arg, ctx);
-                args_range.push(syntax.text_range());
+                ranges.push(syntax.text_range());
             }
             fragment
                 .append(CallMethod(
                     args.len() as u8,
-                    UString::from(name_string),
-                    args_range.into_boxed_slice(),
+                    UString::from(name_string.clone()),
+                    ranges.into_boxed_slice(),
                 ))
                 .append(Unload);
         }

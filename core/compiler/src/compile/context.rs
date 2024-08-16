@@ -82,7 +82,7 @@ impl<'s> Context<'s> {
         })
     }
 
-    pub(crate) fn finish_with(self, fragment: Fragment) -> (Vec<il::ICode>, ()) {
+    pub(crate) fn finish_with(self, fragment: Fragment) -> (Vec<il::ICode>, il::SourceInfo) {
         let (all_code_source, funcid2index) = {
             let func_list = Rc::try_unwrap(self.func_list)
                 .expect("[BUG] Context::finish_with() should be called in the outermost Context.")
@@ -97,7 +97,8 @@ impl<'s> Context<'s> {
             (codes, id2idx)
         };
         let mut codes = Vec::with_capacity(all_code_source.len());
-        for code in all_code_source {
+        let mut infos = il::SourceInfo::new();
+        for (i, code) in all_code_source.into_iter().enumerate() {
             use il::ICode::*;
             use ICodeSource as Src;
             #[rustfmt::skip]
@@ -112,37 +113,55 @@ impl<'s> Context<'s> {
                 Src::StoreLocal(x)          => StoreLocal(x),
                 Src::StoreNewLocal          => StoreNewLocal,
                 Src::MakeArray(x)           => MakeArray(x),
-                Src::MakeTable(x, _)        => MakeTable(x),
-                Src::DropLocal(x)           => DropLocal(x),
-                Src::Jump(x)                => Jump(x),
-                Src::JumpIfTrue(x)          => JumpIfTrue(x),
-                Src::JumpIfFalse(x)         => JumpIfFalse(x),
-                Src::Call(x, _)             => Call(x),
-                Src::CallMethod(x, y, _)    => CallMethod(x, y),
-                Src::SetItem(_)             => SetItem,
-                Src::GetItem(_)             => GetItem,
+                Src::MakeTable(x, ranges)   => {
+                    for (extra, range) in ranges.iter().enumerate() {
+                        if let Some(range) = range {
+                            infos.insert(i, extra, *range);
+                        }
+                    }
+                    MakeTable(x)
+                }
+                Src::DropLocal(x)            => DropLocal(x),
+                Src::Jump(x)                 => Jump(x),
+                Src::JumpIfTrue(x)           => JumpIfTrue(x),
+                Src::JumpIfFalse(x)          => JumpIfFalse(x),
+                Src::Call(x, range0, ranges) => {
+                    infos.insert(i, 0, range0);
+                    for (extra, range) in ranges.iter().enumerate() {
+                        infos.insert(i, extra + 1, *range);
+                    }
+                    Call(x)
+                }
+                Src::CallMethod(x, y, ranges) => {
+                    for (extra, range) in ranges.iter().enumerate() {
+                        infos.insert(i, extra, *range);
+                    }
+                    CallMethod(x, y)
+                }
+                Src::SetItem(range)         => { infos.insert(i, 0, range); SetItem },
+                Src::GetItem(range)         => { infos.insert(i, 0, range); GetItem },
                 Src::SetMethod(x, _)        => SetMethod(x),
-                Src::Add(_)                 => Add,
-                Src::Sub(_)                 => Sub,
-                Src::Mul(_)                 => Mul,
-                Src::Div(_)                 => Div,
-                Src::Mod(_)                 => Mod,
-                Src::Unm(_)                 => Unm,
-                Src::Unp(_)                 => Unp,
-                Src::Not(_)                 => Not,
-                Src::Eq(_)                  => Eq,
-                Src::NotEq(_)               => NotEq,
-                Src::Less(_)                => Less,
-                Src::LessEq(_)              => LessEq,
-                Src::Greater(_)             => Greater,
-                Src::GreaterEq(_)           => GreaterEq,
-                Src::Concat(_)              => Concat,
-                Src::BitAnd(_)              => BitAnd,
-                Src::BitOr(_)               => BitOr,
-                Src::BitXor(_)              => BitXor,
-                Src::BitNot(_)              => BitNot,
-                Src::ShiftL(_)              => ShiftL,
-                Src::ShiftR(_)              => ShiftR,
+                Src::Add(range)             => { infos.insert(i, 0, range); Add }
+                Src::Sub(range)             => { infos.insert(i, 0, range); Sub }
+                Src::Mul(range)             => { infos.insert(i, 0, range); Mul }
+                Src::Div(range)             => { infos.insert(i, 0, range); Div }
+                Src::Mod(range)             => { infos.insert(i, 0, range); Mod }
+                Src::Unm(range)             => { infos.insert(i, 0, range); Unm }
+                Src::Unp(range)             => { infos.insert(i, 0, range); Unp }
+                Src::Not(range)             => { infos.insert(i, 0, range); Not }
+                Src::Eq(range)              => { infos.insert(i, 0, range); Eq }
+                Src::NotEq(range)           => { infos.insert(i, 0, range); NotEq }
+                Src::Less(range)            => { infos.insert(i, 0, range); Less }
+                Src::LessEq(range)          => { infos.insert(i, 0, range); LessEq }
+                Src::Greater(range)         => { infos.insert(i, 0, range); Greater }
+                Src::GreaterEq(range)       => { infos.insert(i, 0, range); GreaterEq }
+                Src::Concat(range)          => { infos.insert(i, 0, range); Concat }
+                Src::BitAnd(range)          => { infos.insert(i, 0, range); BitAnd }
+                Src::BitOr(range)           => { infos.insert(i, 0, range); BitOr }
+                Src::BitXor(range)          => { infos.insert(i, 0, range); BitXor }
+                Src::BitNot(range)          => { infos.insert(i, 0, range); BitNot }
+                Src::ShiftL(range)          => { infos.insert(i, 0, range); ShiftL }
+                Src::ShiftR(range)          => { infos.insert(i, 0, range); ShiftR }
                 Src::GetIter                => GetIter,
                 Src::IterMoveNext           => IterMoveNext,
                 Src::IterCurrent            => IterCurrent,
@@ -155,7 +174,7 @@ impl<'s> Context<'s> {
             };
             codes.push(code);
         }
-        (codes, ())
+        (codes, infos)
     }
 }
 
