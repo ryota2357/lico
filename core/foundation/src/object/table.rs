@@ -1,7 +1,7 @@
 use super::*;
 use crate::collections::*;
+use compact_str::CompactString;
 use core::{borrow::Borrow, cell::Cell, fmt, hash::Hash, ptr::NonNull};
-use std::borrow::Cow;
 
 pub struct Table {
     ptr: NonNull<Inner>,
@@ -18,8 +18,8 @@ unsafe impl PmsObject<Inner> for Table {
 }
 
 pub struct Inner {
-    map: LazyHashMap<Cow<'static, str>, Object>,
-    methods: SortedLinearMap<Cow<'static, str>, TableMethod>,
+    map: LazyHashMap<UString, Object>,
+    methods: SortedLinearMap<CompactString, TableMethod>,
     ref_count: Cell<usize>,
     color: Cell<Color>,
 }
@@ -76,19 +76,19 @@ impl Table {
 
     pub fn get<Q>(&self, key: &Q) -> Option<&Object>
     where
-        Cow<'static, str>: Borrow<Q>,
+        UString: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
         self.inner().map.get(key)
     }
 
-    pub fn insert<T: Into<Object>>(&mut self, key: Cow<'static, str>, value: T) -> Option<Object> {
+    pub fn insert<T: Into<Object>>(&mut self, key: UString, value: T) -> Option<Object> {
         unsafe { self.inner_mut().map.insert(key, value.into()) }
     }
 
     pub fn remove<Q>(&mut self, key: &Q) -> Option<Object>
     where
-        Cow<'static, str>: Borrow<Q>,
+        UString: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
         unsafe { self.inner_mut().map.remove(key) }
@@ -102,7 +102,7 @@ impl Table {
 
     pub fn contains_key<Q>(&self, key: &Q) -> bool
     where
-        Cow<'static, str>: Borrow<Q>,
+        UString: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
         self.inner().map.contains_key(key)
@@ -110,23 +110,23 @@ impl Table {
 
     /// # Safety
     /// TODO
-    pub unsafe fn iter(&self) -> lazy_hash_map::Iter<Cow<'static, str>, Object> {
+    pub unsafe fn iter(&self) -> lazy_hash_map::Iter<UString, Object> {
         self.inner().map.iter()
     }
 
     pub fn get_method<Q>(&self, key: &Q) -> Option<&TableMethod>
     where
-        Cow<'static, str>: Borrow<Q>,
+        CompactString: Borrow<Q>,
         Q: Hash + Ord + ?Sized,
     {
         self.inner().methods.get(key)
     }
 
-    pub fn set_method<T: Into<TableMethod>>(&mut self, key: Cow<'static, str>, value: T) {
+    pub fn set_method<T: Into<TableMethod>>(&mut self, key: CompactString, value: T) {
         unsafe { self.inner_mut().methods.insert(key, value.into()) };
     }
 
-    fn with_map(map: LazyHashMap<Cow<'static, str>, Object>) -> Self {
+    fn with_map(map: LazyHashMap<UString, Object>) -> Self {
         let ptr = Box::leak(Box::new(Inner {
             map,
             methods: SortedLinearMap::new(),
@@ -145,8 +145,8 @@ impl Default for Table {
     }
 }
 
-impl<const N: usize> From<[(Cow<'static, str>, Object); N]> for Table {
-    fn from(value: [(Cow<'static, str>, Object); N]) -> Self {
+impl<const N: usize> From<[(UString, Object); N]> for Table {
+    fn from(value: [(UString, Object); N]) -> Self {
         let data = LazyHashMap::from(value);
         Table::with_map(data)
     }
