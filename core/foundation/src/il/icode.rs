@@ -27,12 +27,6 @@ pub enum ICode {
     /// Pushes a constant nil value as an object to the stack.
     LoadNilObject,
 
-    /// Pushes a constant array value as an object to the stack.
-    LoadArrayObject(Array),
-
-    /// Pushes a constant table value as an object to the stack.
-    LoadTableObject(Table),
-
     /// Pushes the stored local object specified by `.0` onto the local variable table.
     ///
     /// # Panic
@@ -381,8 +375,6 @@ impl fmt::Display for ICode {
             ICode::LoadStringObject(a0)    => write!(f, "LoadStringObject {}", a0),
             ICode::LoadBoolObject(a0)      => write!(f, "LoadBoolObject   {}", a0),
             ICode::LoadNilObject           => write!(f, "LoadNilObject    "),
-            ICode::LoadArrayObject(a0)     => write!(f, "LoadArrayObject  len={}", a0.len()),
-            ICode::LoadTableObject(a0)     => write!(f, "LoadTableObject  len={}", a0.len()),
             ICode::LoadLocal(a0)           => write!(f, "LoadLocal        {}", a0.as_usize()),
             ICode::Unload                  => write!(f, "Unload           "),
             ICode::StoreLocal(a0)          => write!(f, "StoreLocal       {}", a0.as_usize()),

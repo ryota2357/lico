@@ -14,8 +14,6 @@ pub(crate) enum ICodeSource {
     LoadStringObject(UString),
     LoadBoolObject(bool),
     LoadNilObject,
-    // LoadArrayObjct(Array),
-    // LoadTableObjct(Table),
     LoadLocal(il::LocalId),
 
     Unload,
