@@ -48,6 +48,13 @@ pub enum TableMethod {
     Custom(Function),
 }
 
+impl_from_variant! {
+    TableMethod {
+        Native: RustFunction,
+        Custom: Function,
+    }
+}
+
 impl Table {
     pub fn new() -> Self {
         let map = LazyHashMap::new();
