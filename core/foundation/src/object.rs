@@ -51,3 +51,20 @@ impl_from_variant! {
         RustFunction: RustFunction,
     }
 }
+
+impl fmt::Display for Object {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Object::Int(x) => write!(f, "{}", x),
+            Object::Float(x) => write!(f, "{}", x),
+            Object::Bool(x) => write!(f, "{}", x),
+            Object::Nil => write!(f, "nil"),
+            Object::String(x) => write!(f, "{}", x),
+            // TODO: use for each Display, don't use debug
+            Object::Array(x) => write!(f, "{:?}", x),
+            Object::Table(x) => write!(f, "{:?}", x),
+            Object::Function(x) => write!(f, "{:?}", x),
+            Object::RustFunction(x) => write!(f, "{:?}", x),
+        }
+    }
+}

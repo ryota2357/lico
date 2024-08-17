@@ -17,15 +17,21 @@ pub struct RustFunction(Inner);
 enum Inner {
     #[allow(unused, non_camel_case_types)]
     __dummy,
-    Data(u8, fn(&[Object]) -> Result<Object>),
+    Data(
+        u8,
+        fn(Box<dyn ExactSizeIterator<Item = Object>>) -> Result<Object>,
+    ),
 }
 
 impl RustFunction {
-    pub const fn new(param_len: u8, func: fn(&[Object]) -> Result<Object>) -> Self {
+    pub const fn new(
+        param_len: u8,
+        func: fn(Box<dyn ExactSizeIterator<Item = Object>>) -> Result<Object>,
+    ) -> Self {
         RustFunction(Inner::Data(param_len, func))
     }
 
-    pub fn call(&self, args: &[Object]) -> Result<Object> {
+    pub fn call(&self, args: Box<dyn ExactSizeIterator<Item = Object>>) -> Result<Object> {
         let (param_len, func) = self.data();
         if args.len() != param_len as usize {
             Err(anyhow!(
@@ -39,7 +45,12 @@ impl RustFunction {
     }
 
     #[allow(clippy::type_complexity)]
-    fn data(&self) -> (u8, fn(&[Object]) -> Result<Object>) {
+    fn data(
+        &self,
+    ) -> (
+        u8,
+        fn(Box<dyn ExactSizeIterator<Item = Object>>) -> Result<Object>,
+    ) {
         unsafe {
             match self.0 {
                 Inner::Data(param_len, func) => (param_len, func),

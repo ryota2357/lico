@@ -27,15 +27,15 @@ trait Compilable<'node, 'src: 'node> {
 const DEFAULT_FUNCTIONS: [(&str, RustFunction); 2] = [
     (
         "print",
-        RustFunction::new(1, |args: &[Object]| {
-            print!("{:?}", args[0]);
+        RustFunction::new(1, |mut args| {
+            print!("{}", args.next().unwrap());
             Ok(Object::Nil)
         }),
     ),
     (
         "println",
-        RustFunction::new(1, |args: &[Object]| {
-            println!("{:?}", args[0]);
+        RustFunction::new(1, |mut args| {
+            println!("{}", args.next().unwrap());
             Ok(Object::Nil)
         }),
     ),
