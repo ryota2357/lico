@@ -187,10 +187,15 @@ fn compile<'node, 'src: 'node>(
         }
 
         Value::MethodCall { value, name, args } => {
-            fragment.append_compile(value, ctx);
             let mut ranges = Vec::with_capacity(args.len() + 1);
+
+            let (value_syntax, value) = ctx.strage.get(value).unwrap();
+            fragment.append_compile(&value, ctx);
+            ranges.push(value_syntax.text_range());
+
             let (name_syntax, name_string) = ctx.strage.get(name).unwrap();
             ranges.push(name_syntax.text_range());
+
             assert!(
                 args.len() <= u8::MAX as usize,
                 "Number of arguments greater than u8::MAX is not supported."
@@ -199,6 +204,7 @@ fn compile<'node, 'src: 'node>(
                 fragment.append_compile(&arg, ctx);
                 ranges.push(syntax.text_range());
             }
+
             fragment.append(CallMethod(
                 args.len() as u8,
                 UString::from(name_string.clone()),

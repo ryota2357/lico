@@ -39,6 +39,34 @@ fn _size_check() {
     }
 }
 
+impl Object {
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            Object::Nil => false,
+            Object::Bool(b) => *b,
+            _ => true,
+        }
+    }
+
+    pub fn is_falsey(&self) -> bool {
+        !self.is_truthy()
+    }
+
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            Object::Int(_) => "int",
+            Object::Float(_) => "float",
+            Object::Bool(_) => "bool",
+            Object::Nil => "nil",
+            Object::String(_) => "string",
+            Object::Array(_) => "array",
+            Object::Table(_) => "table",
+            Object::Function(_) => "function",
+            Object::RustFunction(_) => "function",
+        }
+    }
+}
+
 impl_from_variant! {
     Object {
         Int: i64,

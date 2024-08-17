@@ -31,6 +31,10 @@ impl RustFunction {
         RustFunction(Inner::Data(param_len, func))
     }
 
+    pub fn param_len(&self) -> u8 {
+        self.data().0
+    }
+
     pub fn call(&self, args: Box<dyn ExactSizeIterator<Item = Object>>) -> Result<Object> {
         let (param_len, func) = self.data();
         if args.len() != param_len as usize {

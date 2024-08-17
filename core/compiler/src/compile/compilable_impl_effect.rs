@@ -262,10 +262,15 @@ fn compile<'node, 'src: 'node>(
         }
 
         Effect::MethodCall { table, name, args } => {
-            fragment.append_compile(table, ctx);
             let mut ranges = Vec::with_capacity(args.len() + 1);
+
+            let (table_syntax, table) = ctx.strage.get(table).unwrap();
+            ranges.push(table_syntax.text_range());
+            fragment.append_compile(&table, ctx);
+
             let (name_syntax, name_string) = ctx.strage.get(name).unwrap();
             ranges.push(name_syntax.text_range());
+
             assert!(
                 args.len() <= u8::MAX as usize,
                 "Number of arguments greater than u8::MAX is not supported."
@@ -274,6 +279,7 @@ fn compile<'node, 'src: 'node>(
                 fragment.append_compile(&arg, ctx);
                 ranges.push(syntax.text_range());
             }
+
             fragment
                 .append(CallMethod(
                     args.len() as u8,

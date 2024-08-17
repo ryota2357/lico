@@ -50,7 +50,9 @@ pub(crate) enum ICodeSource {
     // - The specified method name is not defined in the receiver table object.
     // - The number of method arguments is not equal to the specified argument count.
     // ---
-    // .2: first is Method name text range, rest is each argument text range
+    // .2: [0]   Receiver text range.
+    //     [1]   Method name text range.
+    //     [2..] Each argument text range.
     CallMethod(u8, UString, Box<[TextRange]>),
 
     // Exeption

@@ -6,3 +6,5 @@ edition.workspace = true
 
 [dependencies]
 foundation.workspace = true
+anyhow = { workspace = true }
+bitflags = { workspace = true }
