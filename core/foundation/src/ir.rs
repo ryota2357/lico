@@ -1,6 +1,5 @@
 use crate::syntax::{SyntaxNode, SyntaxToken};
 use compact_str::CompactString;
-use core::num::NonZero;
 
 mod storage;
 pub use storage::*;
@@ -8,33 +7,8 @@ pub use storage::*;
 mod item;
 pub use item::*;
 
-pub struct Module {
-    effects: EffectsKey,
-    functions: Vec<FunctionKey>,
-    strage: Strage,
-}
-
-impl Module {
-    pub fn new(effects: EffectsKey, functions: Vec<FunctionKey>, strage: Strage) -> Self {
-        Self {
-            effects,
-            functions,
-            strage,
-        }
-    }
-
-    pub fn effects(&self) -> &EffectsKey {
-        &self.effects
-    }
-
-    pub fn functions(&self) -> &[FunctionKey] {
-        &self.functions
-    }
-
-    pub fn strage(&self) -> &Strage {
-        &self.strage
-    }
-}
+mod module;
+pub use module::Module;
 
 pub struct ModuleBuilder {
     sb: StrageBuilder,

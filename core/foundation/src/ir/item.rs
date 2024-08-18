@@ -1,5 +1,6 @@
 use super::*;
 use crate::{object::UString, syntax::SyntaxToken};
+use core::num::NonZero;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ScopeIndex(NonZero<u32>);
