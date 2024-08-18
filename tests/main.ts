@@ -1,7 +1,7 @@
-import * as path from "https://deno.land/std@0.212.0/path/mod.ts";
-import * as fs from "https://deno.land/std@0.212.0/fs/mod.ts";
-import * as colors from "https://deno.land/std@0.212.0/fmt/colors.ts";
-import { printf } from "https://deno.land/std@0.212.0/fmt/printf.ts";
+import * as path from "jsr:@std/path@1.0.2";
+import * as fs from "jsr:@std/fs@1.0.1";
+import * as colors from "jsr:@std/fmt@1.0.0/colors";
+import { printf } from "jsr:@std/fmt@1.0.0/printf";
 
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 

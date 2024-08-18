@@ -1,7 +1,7 @@
 {
   "tasks": {
     "test": "deno run --allow-run --allow-read main.ts",
-    "upgrade": "deno run --allow-read --allow-net --allow-write https://deno.land/x/udd/main.ts main.ts"
+    "upgrade": "deno run --allow-env --allow-read --allow-write --allow-run=git,deno --allow-net=jsr.io jsr:@molt/cli --write main.ts"
   },
   "lock": false
 }
