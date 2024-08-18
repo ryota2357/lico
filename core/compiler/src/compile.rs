@@ -42,26 +42,18 @@ const DEFAULT_FUNCTIONS: [(&str, RustFunction); 2] = [
 ];
 
 pub fn compile(module: &ir::Module) -> il::Module {
-    let mut capture_db = database::FunctionCapture::new();
-    for (name, _) in DEFAULT_FUNCTIONS.iter() {
-        capture_db.insert(module, *name);
-    }
-    capture_db.build_with(module);
+    let (capture_db, used_default) = database::FunctionCapture::build_with(
+        module,
+        DEFAULT_FUNCTIONS.iter().map(|(name, _)| *name),
+    );
 
     let mut ctx = Context::new(module.strage(), &capture_db);
     let mut fragment = Fragment::new();
     let mut default_rfns = Vec::new();
-    for (name, func) in DEFAULT_FUNCTIONS.iter() {
-        let mut is_used = false;
-        for (_, capture) in capture_db.iter_captures() {
-            if capture.contains(*name) {
-                is_used = true;
-                break;
-            }
-        }
-        if is_used {
-            default_rfns.push((*name, *func));
+    for (name, f) in DEFAULT_FUNCTIONS.iter() {
+        if used_default.contains(name) {
             ctx.add_local(name);
+            default_rfns.push((*name, *f));
         }
     }
     fragment.append_compile(module.effects(), &mut ctx);

@@ -1,79 +1,65 @@
 use compact_str::CompactString;
-use core::{cell::RefCell, fmt, mem::take};
+use core::{
+    cell::RefCell,
+    fmt,
+    mem::{replace, take},
+};
 use foundation::ir::*;
 use rustc_hash::{FxHashMap, FxHashSet};
 use std::rc::Rc;
 
 pub struct FunctionCapture {
-    map: FxHashMap<u64, FxHashSet<CompactString>>,
+    pub(crate) map: FxHashMap<FunctionCaptureKey, FxHashSet<CompactString>>,
 }
 
-pub trait FunctionCaptureKey {
-    fn as_db_key(&self) -> u64;
-}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct FunctionCaptureKey(u64);
 
-impl FunctionCaptureKey for &SymbolKey {
-    fn as_db_key(&self) -> u64 {
-        self.as_u32() as u64
-    }
-}
-impl FunctionCaptureKey for &FunctionKey {
-    fn as_db_key(&self) -> u64 {
-        self.as_u64()
-    }
-}
-impl FunctionCaptureKey for &Module {
-    fn as_db_key(&self) -> u64 {
-        self.effects().as_u64()
+impl From<&FunctionKey> for FunctionCaptureKey {
+    fn from(value: &FunctionKey) -> Self {
+        const {
+            // Simple check that FunctionKey is NonZero type.
+            assert!(size_of::<FunctionKey>() == size_of::<Option<FunctionKey>>());
+        };
+        // Of course, the above check is not perfect, So I check it at runtime.
+        assert!(value.as_u64() != 0);
+        FunctionCaptureKey(value.as_u64())
     }
 }
 
-pub struct CaptureHashSetRef<'s>(CaptureHashSetRefInner<'s>);
+impl From<&Module> for FunctionCaptureKey {
+    fn from(_value: &Module) -> Self {
+        // FunctionCaptureKey is only from `FunctionKey` and `Module`.
+        // `FunctionKey` is NonZero type (I checked it above assetions), so I can use 0 as a key
+        // for `Module`.
+        FunctionCaptureKey(0)
+    }
+}
 
-enum CaptureHashSetRefInner<'s> {
+pub enum CaptureHashSetRef<'s> {
     Empty,
     Occupied(&'s FxHashSet<CompactString>),
 }
 
 impl FunctionCapture {
-    pub fn new() -> Self {
-        Self {
-            map: FxHashMap::default(),
+    pub fn build_with(
+        module: &Module,
+        defaults: impl IntoIterator<Item = &'static str>,
+    ) -> (Self, Vec<&'static str>) {
+        walk(module, defaults.into_iter().collect())
+    }
+
+    pub fn get_capture(&self, key: impl Into<FunctionCaptureKey>) -> CaptureHashSetRef {
+        match self.map.get(&key.into()) {
+            Some(set) => CaptureHashSetRef::Occupied(set),
+            None => CaptureHashSetRef::Empty,
         }
     }
 
-    pub fn build_with(&mut self, module: &Module) {
-        let db = Rc::new(RefCell::new(FunctionCapture {
-            map: take(&mut self.map),
-        }));
-        let mut walker = Walker::new(module.strage(), Rc::clone(&db));
-        walker.go(module.effects());
-        self.map = take(&mut walker.take_db().map);
-    }
-
-    pub fn insert(&mut self, key: impl FunctionCaptureKey, value: impl Into<CompactString>) {
-        self.map
-            .entry(key.as_db_key())
-            .or_default()
-            .insert(value.into());
-    }
-
-    pub fn get_capture(&self, key: impl FunctionCaptureKey) -> CaptureHashSetRef {
-        let inner = match self.map.get(&key.as_db_key()) {
-            Some(hash) => CaptureHashSetRefInner::Occupied(hash),
-            None => CaptureHashSetRefInner::Empty,
-        };
-        CaptureHashSetRef(inner)
-    }
-
-    pub fn iter_captures(&self) -> impl Iterator<Item = (&u64, &FxHashSet<CompactString>)> {
+    pub fn iter_captures(
+        &self,
+    ) -> impl Iterator<Item = (&FunctionCaptureKey, &FxHashSet<CompactString>)> {
         self.map.iter()
-    }
-}
-
-impl Default for FunctionCapture {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -85,16 +71,16 @@ impl fmt::Debug for FunctionCapture {
 
 impl<'s> CaptureHashSetRef<'s> {
     pub fn contains(&self, name: &str) -> bool {
-        match &self.0 {
-            CaptureHashSetRefInner::Empty => false,
-            CaptureHashSetRefInner::Occupied(hash) => hash.contains(name),
+        match &self {
+            CaptureHashSetRef::Empty => false,
+            CaptureHashSetRef::Occupied(hash) => hash.contains(name),
         }
     }
 
     pub fn iter(&self) -> CaptureHashSetRefIter<'s> {
-        match &self.0 {
-            CaptureHashSetRefInner::Empty => CaptureHashSetRefIter::Empty,
-            CaptureHashSetRefInner::Occupied(hash) => CaptureHashSetRefIter::Occupied(hash.iter()),
+        match &self {
+            CaptureHashSetRef::Empty => CaptureHashSetRefIter::Empty,
+            CaptureHashSetRef::Occupied(hash) => CaptureHashSetRefIter::Occupied(hash.iter()),
         }
     }
 }
@@ -125,16 +111,16 @@ impl ExactSizeIterator for CaptureHashSetRefIter<'_> {
 
 use internal::*;
 
-impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for EffectsKey {
-    fn accept(&self, w: &mut Walker<'walker, 'strage>) {
+impl<'strage> Walkable<'strage> for EffectsKey {
+    fn accept(&self, w: &mut Walker<'strage>) {
         for (_, effect) in w.strage.get(self) {
             w.go(effect);
         }
     }
 }
 
-impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
-    fn accept(&self, w: &mut Walker<'walker, 'strage>) {
+impl<'strage> Walkable<'strage> for Effect {
+    fn accept(&self, w: &mut Walker<'strage>) {
         use Effect::*;
         match self {
             MakeLocal { name, value } => {
@@ -143,7 +129,7 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
             }
             MakeFunc { name, func } => {
                 w.insert_def(name);
-                w.fork(|w| {
+                w.go_function(*func, |w| {
                     let (param_iter, effect_iter) = w.strage.get(func);
                     for (_, param) in param_iter {
                         w.insert_def(param);
@@ -151,7 +137,6 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
                     for (_, effect) in effect_iter {
                         w.go(effect);
                     }
-                    func
                 });
             }
             SetLocal { local, value } => {
@@ -180,7 +165,7 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
                 path: _,
                 func,
             } => {
-                w.fork(|w| {
+                w.go_function(*func, |w| {
                     let (param_iter, effect_iter) = w.strage.get(func);
                     for (_, param) in param_iter {
                         w.insert_def(param);
@@ -188,7 +173,6 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
                     for (_, effect) in effect_iter {
                         w.go(effect);
                     }
-                    func
                 });
                 w.use_local(table);
             }
@@ -198,7 +182,7 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
                 name: _,
                 func,
             } => {
-                w.fork(|w| {
+                w.go_function(*func, |w| {
                     let (param_iter, effect_iter) = w.strage.get(func);
                     for (_, param) in param_iter {
                         w.insert_def(param);
@@ -206,7 +190,6 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
                     for (_, effect) in effect_iter {
                         w.go(effect);
                     }
-                    func
                 });
                 w.use_local(table);
             }
@@ -265,8 +248,8 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Effect {
     }
 }
 
-impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for ValueKey {
-    fn accept(&self, walker: &mut Walker<'walker, 'strage>) {
+impl<'strage> Walkable<'strage> for ValueKey {
+    fn accept(&self, walker: &mut Walker<'strage>) {
         let Some((_, value)) = walker.strage.get(self) else {
             return;
         };
@@ -274,8 +257,8 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for ValueKey {
     }
 }
 
-impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Value {
-    fn accept(&self, w: &mut Walker<'walker, 'strage>) {
+impl<'strage> Walkable<'strage> for Value {
+    fn accept(&self, w: &mut Walker<'strage>) {
         use Value::*;
         match self {
             Branch {
@@ -336,7 +319,7 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Value {
             }
             Int(_) | Float(_) | String(_) | Bool(_) | Nil => {}
             Function(func) => {
-                w.fork(|w| {
+                w.go_function(*func, |w| {
                     let (param_iter, effect_iter) = w.strage.get(func);
                     for (_, param) in param_iter {
                         w.insert_def(param);
@@ -344,7 +327,6 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Value {
                     for (_, effect) in effect_iter {
                         w.go(effect);
                     }
-                    func
                 });
             }
             Array { elements } => {
@@ -370,77 +352,92 @@ impl<'walker, 'strage: 'walker> Walkable<'walker, 'strage> for Value {
 mod internal {
     use super::*;
 
-    #[derive(Default)]
-    struct LinkedNode<'a, T> {
-        value: T,
-        next: Option<&'a LinkedNode<'a, T>>,
-    }
-
-    pub(super) struct Walker<'walker, 'strage: 'walker> {
+    pub struct Walker<'strage> {
         pub strage: &'strage Strage,
         db: Rc<RefCell<FunctionCapture>>,
-        master_defs: LinkedNode<'walker, FxHashSet<&'strage str>>,
-        defs: FxHashSet<&'strage str>,
-        caps: FxHashSet<&'strage str>,
+        master: Vec<(FunctionKey, FxHashMap<&'strage str, u32>)>,
+        defs: FxHashMap<&'strage str, u32>,
+        current: FunctionCaptureKey,
         defs_rev: Vec<&'strage str>,
+
+        // From the concept of Lico Language, the number of default functions/variables is small,
+        // so I use Vec instead of HashSet.
+        unused_defaunts: Vec<&'static str>,
     }
 
-    pub(super) trait Walkable<'walker, 'strage: 'walker> {
-        fn accept(&self, w: &mut Walker<'walker, 'strage>);
+    pub(super) trait Walkable<'strage> {
+        fn accept(&self, w: &mut Walker<'strage>);
     }
 
-    impl<'walker, 'strage: 'walker> Walker<'walker, 'strage> {
-        pub(super) fn new(strage: &'strage Strage, db: Rc<RefCell<FunctionCapture>>) -> Self {
-            Self {
-                strage,
-                db,
-                master_defs: LinkedNode {
-                    value: FxHashSet::default(),
-                    next: None,
-                },
-                defs: FxHashSet::default(),
-                caps: FxHashSet::default(),
-                defs_rev: Vec::new(),
-            }
-        }
+    pub(crate) fn walk(
+        module: &Module,
+        defaults: Vec<&'static str>,
+    ) -> (FunctionCapture, Vec<&'static str>) {
+        let db = Rc::new(RefCell::new(FunctionCapture {
+            map: FxHashMap::default(),
+        }));
+        let mut walker = Walker {
+            strage: module.strage(),
+            db,
+            master: Vec::new(),
+            defs: FxHashMap::default(),
+            current: FunctionCaptureKey::from(module),
+            defs_rev: Vec::new(),
+            unused_defaunts: defaults.clone(),
+        };
+        walker.go(module.effects());
+        assert!(walker.master.is_empty());
+        let db = Rc::try_unwrap(walker.db).unwrap().into_inner();
+        let used_defaults = defaults
+            .into_iter()
+            .filter(|s| !walker.unused_defaunts.contains(s))
+            .collect();
+        (db, used_defaults)
+    }
 
-        pub(super) fn go(&mut self, key: &impl Walkable<'walker, 'strage>) {
+    impl<'strage> Walker<'strage> {
+        pub(super) fn go(&mut self, key: &impl Walkable<'strage>) {
             key.accept(self);
         }
 
-        pub(super) fn go_branch(&mut self, f: impl FnOnce(&mut Walker<'walker, 'strage>)) {
+        pub(super) fn go_branch(&mut self, f: impl FnOnce(&mut Walker<'strage>)) {
             let save_defs_rev = take(&mut self.defs_rev);
+            f(self);
+            let remove_def = replace(&mut self.defs_rev, save_defs_rev);
+            for def in remove_def {
+                *self.defs.get_mut(def).unwrap() -= 1;
+                if *self.defs.get(def).unwrap() == 0 {
+                    self.defs.remove(def);
+                }
+            }
+        }
+
+        pub(super) fn go_function(
+            &mut self,
+            func_key: FunctionKey,
+            f: impl FnOnce(&mut Walker<'strage>),
+        ) {
+            let save_current = self.current;
+
+            let mut master = take(&mut self.master);
+            master.push((func_key, take(&mut self.defs)));
             let mut walker = Walker {
                 strage: self.strage,
                 db: Rc::clone(&self.db),
-                master_defs: take(&mut self.master_defs),
-                defs: take(&mut self.defs),
-                caps: take(&mut self.caps),
+                master,
+                defs: FxHashMap::default(),
+                current: FunctionCaptureKey::from(&func_key),
                 defs_rev: Vec::new(),
+                unused_defaunts: take(&mut self.unused_defaunts),
             };
             f(&mut walker);
-            for def in walker.defs_rev {
-                walker.defs.remove(def);
-            }
-            self.defs_rev = save_defs_rev;
-            self.master_defs = walker.master_defs;
-            self.defs = walker.defs;
-            self.caps = walker.caps;
-        }
+            walker.master.pop();
 
-        pub(super) fn fork<'a, F>(&mut self, f: F)
-        where
-            F: FnOnce(&mut Walker<'walker, 'strage>) -> &'a FunctionKey,
-        {
-            let mut walker = Walker::new(self.strage, Rc::clone(&self.db));
-            let key = f(&mut walker);
-            let Walker {
-                db: record, caps, ..
-            } = walker;
-            let mut record_borrow_mut = record.borrow_mut();
-            for cap in caps {
-                record_borrow_mut.insert(key, cap);
-            }
+            self.master = walker.master;
+            self.defs = walker.defs;
+            self.current = save_current;
+            self.defs_rev = walker.defs_rev;
+            self.unused_defaunts = walker.unused_defaunts;
         }
 
         #[allow(private_bounds)]
@@ -448,33 +445,49 @@ mod internal {
             let Some(symbol) = symbol.into_symbol(self.strage) else {
                 return;
             };
-            self.defs.insert(symbol.text());
+            *self.defs.entry(symbol.text()).or_insert(0) += 1;
         }
 
-        pub(super) fn use_local(&self, symbol: &SymbolKey) {
+        pub(super) fn use_local(&mut self, symbol: &SymbolKey) {
             let Some((_, symbol)) = self.strage.get(symbol) else {
                 return;
             };
             let symbol_str = symbol.text();
-            if self.defs.contains(symbol_str) {
+            if self.defs.contains_key(symbol_str) {
                 return;
             }
-            let mut next = self.master_defs.next;
-            while let Some(defs) = next {
-                if defs.value.contains(symbol_str) {
-                    return;
-                }
-                next = defs.next;
-            }
-            todo!(
-                "Implement undefined local variable error. (undefined: {})",
-                symbol_str
-            );
-        }
 
-        pub(super) fn take_db(self) -> FunctionCapture {
-            assert!(self.master_defs.next.is_none());
-            Rc::try_unwrap(self.db).unwrap().into_inner()
+            // TODO: remove aftter full build type check
+            fn check_double_embedded<T: core::iter::DoubleEndedIterator>(_x: T) {}
+            check_double_embedded(self.defs_rev.iter());
+
+            let mut found_index = -1;
+            for (i, (_, defs)) in self.master.iter().enumerate().rev() {
+                if defs.contains_key(symbol_str) {
+                    found_index = i as isize;
+                    break;
+                }
+            }
+            if found_index != -1 {
+                for (func, defs) in &mut self.master[(found_index + 1) as usize..] {
+                    debug_assert!(!defs.contains_key(symbol_str));
+                    defs.insert(symbol_str, 1);
+                    debug_assert!(!self.db.borrow().get_capture(&*func).contains(symbol_str));
+                    self.db
+                        .borrow_mut()
+                        .map
+                        .entry((&*func).into())
+                        .or_default()
+                        .insert(CompactString::from(symbol_str));
+                }
+            } else if self.unused_defaunts.contains(&symbol_str) {
+                self.unused_defaunts.retain(|s| *s != symbol_str);
+            } else {
+                todo!(
+                    "Implement undefined local variable error. (undefined: {})",
+                    symbol_str
+                );
+            }
         }
     }
 
