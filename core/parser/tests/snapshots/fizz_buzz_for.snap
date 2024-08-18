@@ -1,0 +1,242 @@
+---
+source: parser/tests/example.rs
+description: fizz_buzz_for
+---
+PROGRAM@0..401
+  FUNC_STMT@0..229
+    FUNC_KW@0..4 "func"
+    WHITESPACE@4..5 " "
+    NAME_PATH@5..14
+      NAME@5..14
+        IDENT@5..14 "fizz_buzz"
+    PARAM_LIST@14..17
+      OPENPAREN@14..15 "("
+      NAME@15..16
+        IDENT@15..16 "i"
+      CLOSEPAREN@16..17 ")"
+    PROGRAM@17..226
+      WHITESPACE@17..22 "\n    "
+      VAR_STMT@22..46
+        VAR_KW@22..25 "var"
+        WHITESPACE@25..26 " "
+        NAME@26..28
+          IDENT@26..28 "m3"
+        WHITESPACE@28..29 " "
+        EQ@29..30 "="
+        WHITESPACE@30..31 " "
+        BINARY_EXPR@31..46
+          BINARY_EXPR@31..37
+            LOCAL_VAR@31..32
+              IDENT@31..32 "i"
+            WHITESPACE@32..33 " "
+            PERCENT@33..34 "%"
+            WHITESPACE@34..35 " "
+            LITERAL@35..36
+              INT@35..36 "3"
+            WHITESPACE@36..37 " "
+          EQ2@37..39 "=="
+          WHITESPACE@39..40 " "
+          LITERAL@40..41
+            INT@40..41 "0"
+          WHITESPACE@41..46 "\n    "
+      VAR_STMT@46..70
+        VAR_KW@46..49 "var"
+        WHITESPACE@49..50 " "
+        NAME@50..52
+          IDENT@50..52 "m5"
+        WHITESPACE@52..53 " "
+        EQ@53..54 "="
+        WHITESPACE@54..55 " "
+        BINARY_EXPR@55..70
+          BINARY_EXPR@55..61
+            LOCAL_VAR@55..56
+              IDENT@55..56 "i"
+            WHITESPACE@56..57 " "
+            PERCENT@57..58 "%"
+            WHITESPACE@58..59 " "
+            LITERAL@59..60
+              INT@59..60 "5"
+            WHITESPACE@60..61 " "
+          EQ2@61..63 "=="
+          WHITESPACE@63..64 " "
+          LITERAL@64..65
+            INT@64..65 "0"
+          WHITESPACE@65..70 "\n    "
+      EXPR_STMT@70..226
+        IF_EXPR@70..225
+          IF_KW@70..72 "if"
+          WHITESPACE@72..73 " "
+          BINARY_EXPR@73..83
+            LOCAL_VAR@73..75
+              IDENT@73..75 "m3"
+            WHITESPACE@75..76 " "
+            AND_KW@76..79 "and"
+            WHITESPACE@79..80 " "
+            LOCAL_VAR@80..82
+              IDENT@80..82 "m5"
+            WHITESPACE@82..83 " "
+          THEN_KW@83..87 "then"
+          PROGRAM@87..118
+            WHITESPACE@87..96 "\n        "
+            RETURN_STMT@96..118
+              RETURN_KW@96..102 "return"
+              WHITESPACE@102..103 " "
+              LITERAL@103..113
+                STRING@103..113 "\"FizzBuzz\""
+              WHITESPACE@113..118 "\n    "
+          ELIF_BRANCH@118..157
+            ELIF_KW@118..122 "elif"
+            WHITESPACE@122..123 " "
+            LOCAL_VAR@123..125
+              IDENT@123..125 "m3"
+            WHITESPACE@125..126 " "
+            THEN_KW@126..130 "then"
+            PROGRAM@130..157
+              WHITESPACE@130..139 "\n        "
+              RETURN_STMT@139..157
+                RETURN_KW@139..145 "return"
+                WHITESPACE@145..146 " "
+                LITERAL@146..152
+                  STRING@146..152 "\"Fizz\""
+                WHITESPACE@152..157 "\n    "
+          ELIF_BRANCH@157..196
+            ELIF_KW@157..161 "elif"
+            WHITESPACE@161..162 " "
+            LOCAL_VAR@162..164
+              IDENT@162..164 "m5"
+            WHITESPACE@164..165 " "
+            THEN_KW@165..169 "then"
+            PROGRAM@169..196
+              WHITESPACE@169..178 "\n        "
+              RETURN_STMT@178..196
+                RETURN_KW@178..184 "return"
+                WHITESPACE@184..185 " "
+                LITERAL@185..191
+                  STRING@185..191 "\"Buzz\""
+                WHITESPACE@191..196 "\n    "
+          ELSE_BRANCH@196..222
+            ELSE_KW@196..200 "else"
+            PROGRAM@200..222
+              WHITESPACE@200..209 "\n        "
+              RETURN_STMT@209..222
+                RETURN_KW@209..215 "return"
+                WHITESPACE@215..216 " "
+                LOCAL_VAR@216..217
+                  IDENT@216..217 "i"
+                WHITESPACE@217..222 "\n    "
+          END_KW@222..225 "end"
+        WHITESPACE@225..226 "\n"
+    END_KW@226..229 "end"
+  WHITESPACE@229..231 "\n\n"
+  EXPR_STMT@231..253
+    CALL_EXPR@231..252
+      LOCAL_VAR@231..238
+        IDENT@231..238 "println"
+      ARG_LIST@238..252
+        OPENPAREN@238..239 "("
+        LITERAL@239..251
+          STRING@239..251 "\"[1 -> 100]\""
+        CLOSEPAREN@251..252 ")"
+    WHITESPACE@252..253 "\n"
+  FOR_STMT@253..307
+    FOR_KW@253..256 "for"
+    WHITESPACE@256..257 " "
+    NAME@257..258
+      IDENT@257..258 "i"
+    WHITESPACE@258..259 " "
+    IN_KW@259..261 "in"
+    WHITESPACE@261..262 " "
+    METHOD_CALL_EXPR@262..274
+      LITERAL@262..263
+        INT@262..263 "1"
+      ARROW@263..265 "->"
+      NAME@265..269
+        IDENT@265..269 "upto"
+      ARG_LIST@269..274
+        OPENPAREN@269..270 "("
+        LITERAL@270..273
+          INT@270..273 "100"
+        CLOSEPAREN@273..274 ")"
+    WHITESPACE@274..275 " "
+    DO_KW@275..277 "do"
+    PROGRAM@277..304
+      WHITESPACE@277..282 "\n    "
+      EXPR_STMT@282..304
+        CALL_EXPR@282..303
+          LOCAL_VAR@282..289
+            IDENT@282..289 "println"
+          ARG_LIST@289..303
+            OPENPAREN@289..290 "("
+            CALL_EXPR@290..302
+              LOCAL_VAR@290..299
+                IDENT@290..299 "fizz_buzz"
+              ARG_LIST@299..302
+                OPENPAREN@299..300 "("
+                LOCAL_VAR@300..301
+                  IDENT@300..301 "i"
+                CLOSEPAREN@301..302 ")"
+            CLOSEPAREN@302..303 ")"
+        WHITESPACE@303..304 "\n"
+    END_KW@304..307 "end"
+  WHITESPACE@307..309 "\n\n"
+  EXPR_STMT@309..322
+    CALL_EXPR@309..320
+      LOCAL_VAR@309..314
+        IDENT@309..314 "print"
+      ARG_LIST@314..320
+        OPENPAREN@314..315 "("
+        LITERAL@315..319
+          STRING@315..319 "\"\\n\""
+        CLOSEPAREN@319..320 ")"
+    WHITESPACE@320..322 "\n\n"
+  EXPR_STMT@322..344
+    CALL_EXPR@322..343
+      LOCAL_VAR@322..329
+        IDENT@322..329 "println"
+      ARG_LIST@329..343
+        OPENPAREN@329..330 "("
+        LITERAL@330..342
+          STRING@330..342 "\"[100 -> 1]\""
+        CLOSEPAREN@342..343 ")"
+    WHITESPACE@343..344 "\n"
+  FOR_STMT@344..400
+    FOR_KW@344..347 "for"
+    WHITESPACE@347..348 " "
+    NAME@348..349
+      IDENT@348..349 "i"
+    WHITESPACE@349..350 " "
+    IN_KW@350..352 "in"
+    WHITESPACE@352..353 " "
+    METHOD_CALL_EXPR@353..367
+      LITERAL@353..356
+        INT@353..356 "100"
+      ARROW@356..358 "->"
+      NAME@358..364
+        IDENT@358..364 "downto"
+      ARG_LIST@364..367
+        OPENPAREN@364..365 "("
+        LITERAL@365..366
+          INT@365..366 "1"
+        CLOSEPAREN@366..367 ")"
+    WHITESPACE@367..368 " "
+    DO_KW@368..370 "do"
+    PROGRAM@370..397
+      WHITESPACE@370..375 "\n    "
+      EXPR_STMT@375..397
+        CALL_EXPR@375..396
+          LOCAL_VAR@375..382
+            IDENT@375..382 "println"
+          ARG_LIST@382..396
+            OPENPAREN@382..383 "("
+            CALL_EXPR@383..395
+              LOCAL_VAR@383..392
+                IDENT@383..392 "fizz_buzz"
+              ARG_LIST@392..395
+                OPENPAREN@392..393 "("
+                LOCAL_VAR@393..394
+                  IDENT@393..394 "i"
+                CLOSEPAREN@394..395 ")"
+            CLOSEPAREN@395..396 ")"
+        WHITESPACE@396..397 "\n"
+    END_KW@397..400 "end"
+  WHITESPACE@400..401 "\n"

@@ -1,0 +1,321 @@
+---
+source: parser/tests/example.rs
+description: fibonacci_z_combinator
+---
+PROGRAM@0..468
+  VAR_STMT@0..197
+    VAR_KW@0..3 "var"
+    WHITESPACE@3..4 " "
+    NAME@4..5
+      IDENT@4..5 "Z"
+    WHITESPACE@5..6 " "
+    EQ@6..7 "="
+    WHITESPACE@7..8 " "
+    FUNC_CONST@8..195
+      FUNC_KW@8..12 "func"
+      PARAM_LIST@12..15
+        OPENPAREN@12..13 "("
+        NAME@13..14
+          IDENT@13..14 "f"
+        CLOSEPAREN@14..15 ")"
+      PROGRAM@15..192
+        WHITESPACE@15..20 "\n    "
+        RETURN_STMT@20..192
+          RETURN_KW@20..26 "return"
+          WHITESPACE@26..27 " "
+          CALL_EXPR@27..191
+            PAREN_EXPR@27..109
+              OPENPAREN@27..28 "("
+              FUNC_CONST@28..108
+                FUNC_KW@28..32 "func"
+                PARAM_LIST@32..35
+                  OPENPAREN@32..33 "("
+                  NAME@33..34
+                    IDENT@33..34 "x"
+                  CLOSEPAREN@34..35 ")"
+                PROGRAM@35..105
+                  WHITESPACE@35..44 "\n        "
+                  RETURN_STMT@44..105
+                    RETURN_KW@44..50 "return"
+                    WHITESPACE@50..51 " "
+                    FUNC_CONST@51..100
+                      FUNC_KW@51..55 "func"
+                      PARAM_LIST@55..58
+                        OPENPAREN@55..56 "("
+                        NAME@56..57
+                          IDENT@56..57 "y"
+                        CLOSEPAREN@57..58 ")"
+                      PROGRAM@58..97
+                        WHITESPACE@58..71 "\n            "
+                        RETURN_STMT@71..97
+                          RETURN_KW@71..77 "return"
+                          WHITESPACE@77..78 " "
+                          CALL_EXPR@78..88
+                            CALL_EXPR@78..85
+                              LOCAL_VAR@78..79
+                                IDENT@78..79 "f"
+                              ARG_LIST@79..85
+                                OPENPAREN@79..80 "("
+                                CALL_EXPR@80..84
+                                  LOCAL_VAR@80..81
+                                    IDENT@80..81 "x"
+                                  ARG_LIST@81..84
+                                    OPENPAREN@81..82 "("
+                                    LOCAL_VAR@82..83
+                                      IDENT@82..83 "x"
+                                    CLOSEPAREN@83..84 ")"
+                                CLOSEPAREN@84..85 ")"
+                            ARG_LIST@85..88
+                              OPENPAREN@85..86 "("
+                              LOCAL_VAR@86..87
+                                IDENT@86..87 "y"
+                              CLOSEPAREN@87..88 ")"
+                          WHITESPACE@88..97 "\n        "
+                      END_KW@97..100 "end"
+                    WHITESPACE@100..105 "\n    "
+                END_KW@105..108 "end"
+              CLOSEPAREN@108..109 ")"
+            ARG_LIST@109..191
+              OPENPAREN@109..110 "("
+              FUNC_CONST@110..190
+                FUNC_KW@110..114 "func"
+                PARAM_LIST@114..117
+                  OPENPAREN@114..115 "("
+                  NAME@115..116
+                    IDENT@115..116 "x"
+                  CLOSEPAREN@116..117 ")"
+                PROGRAM@117..187
+                  WHITESPACE@117..126 "\n        "
+                  RETURN_STMT@126..187
+                    RETURN_KW@126..132 "return"
+                    WHITESPACE@132..133 " "
+                    FUNC_CONST@133..182
+                      FUNC_KW@133..137 "func"
+                      PARAM_LIST@137..140
+                        OPENPAREN@137..138 "("
+                        NAME@138..139
+                          IDENT@138..139 "y"
+                        CLOSEPAREN@139..140 ")"
+                      PROGRAM@140..179
+                        WHITESPACE@140..153 "\n            "
+                        RETURN_STMT@153..179
+                          RETURN_KW@153..159 "return"
+                          WHITESPACE@159..160 " "
+                          CALL_EXPR@160..170
+                            CALL_EXPR@160..167
+                              LOCAL_VAR@160..161
+                                IDENT@160..161 "f"
+                              ARG_LIST@161..167
+                                OPENPAREN@161..162 "("
+                                CALL_EXPR@162..166
+                                  LOCAL_VAR@162..163
+                                    IDENT@162..163 "x"
+                                  ARG_LIST@163..166
+                                    OPENPAREN@163..164 "("
+                                    LOCAL_VAR@164..165
+                                      IDENT@164..165 "x"
+                                    CLOSEPAREN@165..166 ")"
+                                CLOSEPAREN@166..167 ")"
+                            ARG_LIST@167..170
+                              OPENPAREN@167..168 "("
+                              LOCAL_VAR@168..169
+                                IDENT@168..169 "y"
+                              CLOSEPAREN@169..170 ")"
+                          WHITESPACE@170..179 "\n        "
+                      END_KW@179..182 "end"
+                    WHITESPACE@182..187 "\n    "
+                END_KW@187..190 "end"
+              CLOSEPAREN@190..191 ")"
+          WHITESPACE@191..192 "\n"
+      END_KW@192..195 "end"
+    WHITESPACE@195..197 "\n\n"
+  VAR_STMT@197..357
+    VAR_KW@197..200 "var"
+    WHITESPACE@200..201 " "
+    NAME@201..204
+      IDENT@201..204 "fib"
+    WHITESPACE@204..205 " "
+    EQ@205..206 "="
+    WHITESPACE@206..207 " "
+    CALL_EXPR@207..355
+      LOCAL_VAR@207..208
+        IDENT@207..208 "Z"
+      ARG_LIST@208..355
+        OPENPAREN@208..209 "("
+        FUNC_CONST@209..354
+          FUNC_KW@209..213 "func"
+          PARAM_LIST@213..216
+            OPENPAREN@213..214 "("
+            NAME@214..215
+              IDENT@214..215 "f"
+            CLOSEPAREN@215..216 ")"
+          PROGRAM@216..351
+            WHITESPACE@216..221 "\n    "
+            RETURN_STMT@221..351
+              RETURN_KW@221..227 "return"
+              WHITESPACE@227..228 " "
+              FUNC_CONST@228..350
+                FUNC_KW@228..232 "func"
+                PARAM_LIST@232..235
+                  OPENPAREN@232..233 "("
+                  NAME@233..234
+                    IDENT@233..234 "n"
+                  CLOSEPAREN@234..235 ")"
+                PROGRAM@235..347
+                  WHITESPACE@235..244 "\n        "
+                  EXPR_STMT@244..347
+                    IF_EXPR@244..342
+                      IF_KW@244..246 "if"
+                      WHITESPACE@246..247 " "
+                      BINARY_EXPR@247..253
+                        LOCAL_VAR@247..248
+                          IDENT@247..248 "n"
+                        WHITESPACE@248..249 " "
+                        LT@249..250 "<"
+                        WHITESPACE@250..251 " "
+                        LITERAL@251..252
+                          INT@251..252 "2"
+                        WHITESPACE@252..253 " "
+                      THEN_KW@253..257 "then"
+                      PROGRAM@257..287
+                        WHITESPACE@257..270 "\n            "
+                        RETURN_STMT@270..287
+                          RETURN_KW@270..276 "return"
+                          WHITESPACE@276..277 " "
+                          LOCAL_VAR@277..278
+                            IDENT@277..278 "n"
+                          WHITESPACE@278..287 "\n        "
+                      ELSE_BRANCH@287..339
+                        ELSE_KW@287..291 "else"
+                        PROGRAM@291..339
+                          WHITESPACE@291..304 "\n            "
+                          RETURN_STMT@304..339
+                            RETURN_KW@304..310 "return"
+                            WHITESPACE@310..311 " "
+                            BINARY_EXPR@311..339
+                              CALL_EXPR@311..319
+                                LOCAL_VAR@311..312
+                                  IDENT@311..312 "f"
+                                ARG_LIST@312..319
+                                  OPENPAREN@312..313 "("
+                                  BINARY_EXPR@313..318
+                                    LOCAL_VAR@313..314
+                                      IDENT@313..314 "n"
+                                    WHITESPACE@314..315 " "
+                                    MINUS@315..316 "-"
+                                    WHITESPACE@316..317 " "
+                                    LITERAL@317..318
+                                      INT@317..318 "1"
+                                  CLOSEPAREN@318..319 ")"
+                              WHITESPACE@319..320 " "
+                              PLUS@320..321 "+"
+                              WHITESPACE@321..322 " "
+                              CALL_EXPR@322..330
+                                LOCAL_VAR@322..323
+                                  IDENT@322..323 "f"
+                                ARG_LIST@323..330
+                                  OPENPAREN@323..324 "("
+                                  BINARY_EXPR@324..329
+                                    LOCAL_VAR@324..325
+                                      IDENT@324..325 "n"
+                                    WHITESPACE@325..326 " "
+                                    MINUS@326..327 "-"
+                                    WHITESPACE@327..328 " "
+                                    LITERAL@328..329
+                                      INT@328..329 "2"
+                                  CLOSEPAREN@329..330 ")"
+                              WHITESPACE@330..339 "\n        "
+                      END_KW@339..342 "end"
+                    WHITESPACE@342..347 "\n    "
+                END_KW@347..350 "end"
+              WHITESPACE@350..351 "\n"
+          END_KW@351..354 "end"
+        CLOSEPAREN@354..355 ")"
+    WHITESPACE@355..357 "\n\n"
+  FOR_STMT@357..434
+    FOR_KW@357..360 "for"
+    WHITESPACE@360..361 " "
+    NAME@361..362
+      IDENT@361..362 "n"
+    WHITESPACE@362..363 " "
+    IN_KW@363..365 "in"
+    WHITESPACE@365..366 " "
+    METHOD_CALL_EXPR@366..377
+      LITERAL@366..367
+        INT@366..367 "0"
+      ARROW@367..369 "->"
+      NAME@369..373
+        IDENT@369..373 "upto"
+      ARG_LIST@373..377
+        OPENPAREN@373..374 "("
+        LITERAL@374..376
+          INT@374..376 "10"
+        CLOSEPAREN@376..377 ")"
+    WHITESPACE@377..378 " "
+    DO_KW@378..380 "do"
+    PROGRAM@380..431
+      WHITESPACE@380..385 "\n    "
+      EXPR_STMT@385..398
+        CALL_EXPR@385..393
+          LOCAL_VAR@385..390
+            IDENT@385..390 "print"
+          ARG_LIST@390..393
+            OPENPAREN@390..391 "("
+            LOCAL_VAR@391..392
+              IDENT@391..392 "n"
+            CLOSEPAREN@392..393 ")"
+        WHITESPACE@393..398 "\n    "
+      EXPR_STMT@398..415
+        CALL_EXPR@398..410
+          LOCAL_VAR@398..403
+            IDENT@398..403 "print"
+          ARG_LIST@403..410
+            OPENPAREN@403..404 "("
+            LITERAL@404..409
+              STRING@404..409 "\" = \""
+            CLOSEPAREN@409..410 ")"
+        WHITESPACE@410..415 "\n    "
+      EXPR_STMT@415..431
+        CALL_EXPR@415..430
+          LOCAL_VAR@415..422
+            IDENT@415..422 "println"
+          ARG_LIST@422..430
+            OPENPAREN@422..423 "("
+            CALL_EXPR@423..429
+              LOCAL_VAR@423..426
+                IDENT@423..426 "fib"
+              ARG_LIST@426..429
+                OPENPAREN@426..427 "("
+                LOCAL_VAR@427..428
+                  IDENT@427..428 "n"
+                CLOSEPAREN@428..429 ")"
+            CLOSEPAREN@429..430 ")"
+        WHITESPACE@430..431 "\n"
+    END_KW@431..434 "end"
+  WHITESPACE@434..436 "\n\n"
+  EXPR_STMT@436..451
+    CALL_EXPR@436..450
+      LOCAL_VAR@436..441
+        IDENT@436..441 "print"
+      ARG_LIST@441..450
+        OPENPAREN@441..442 "("
+        LITERAL@442..449
+          STRING@442..449 "\"25 = \""
+        CLOSEPAREN@449..450 ")"
+    WHITESPACE@450..451 "\n"
+  EXPR_STMT@451..468
+    CALL_EXPR@451..467
+      LOCAL_VAR@451..458
+        IDENT@451..458 "println"
+      ARG_LIST@458..467
+        OPENPAREN@458..459 "("
+        CALL_EXPR@459..466
+          LOCAL_VAR@459..462
+            IDENT@459..462 "fib"
+          ARG_LIST@462..466
+            OPENPAREN@462..463 "("
+            LITERAL@463..465
+              INT@463..465 "25"
+            CLOSEPAREN@465..466 ")"
+        CLOSEPAREN@466..467 ")"
+    WHITESPACE@467..468 "\n"

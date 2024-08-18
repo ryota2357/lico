@@ -1,0 +1,38 @@
+---
+source: parser/tests/example.rs
+description: hello_with_variable
+---
+PROGRAM@0..57
+  VAR_STMT@0..23
+    VAR_KW@0..3 "var"
+    WHITESPACE@3..4 " "
+    NAME@4..8
+      IDENT@4..8 "name"
+    WHITESPACE@8..9 " "
+    EQ@9..10 "="
+    WHITESPACE@10..11 " "
+    LITERAL@11..22
+      STRING@11..22 "\"ryota2357\""
+    WHITESPACE@22..23 "\n"
+  EXPR_STMT@23..57
+    CALL_EXPR@23..56
+      LOCAL_VAR@23..30
+        IDENT@23..30 "println"
+      ARG_LIST@30..56
+        OPENPAREN@30..31 "("
+        BINARY_EXPR@31..55
+          LITERAL@31..40
+            STRING@31..40 "\"Hello, \""
+          WHITESPACE@40..41 " "
+          DOT2@41..43 ".."
+          WHITESPACE@43..44 " "
+          BINARY_EXPR@44..55
+            LOCAL_VAR@44..48
+              IDENT@44..48 "name"
+            WHITESPACE@48..49 " "
+            DOT2@49..51 ".."
+            WHITESPACE@51..52 " "
+            LITERAL@52..55
+              STRING@52..55 "\"!\""
+        CLOSEPAREN@55..56 ")"
+    WHITESPACE@56..57 "\n"

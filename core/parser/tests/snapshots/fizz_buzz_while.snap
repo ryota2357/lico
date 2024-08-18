@@ -1,0 +1,188 @@
+---
+source: parser/tests/example.rs
+description: fizz_buzz_while
+---
+PROGRAM@0..263
+  VAR_STMT@0..16
+    VAR_KW@0..3 "var"
+    WHITESPACE@3..4 " "
+    NAME@4..9
+      IDENT@4..9 "limit"
+    WHITESPACE@9..10 " "
+    EQ@10..11 "="
+    WHITESPACE@11..12 " "
+    LITERAL@12..15
+      INT@12..15 "100"
+    WHITESPACE@15..16 "\n"
+  VAR_STMT@16..26
+    VAR_KW@16..19 "var"
+    WHITESPACE@19..20 " "
+    NAME@20..21
+      IDENT@20..21 "i"
+    WHITESPACE@21..22 " "
+    EQ@22..23 "="
+    WHITESPACE@23..24 " "
+    LITERAL@24..25
+      INT@24..25 "0"
+    WHITESPACE@25..26 "\n"
+  WHILE_STMT@26..262
+    WHILE_KW@26..31 "while"
+    WHITESPACE@31..32 " "
+    BINARY_EXPR@32..42
+      LOCAL_VAR@32..33
+        IDENT@32..33 "i"
+      WHITESPACE@33..34 " "
+      LT@34..35 "<"
+      WHITESPACE@35..36 " "
+      LOCAL_VAR@36..41
+        IDENT@36..41 "limit"
+      WHITESPACE@41..42 " "
+    DO_KW@42..44 "do"
+    PROGRAM@44..259
+      WHITESPACE@44..49 "\n    "
+      EXPR_STMT@49..63
+        BINARY_EXPR@49..63
+          LOCAL_VAR@49..50
+            IDENT@49..50 "i"
+          WHITESPACE@50..51 " "
+          EQ@51..52 "="
+          WHITESPACE@52..53 " "
+          BINARY_EXPR@53..63
+            LOCAL_VAR@53..54
+              IDENT@53..54 "i"
+            WHITESPACE@54..55 " "
+            PLUS@55..56 "+"
+            WHITESPACE@56..57 " "
+            LITERAL@57..58
+              INT@57..58 "1"
+            WHITESPACE@58..63 "\n    "
+      EXPR_STMT@63..259
+        IF_EXPR@63..258
+          IF_KW@63..65 "if"
+          WHITESPACE@65..66 " "
+          BINARY_EXPR@66..92
+            BINARY_EXPR@66..77
+              BINARY_EXPR@66..72
+                LOCAL_VAR@66..67
+                  IDENT@66..67 "i"
+                WHITESPACE@67..68 " "
+                PERCENT@68..69 "%"
+                WHITESPACE@69..70 " "
+                LITERAL@70..71
+                  INT@70..71 "3"
+                WHITESPACE@71..72 " "
+              EQ2@72..74 "=="
+              WHITESPACE@74..75 " "
+              LITERAL@75..76
+                INT@75..76 "0"
+              WHITESPACE@76..77 " "
+            AND_KW@77..80 "and"
+            WHITESPACE@80..81 " "
+            BINARY_EXPR@81..92
+              BINARY_EXPR@81..87
+                LOCAL_VAR@81..82
+                  IDENT@81..82 "i"
+                WHITESPACE@82..83 " "
+                PERCENT@83..84 "%"
+                WHITESPACE@84..85 " "
+                LITERAL@85..86
+                  INT@85..86 "5"
+                WHITESPACE@86..87 " "
+              EQ2@87..89 "=="
+              WHITESPACE@89..90 " "
+              LITERAL@90..91
+                INT@90..91 "0"
+              WHITESPACE@91..92 " "
+          THEN_KW@92..96 "then"
+          PROGRAM@96..129
+            WHITESPACE@96..105 "\n        "
+            EXPR_STMT@105..129
+              CALL_EXPR@105..124
+                LOCAL_VAR@105..112
+                  IDENT@105..112 "println"
+                ARG_LIST@112..124
+                  OPENPAREN@112..113 "("
+                  LITERAL@113..123
+                    STRING@113..123 "\"FizzBuzz\""
+                  CLOSEPAREN@123..124 ")"
+              WHITESPACE@124..129 "\n    "
+          ELIF_BRANCH@129..178
+            ELIF_KW@129..133 "elif"
+            WHITESPACE@133..134 " "
+            BINARY_EXPR@134..145
+              BINARY_EXPR@134..140
+                LOCAL_VAR@134..135
+                  IDENT@134..135 "i"
+                WHITESPACE@135..136 " "
+                PERCENT@136..137 "%"
+                WHITESPACE@137..138 " "
+                LITERAL@138..139
+                  INT@138..139 "3"
+                WHITESPACE@139..140 " "
+              EQ2@140..142 "=="
+              WHITESPACE@142..143 " "
+              LITERAL@143..144
+                INT@143..144 "0"
+              WHITESPACE@144..145 " "
+            THEN_KW@145..149 "then"
+            PROGRAM@149..178
+              WHITESPACE@149..158 "\n        "
+              EXPR_STMT@158..178
+                CALL_EXPR@158..173
+                  LOCAL_VAR@158..165
+                    IDENT@158..165 "println"
+                  ARG_LIST@165..173
+                    OPENPAREN@165..166 "("
+                    LITERAL@166..172
+                      STRING@166..172 "\"Fizz\""
+                    CLOSEPAREN@172..173 ")"
+                WHITESPACE@173..178 "\n    "
+          ELIF_BRANCH@178..227
+            ELIF_KW@178..182 "elif"
+            WHITESPACE@182..183 " "
+            BINARY_EXPR@183..194
+              BINARY_EXPR@183..189
+                LOCAL_VAR@183..184
+                  IDENT@183..184 "i"
+                WHITESPACE@184..185 " "
+                PERCENT@185..186 "%"
+                WHITESPACE@186..187 " "
+                LITERAL@187..188
+                  INT@187..188 "5"
+                WHITESPACE@188..189 " "
+              EQ2@189..191 "=="
+              WHITESPACE@191..192 " "
+              LITERAL@192..193
+                INT@192..193 "0"
+              WHITESPACE@193..194 " "
+            THEN_KW@194..198 "then"
+            PROGRAM@198..227
+              WHITESPACE@198..207 "\n        "
+              EXPR_STMT@207..227
+                CALL_EXPR@207..222
+                  LOCAL_VAR@207..214
+                    IDENT@207..214 "println"
+                  ARG_LIST@214..222
+                    OPENPAREN@214..215 "("
+                    LITERAL@215..221
+                      STRING@215..221 "\"Buzz\""
+                    CLOSEPAREN@221..222 ")"
+                WHITESPACE@222..227 "\n    "
+          ELSE_BRANCH@227..255
+            ELSE_KW@227..231 "else"
+            PROGRAM@231..255
+              WHITESPACE@231..240 "\n        "
+              EXPR_STMT@240..255
+                CALL_EXPR@240..250
+                  LOCAL_VAR@240..247
+                    IDENT@240..247 "println"
+                  ARG_LIST@247..250
+                    OPENPAREN@247..248 "("
+                    LOCAL_VAR@248..249
+                      IDENT@248..249 "i"
+                    CLOSEPAREN@249..250 ")"
+                WHITESPACE@250..255 "\n    "
+          END_KW@255..258 "end"
+        WHITESPACE@258..259 "\n"
+    END_KW@259..262 "end"
+  WHITESPACE@262..263 "\n"

@@ -1,0 +1,15 @@
+---
+source: parser/tests/example.rs
+description: hello_world
+---
+PROGRAM@0..25
+  EXPR_STMT@0..25
+    CALL_EXPR@0..24
+      LOCAL_VAR@0..7
+        IDENT@0..7 "println"
+      ARG_LIST@7..24
+        OPENPAREN@7..8 "("
+        LITERAL@8..23
+          STRING@8..23 "\"Hello, world!\""
+        CLOSEPAREN@23..24 ")"
+    WHITESPACE@24..25 "\n"
