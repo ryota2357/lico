@@ -24,7 +24,7 @@ impl FunctionCaptureKey for &FunctionKey {
 }
 impl FunctionCaptureKey for &Module {
     fn as_db_key(&self) -> u64 {
-        self.effects.as_u64()
+        self.effects().as_u64()
     }
 }
 
@@ -46,8 +46,8 @@ impl FunctionCapture {
         let db = Rc::new(RefCell::new(FunctionCapture {
             map: take(&mut self.map),
         }));
-        let mut walker = Walker::new(&module.strage, Rc::clone(&db));
-        walker.go(&module.effects);
+        let mut walker = Walker::new(module.strage(), Rc::clone(&db));
+        walker.go(module.effects());
         self.map = take(&mut walker.take_db().map);
     }
 

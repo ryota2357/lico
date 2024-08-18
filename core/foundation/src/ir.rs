@@ -9,9 +9,31 @@ mod item;
 pub use item::*;
 
 pub struct Module {
-    pub effects: EffectsKey,
-    pub functions: Vec<FunctionKey>,
-    pub strage: Strage,
+    effects: EffectsKey,
+    functions: Vec<FunctionKey>,
+    strage: Strage,
+}
+
+impl Module {
+    pub fn new(effects: EffectsKey, functions: Vec<FunctionKey>, strage: Strage) -> Self {
+        Self {
+            effects,
+            functions,
+            strage,
+        }
+    }
+
+    pub fn effects(&self) -> &EffectsKey {
+        &self.effects
+    }
+
+    pub fn functions(&self) -> &[FunctionKey] {
+        &self.functions
+    }
+
+    pub fn strage(&self) -> &Strage {
+        &self.strage
+    }
 }
 
 pub struct ModuleBuilder {
@@ -35,11 +57,7 @@ impl ModuleBuilder {
 
     pub fn finish_with(self, root_effects: EffectsKey) -> Module {
         let strage = self.sb.finish();
-        Module {
-            effects: root_effects,
-            functions: self.fns,
-            strage,
-        }
+        Module::new(root_effects, self.fns, strage)
     }
 
     pub fn add_value(&mut self, value: impl Into<Option<(SyntaxNode, Value)>>) -> ValueKey {

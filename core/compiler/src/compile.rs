@@ -48,7 +48,7 @@ pub fn compile(module: &ir::Module) -> il::Module {
     }
     capture_db.build_with(module);
 
-    let mut ctx = Context::new(&module.strage, &capture_db);
+    let mut ctx = Context::new(module.strage(), &capture_db);
     let mut fragment = Fragment::new();
     let mut default_rfns = Vec::new();
     for (name, func) in DEFAULT_FUNCTIONS.iter() {
@@ -64,7 +64,7 @@ pub fn compile(module: &ir::Module) -> il::Module {
             ctx.add_local(name);
         }
     }
-    fragment.append_compile(&module.effects, &mut ctx);
+    fragment.append_compile(module.effects(), &mut ctx);
     let (codes, infos) = ctx.finish_with(fragment);
     il::Module::new(
         il::Executable::new(codes),
