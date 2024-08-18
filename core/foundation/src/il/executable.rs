@@ -4,6 +4,7 @@ use core::{
     cell::Cell,
     fmt, hint,
     ptr::{self, drop_in_place, NonNull},
+    slice,
 };
 use std::alloc;
 
@@ -185,11 +186,28 @@ impl Drop for Executable {
 impl fmt::Debug for Executable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let data_len = self.len();
-        let data_slice = ptr::slice_from_raw_parts(self.ptr.as_ptr(), data_len);
+        let data_slice = unsafe {
+            // SAFETY: `self.ptr` points to the beginning of the data, and `data_len` is the length of it.
+            slice::from_raw_parts(self.ptr.as_ptr(), data_len)
+        };
         f.debug_struct("Executable")
             .field("len", &data_len)
             .field("data", &data_slice)
             .finish()
+    }
+}
+
+impl fmt::Display for Executable {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let data_len = self.len();
+        let data_slice = unsafe {
+            // SAFETY: `self.ptr` points to the beginning of the data, and `data_len` is the length of it.
+            slice::from_raw_parts(self.ptr.as_ptr(), data_len)
+        };
+        for icode in data_slice {
+            writeln!(f, "{}", icode)?;
+        }
+        Ok(())
     }
 }
 
