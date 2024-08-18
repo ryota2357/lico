@@ -57,6 +57,7 @@ pub fn compile(module: &ir::Module) -> il::Module {
         }
     }
     fragment.append_compile(module.effects(), &mut ctx);
+    fragment.append_many([ICodeSource::LoadNilObject, ICodeSource::Leave]);
     let (codes, infos) = ctx.finish_with(fragment);
     il::Module::new(
         il::Executable::new(codes),
