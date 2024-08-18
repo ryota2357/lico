@@ -220,8 +220,8 @@ ast_node!(struct CallExpr for CALL_EXPR {
 
 // Expr 'BinaryOp' Expr
 ast_node!(struct BinaryExpr for BINARY_EXPR {
-    lhs: child[Expression],
-    rhs: child[Expression],
+    lhs: child[Expression, 0],
+    rhs: child[Expression, 1],
 });
 impl BinaryExpr {
     pub fn op(&self) -> Option<(SyntaxToken, BinaryOp)> {
