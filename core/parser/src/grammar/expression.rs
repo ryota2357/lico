@@ -1,16 +1,11 @@
 use super::*;
 
-pub(super) const EXPR_FIRST: TokenSet = atom::LITERA_FIRST.unions(&[
-    T![if],
-    T![do],
-    T![not],
-    T![+],
-    T![-],
-    T![~],
-    T![func],
-    T!['{'],
-    T!['['],
-    IDENT,
+pub(super) const EXPR_FIRST: TokenSet = ATOM_EXPR_FIRST.unions(&[
+    T![+],   // prefix-op
+    T![-],   // prefix-op
+    T![not], // prefix-op
+    T![~],   // prefix-op
+    T![!],   // Invalid prefix-op, for error recovery
 ]);
 
 /// Precondition: `assert!(p.at_ts(EXPR_FIRST))`
@@ -140,11 +135,18 @@ const fn infix_op_binding_power(kind: SyntaxKind) -> Option<(u8, u8)> {
     Some(bp)
 }
 
+const ATOM_EXPR_FIRST: TokenSet = atom::LITERA_FIRST.unions(&[
+    T![do],   // do_expr
+    T![if],   // if_expr
+    T!['('],  // paren_expr
+    T!['{'],  // atom::table_const
+    T!['['],  // atom::array_const
+    T![func], // atom::func_const
+    IDENT,    // atom::local_var
+]);
+
 fn atom_expr(p: &mut Parser) -> CompletedMarker {
-    assert!(p.at_ts(
-        TokenSet::new(&[T!['{'], T!['['], T![func], T![do], T![if], IDENT, T!['(']])
-            .union(atom::LITERA_FIRST)
-    ));
+    assert!(p.at_ts(ATOM_EXPR_FIRST));
 
     // SAFETY: `p.at_ts(..)` is true, so `p.current()` is not None.
     match unsafe { p.current().unwrap_unchecked() } {
