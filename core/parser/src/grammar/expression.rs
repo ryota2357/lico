@@ -148,35 +148,15 @@ fn atom_expr(p: &mut Parser) -> CompletedMarker {
 
     // SAFETY: `p.at_ts(..)` is true, so `p.current()` is not None.
     match unsafe { p.current().unwrap_unchecked() } {
+        T![do] => do_expr(p),
+        T![if] => if_expr(p),
+        T!['('] => paren_expr(p),
         T!['{'] => atom::table_const(p),
         T!['['] => atom::array_const(p),
         T![func] => atom::func_const(p),
-        T![do] => do_expr(p),
-        T![if] => if_expr(p),
+        IDENT => atom::local_var(p),
         c if atom::LITERA_FIRST.contains(c) => atom::literal(p),
-        IDENT => {
-            let m = p.start();
-            p.bump(IDENT);
-            m.complete(p, LOCAL_VAR)
-        }
-        T!['('] => {
-            let m = p.start();
-            p.bump(T!['(']);
-            p.eat_trivia();
-            if p.at_ts(EXPR_FIRST) {
-                expr(p);
-                p.eat_trivia();
-            } else {
-                p.error("Expected <expr>, or use `nil` for unit literal");
-            }
-            if !p.eat(T![')']) {
-                p.error("Missing closing ')'");
-            }
-            m.complete(p, PAREN_EXPR)
-        }
-        _ => {
-            unreachable!();
-        }
+        _ => unreachable!(),
     }
 }
 
@@ -270,6 +250,22 @@ fn if_expr(p: &mut Parser) -> CompletedMarker {
         p.error("Missing 'end' keyword");
     }
     m.complete(p, IF_EXPR)
+}
+
+fn paren_expr(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.bump(T!['(']);
+    p.eat_trivia();
+    if p.at_ts(EXPR_FIRST) {
+        expr(p);
+        p.eat_trivia();
+    } else {
+        p.error("Expected <expr>, or use `nil` for unit literal");
+    }
+    if !p.eat(T![')']) {
+        p.error("Missing closing ')'");
+    }
+    m.complete(p, PAREN_EXPR)
 }
 
 fn elif_branch(p: &mut Parser) {

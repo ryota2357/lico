@@ -173,3 +173,10 @@ pub(super) fn func_const(p: &mut Parser) -> CompletedMarker {
     }
     m.complete(p, FUNC_CONST)
 }
+
+/// Precondition: `assert!(p.at(IDENT))`
+pub(super) fn local_var(p: &mut Parser) -> CompletedMarker {
+    let m = p.start();
+    p.bump(IDENT);
+    m.complete(p, LOCAL_VAR)
+}
