@@ -40,13 +40,15 @@ fn var_stmt(p: &mut Parser) {
     if p.at(IDENT) {
         name(p);
     } else {
-        p.error_with(|p| match p.current() {
-            Some(T![=]) | None => "Missing <name>".into(),
-            Some(..) => {
-                let m = p.start();
-                p.bump_any();
-                m.complete(p, ERROR);
-                format!("Expected <name>, but found {:?}", p.current()).into()
+        p.error_with(|p| -> std::borrow::Cow<_> {
+            match p.current() {
+                Some(T![=]) | None => "Missing <name>".into(),
+                Some(..) => {
+                    let m = p.start();
+                    p.bump_any();
+                    m.complete(p, ERROR);
+                    format!("Expected <name>, but found {:?}", p.current()).into()
+                }
             }
         });
     }
@@ -73,7 +75,7 @@ fn func_stmt(p: &mut Parser) {
         name_path(p).unwrap_or_else(|_: EndWith<'.'>| {
             p.error_with(|_p| {
                 // TODO: skip some tokens ?
-                "Missing field name".into()
+                "Missing field name"
             })
         });
     }
@@ -88,12 +90,12 @@ fn func_stmt(p: &mut Parser) {
             p.error_with(|p| {
                 const NEXT: TokenSet = statement::STMT_FIRST.unions(&[T![end], T!['(']]);
                 if p.at_ts(NEXT) {
-                    "Missing <name>".into()
+                    "Missing <name>"
                 } else {
                     let m = p.start();
                     util::skip_while_st(p, NEXT);
                     m.complete(p, ERROR);
-                    "Expected <name>".into()
+                    "Expected <name>"
                 }
             })
         }

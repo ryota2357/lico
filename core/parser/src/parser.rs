@@ -80,16 +80,20 @@ impl Parser {
         self.events.push(EventRaw::EmptyError { message_index });
     }
 
-    pub(crate) fn error_with(&mut self, func: impl FnOnce(&mut Parser) -> Cow<'static, str>) {
+    pub(crate) fn error_with<F, M>(&mut self, func: F)
+    where
+        F: FnOnce(&mut Parser) -> M,
+        M: Into<Cow<'static, str>>,
+    {
         self.events.push(EventRaw::StartError);
         let message = func(self);
         let message_index = self.errors.len() as u32;
-        self.errors.push(message);
+        self.errors.push(message.into());
         self.events.push(EventRaw::FinishError { message_index });
     }
 
     pub(crate) fn finish(self) -> Output {
-        assert!(self.input.len() == self.pos);
+        assert_eq!(self.input.len(), self.pos);
         Output::new(self.events, self.errors)
     }
 

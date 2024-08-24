@@ -69,7 +69,7 @@ fn lhs(p: &mut Parser) -> CompletedMarker {
             let m = p.start();
             p.error_with(|p| {
                 p.bump(T![!]);
-                "Should use `not` for logical negation or `~` for bitwise negation".into()
+                "Should use `not` for logical negation or `~` for bitwise negation"
             });
             p.eat_trivia();
             expr_bp(p, 255); // same as normal prefix-op

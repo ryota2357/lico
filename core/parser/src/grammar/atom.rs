@@ -47,12 +47,12 @@ pub(super) fn array_const(p: &mut Parser) -> CompletedMarker {
         p.error_with(|p| {
             const NEXT_FIRST: TokenSet = statement::STMT_FIRST.unions(&[T![']']]);
             if p.at_ts(NEXT_FIRST) {
-                "Missing closing ']'".into()
+                "Missing closing ']'"
             } else {
                 let m = p.start();
                 util::skip_while_st(p, NEXT_FIRST);
                 m.complete(p, ERROR);
-                "Expected closing ']'".into()
+                "Expected closing ']'"
             }
         });
     }
@@ -108,7 +108,7 @@ fn table_field(p: &mut Parser) {
         }
         Some(T![:]) => p.error_with(|p| {
             p.bump(T![:]);
-            "Should use '=' instead of ':'".into()
+            "Should use '=' instead of ':'"
         }),
         Some(t) if expression::EXPR_FIRST.contains(t) => {
             p.error("Missing '='");
