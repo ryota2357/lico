@@ -1,20 +1,21 @@
 use super::*;
 
 pub(super) const STMT_FIRST: TokenSet = expression::EXPR_FIRST.unions(&[
-    T![var],
-    T![func],
-    T![for],
-    T![while],
-    T![return],
-    T![break],
-    T![continue],
+    T![var],      // var_stmt
+    T![func],     // func_stmt
+    T![for],      // for_stmt
+    T![while],    // while_stmt
+    T![return],   // return_stmt
+    T![break],    // break_stmt
+    T![continue], // continue_stmt
 ]);
 
+/// Precondition: `assert!(p.at_ts(STMT_FIRST))`
 pub(super) fn stmt(p: &mut Parser) {
-    let Some(current) = p.current() else {
-        return;
-    };
-    match current {
+    assert!(p.at_ts(STMT_FIRST));
+
+    // SAFETY: `p.at_ts(..)` is true, so `p.current()` is not None.
+    match unsafe { p.current().unwrap_unchecked() } {
         T![var] => var_stmt(p),
         T![func] => func_stmt(p),
         T![for] => for_stmt(p),

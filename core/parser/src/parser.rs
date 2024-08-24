@@ -28,6 +28,10 @@ impl Parser {
         self.input.get(self.pos) == Some(&kind)
     }
 
+    pub(crate) fn at_eof(&self) -> bool {
+        self.input.get(self.pos).is_none()
+    }
+
     pub(crate) fn at_ts(&self, kinds: TokenSet) -> bool {
         let Some(current) = self.current() else {
             return false;

@@ -4,19 +4,22 @@ use foundation::syntax::{SyntaxKind, SyntaxKind::*, T};
 mod atom;
 mod expression;
 mod statement;
+mod util;
 
 struct EndWith<const C: char>;
 
-pub(crate) fn program(p: &mut Parser) {
+pub(crate) fn entry(p: &mut Parser) {
     let m = p.start();
-    loop {
+    while !p.at_eof() {
+        util::loop_stmt_until_st(p, TokenSet::new(&[]));
         p.eat_trivia();
-        if p.at_ts(statement::STMT_FIRST) {
-            statement::stmt(p);
-        } else {
-            break;
-        }
     }
+    m.complete(p, PROGRAM);
+}
+
+fn program(p: &mut Parser) {
+    let m = p.start();
+    util::loop_stmt_until_st(p, TokenSet::one(T![end]));
     p.eat_trivia();
     m.complete(p, PROGRAM);
 }
@@ -139,17 +142,4 @@ fn arg_list(p: &mut Parser) {
         });
     }
     m.complete(p, ARG_LIST);
-}
-
-mod util {
-    use super::*;
-
-    pub(super) fn skip_while_st(p: &mut Parser, st: TokenSet) {
-        while let Some(current) = p.current() {
-            if st.contains(current) {
-                break;
-            }
-            p.bump_any();
-        }
-    }
 }

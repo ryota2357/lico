@@ -30,7 +30,7 @@ pub fn parse(
     };
 
     let mut parser = parser::Parser::new(kind_list);
-    grammar::program(&mut parser);
+    grammar::entry(&mut parser);
     let output = parser.finish();
     let (green_node, errors) = build_tree(source, output, start_offsets);
     syntax_erros.extend(errors);

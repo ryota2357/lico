@@ -233,7 +233,7 @@ fn if_expr(p: &mut Parser) -> CompletedMarker {
     if !p.eat(T![then]) {
         todo!("error recovery")
     }
-    program(p);
+    if_expr_branch_program(p);
     match p.current() {
         Some(T![elif]) => {
             while p.at(T![elif]) {
@@ -283,13 +283,20 @@ fn elif_branch(p: &mut Parser) {
     if !p.eat(T![then]) {
         p.error("Missing 'then' keyword");
     }
-    program(p);
+    if_expr_branch_program(p);
     m.complete(p, ELIF_BRANCH);
 }
 
 fn else_branch(p: &mut Parser) {
     let m = p.start();
     p.bump(T![else]);
-    program(p);
+    if_expr_branch_program(p);
     m.complete(p, ELSE_BRANCH);
+}
+
+fn if_expr_branch_program(p: &mut Parser) {
+    let m = p.start();
+    util::loop_stmt_until_st(p, TokenSet::new(&[T![end], T![elif], T![else]]));
+    p.eat_trivia();
+    m.complete(p, PROGRAM);
 }
