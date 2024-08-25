@@ -32,7 +32,7 @@ fn compile<'node, 'src: 'node>(
 
         Effect::MakeFunc { name, func } => {
             let name_str = ctx.strage.get(name).unwrap().1.text();
-            compile_utils::compile_function(Some(name_str), func, fragment, ctx);
+            compile_utils::compile_function(func, fragment, ctx);
             fragment.append(StoreNewLocal);
             ctx.add_local(name_str);
         }
@@ -77,7 +77,7 @@ fn compile<'node, 'src: 'node>(
             let path_len = path.len();
             let path_iter = ctx.strage.get(path);
 
-            compile_utils::compile_function(None, func, fragment, ctx);
+            compile_utils::compile_function(func, fragment, ctx);
             fragment
                 .append(LoadLocal(ctx.resolve_local(table_symbol.text())))
                 .append_many(path_iter.enumerate().flat_map(|(i, (syntax, field))| {
@@ -102,7 +102,7 @@ fn compile<'node, 'src: 'node>(
             let path_iter = ctx.strage.get(path);
             let (name_syntax, name_string) = ctx.strage.get(name).unwrap();
 
-            compile_utils::compile_function(None, func, fragment, ctx);
+            compile_utils::compile_function(func, fragment, ctx);
             fragment
                 .append(LoadLocal(ctx.resolve_local(table_symbol.text())))
                 .append_many(path_iter.flat_map(|(syntax, field)| {

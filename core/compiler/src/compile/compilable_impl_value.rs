@@ -250,7 +250,7 @@ fn compile<'node, 'src: 'node>(
         }
 
         Value::Function(func) => {
-            compile_utils::compile_function(None, func, fragment, ctx);
+            compile_utils::compile_function(func, fragment, ctx);
         }
 
         Value::Array { elements } => {

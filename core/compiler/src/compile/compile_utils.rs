@@ -1,19 +1,9 @@
 use super::*;
 
-pub(crate) fn compile_function(
-    name: Option<&str>,
-    func: &ir::FunctionKey,
-    fragment: &mut Fragment,
-    ctx: &mut Context,
-) {
+pub(crate) fn compile_function(func: &ir::FunctionKey, fragment: &mut Fragment, ctx: &mut Context) {
     use ICodeSource::*;
 
     let func_capture = ctx.capture_db.get_capture(func);
-
-    let is_recursive = match name {
-        Some(name) => func_capture.contains(name),
-        None => false,
-    };
 
     let (func_fragment, func_param_len) = {
         let (func_params, func_effects) = ctx.strage.get(func);
@@ -21,10 +11,8 @@ pub(crate) fn compile_function(
         let mut fragment = Fragment::new();
         let mut ctx = Context::new_with(ctx);
 
-        if is_recursive {
-            // SAFETY: `name` is `Some` if `is_recursive` is `true`.
-            let name = unsafe { name.unwrap_unchecked() };
-            ctx.add_local(name);
+        for capture in func_capture.iter() {
+            ctx.add_local(capture);
         }
 
         let mut param_len = 0;
