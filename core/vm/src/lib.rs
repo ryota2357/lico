@@ -365,6 +365,7 @@ fn loop_(exe: Executable, runtime: &mut Runtime) -> Status {
                 });
                 let func = Function::new(exe.clone(), param_len, start_pc, env_iter);
                 runtime.stack.push(Object::Function(func));
+                pc += 1;
             }
             FuncSetProperty(_, _) => panic!("[BUG] `FuncSetProperty` is not allowed here"),
             FuncAddCapture(_) => panic!("[BUG] `FuncAddCapture` is not allowed here"),
