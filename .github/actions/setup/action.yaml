@@ -12,4 +12,4 @@ runs:
         rustup component add clippy rustfmt
     - uses: denoland/setup-deno@v1
       with:
-        deno-version: v1.x
+        deno-version: 2.x
